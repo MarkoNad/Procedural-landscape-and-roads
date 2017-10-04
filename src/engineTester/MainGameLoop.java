@@ -31,7 +31,7 @@ public class MainGameLoop {
 		
 		Loader loader = new Loader();
 		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
-		Camera camera = new Camera(new Vector3f(100, 3, 0));
+		//Camera camera = new Camera(new Vector3f(100, 3, 0));
 		MasterRenderer renderer = new MasterRenderer();
 
 		ModelTexture dragonTexture = new ModelTexture(loader.loadTexture("stall"));
@@ -50,6 +50,8 @@ public class MainGameLoop {
 		RawModel bunnyModel = OBJLoader.loadObjModel("stanfordBunny", loader);
 		TexturedModel stanfordBunny = new TexturedModel(bunnyModel, new ModelTexture(loader.loadTexture("white")));
 		Player player = new Player(stanfordBunny, new Vector3f(100, 0, -50), 0, 0, 0, 1);
+		
+		Camera camera = new Camera(player);
 		
 		TexturedModel grass = new TexturedModel(OBJLoader.loadObjModel("grassModel", loader), new ModelTexture(loader.loadTexture("grassTexture")));
 		grass.getTexture().setHasTransparency(true);
@@ -80,7 +82,7 @@ public class MainGameLoop {
 
 		while(!Display.isCloseRequested()) {
 			entity.increaseRotation(0, 0.5f, 0);
-			//camera.move();
+			camera.move();
 			player.move();
 			renderer.processEntity(player);
 			
