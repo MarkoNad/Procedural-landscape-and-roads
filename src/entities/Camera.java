@@ -69,7 +69,6 @@ public class Camera {
 	}
 	
 	private void calculatePitch() {
-		//if(!Mouse.isButtonDown(1)) return;
 		if(!Mouse.isButtonDown(0)) return;
 		pitch -= Mouse.getDY() * 0.1f;
 	}
