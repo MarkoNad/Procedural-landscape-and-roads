@@ -1,5 +1,7 @@
 package terrains;
 
+import org.lwjgl.util.vector.Vector3f;
+
 import models.RawModel;
 import renderEngine.Loader;
 import textures.TerrainTexture;
@@ -22,10 +24,10 @@ public class Terrain {
 	
 	private IHeightGenerator heightGenerator;
 
-	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, 
-			TerrainTexture blendMap, int xVertices, int zVertices) {
-		this(gridX, gridZ, loader, texturePack, blendMap, (x, y) -> 0, xVertices, zVertices);
-	}
+//	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, 
+//			TerrainTexture blendMap, int xVertices, int zVertices) {
+//		this(gridX, gridZ, loader, texturePack, blendMap, (x, y) -> 0, xVertices, zVertices);
+//	}
 	
 	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, 
 			TerrainTexture blendMap, IHeightGenerator heightGenerator, int xVertices, int zVertices) {
@@ -74,9 +76,10 @@ public class Terrain {
 				vertices[vertexPointer * 3 + 1] = heightGenerator.getHeight(x, z);
 				vertices[vertexPointer * 3 + 2] = (float) z / ((float) zVertices - 1) * SIZE;
 				
-				normals[vertexPointer * 3] = 0;
-				normals[vertexPointer * 3 + 1] = 1;
-				normals[vertexPointer * 3 + 2] = 0;
+				Vector3f normal = heightGenerator.getNormal(x, z);
+				normals[vertexPointer * 3] = normal.x;
+				normals[vertexPointer * 3 + 1] = normal.y;
+				normals[vertexPointer * 3 + 2] = normal.z;
 				
 				textureCoords[vertexPointer * 2] = (float) x / ((float) xVertices - 1);
 				textureCoords[vertexPointer * 2 + 1] = (float) z / ((float) zVertices - 1);

@@ -1,5 +1,5 @@
 MasterRenderer::prepare: switch clear and clearColor
-
+normal normalizing in Terrain correct? (inplace)
 
 
 

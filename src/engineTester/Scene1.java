@@ -21,7 +21,6 @@ import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
 import terrains.HeightMapHeightGenerator;
-import terrains.IHeightGenerator;
 import terrains.Terrain;
 import textures.ModelTexture;
 import textures.TerrainTexture;
@@ -69,7 +68,7 @@ public class Scene1 {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		HeightMapHeightGenerator heightGenerator = new HeightMapHeightGenerator("res/heightMap.png");
-		Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, heightGenerator, heightGenerator.getImageWidth(), heightGenerator.getImageHeight());
+		Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, heightGenerator, heightGenerator.getXPoints(), heightGenerator.getYPoints());
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

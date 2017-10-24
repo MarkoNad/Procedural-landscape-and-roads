@@ -20,6 +20,7 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
+import terrains.IHeightGenerator;
 import terrains.Terrain;
 import textures.ModelTexture;
 import textures.TerrainTexture;
@@ -70,7 +71,19 @@ public class MainGameLoop {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		//Terrain terrain = new Terrain(0, -1, loader, new ModelTexture(loader.loadTexture("grass")));
-		Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, (x, z) -> 0, 128, 128);
+		IHeightGenerator heightGenerator = new IHeightGenerator() {
+			
+			@Override
+			public Vector3f getNormal(int x, int z) {
+				return new Vector3f(0.0f, 1.0f, 0.0f);
+			}
+			
+			@Override
+			public float getHeight(float x, float y) {
+				return 0.0f;
+			}
+		};
+		Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, heightGenerator, 128, 128);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();
