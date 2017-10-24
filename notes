@@ -1,0 +1,9 @@
+MasterRenderer::prepare: switch clear and clearColor
+
+
+
+
+
+
+
+vert i frag shaders -> unique variable names (they collide)

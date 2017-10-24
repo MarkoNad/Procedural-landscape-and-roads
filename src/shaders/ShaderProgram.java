@@ -1,9 +1,10 @@
 package shaders;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.FloatBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -88,22 +89,17 @@ public abstract class ShaderProgram {
 	}
 	
 	private static int loadShader(String file, int type){
-        StringBuilder shaderSource = new StringBuilder();
-        try{
-            BufferedReader reader = new BufferedReader(new FileReader(file));
-            String line;
-            while((line = reader.readLine())!=null){
-                shaderSource.append(line).append("//\n");
-            }
-            reader.close();
-        }catch(IOException e){
-            e.printStackTrace();
-            System.exit(-1);
-        }
-        int shaderID = GL20.glCreateShader(type);
+		String shaderSource = null;
+		try {
+			shaderSource = new String(Files.readAllBytes(Paths.get(file)), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		int shaderID = GL20.glCreateShader(type);
         GL20.glShaderSource(shaderID, shaderSource);
         GL20.glCompileShader(shaderID);
-        if(GL20.glGetShaderi(shaderID, GL20.GL_COMPILE_STATUS )== GL11.GL_FALSE){
+        if(GL20.glGetShaderi(shaderID, GL20.GL_COMPILE_STATUS ) == GL11.GL_FALSE){
             System.out.println(GL20.glGetShaderInfoLog(shaderID, 500));
             System.err.println("Could not compile shader!");
             System.exit(-1);

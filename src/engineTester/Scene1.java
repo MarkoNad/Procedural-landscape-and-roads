@@ -7,9 +7,9 @@ import java.util.Random;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
 
-import entities.ThirdPersonCamera;
 import entities.Camera;
 import entities.Entity;
+import entities.FloatingCamera;
 import entities.Light;
 import entities.Player;
 import models.RawModel;
@@ -25,14 +25,14 @@ import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 
-public class MainGameLoop {
+public class Scene1 {
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
 		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
-		//Camera camera = new Camera(new Vector3f(100, 3, 0));
+		Camera camera = new FloatingCamera();
 		MasterRenderer renderer = new MasterRenderer();
 
 		ModelTexture dragonTexture = new ModelTexture(loader.loadTexture("stall"));
@@ -46,13 +46,10 @@ public class MainGameLoop {
 		ModelData data = OBJFileLoader.loadOBJ("tree");
 		RawModel treeModel = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getIndices());
 		TexturedModel tree = new TexturedModel(treeModel, new ModelTexture(loader.loadTexture("tree")));
-		//TexturedModel tree = new TexturedModel(OBJLoader.loadObjModel("tree", loader), new ModelTexture(loader.loadTexture("tree")));
 		
 		RawModel bunnyModel = OBJLoader.loadObjModel("stanfordBunny", loader);
 		TexturedModel stanfordBunny = new TexturedModel(bunnyModel, new ModelTexture(loader.loadTexture("white")));
 		Player player = new Player(stanfordBunny, new Vector3f(100, 0, -50), 0, 0, 0, 1);
-		
-		Camera camera = new ThirdPersonCamera(player);
 		
 		TexturedModel grass = new TexturedModel(OBJLoader.loadObjModel("grassModel", loader), new ModelTexture(loader.loadTexture("grassTexture")));
 		grass.getTexture().setHasTransparency(true);
@@ -68,8 +65,6 @@ public class MainGameLoop {
 		TerrainTexture bTexture = new TerrainTexture(loader.loadTexture("path"));
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
-		
-		//Terrain terrain = new Terrain(0, -1, loader, new ModelTexture(loader.loadTexture("grass")));
 		Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap);
 		
 		List<Entity> entities = new ArrayList<>();
