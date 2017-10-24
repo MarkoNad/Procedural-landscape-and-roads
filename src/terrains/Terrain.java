@@ -17,12 +17,19 @@ public class Terrain {
 	
 	private TerrainTexturePack texturePack;
 	private TerrainTexture blendMap;
+	
+	private IHeightGenerator heightGenerator;
 
 	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap) {
+		this(gridX, gridZ, loader, texturePack, blendMap, (x, y) -> 0);
+	}
+	
+	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap, IHeightGenerator heightGenerator) {
 		this.texturePack = texturePack;
 		this.blendMap = blendMap;
 		this.x = gridX * SIZE;
 		this.z = gridZ * SIZE;
+		this.heightGenerator = heightGenerator;
 		this.model = generateTerrain(loader);
 	}
 
@@ -58,7 +65,7 @@ public class Terrain {
 		for (int i = 0; i < VERTEX_COUNT; i++) {
 			for (int j = 0; j < VERTEX_COUNT; j++) {
 				vertices[vertexPointer * 3] = (float) j / ((float) VERTEX_COUNT - 1) * SIZE;
-				vertices[vertexPointer * 3 + 1] = 0;
+				vertices[vertexPointer * 3 + 1] = heightGenerator.generateHeight(i, j);
 				vertices[vertexPointer * 3 + 2] = (float) i / ((float) VERTEX_COUNT - 1) * SIZE;
 				
 				normals[vertexPointer * 3] = 0;
