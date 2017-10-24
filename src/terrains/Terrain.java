@@ -1,5 +1,7 @@
 package terrains;
 
+import org.lwjgl.util.vector.Vector3f;
+
 import models.RawModel;
 import renderEngine.Loader;
 import textures.TerrainTexture;
@@ -7,11 +9,13 @@ import textures.TerrainTexturePack;
 
 public class Terrain {
 
-	private static final float SIZE = 800;
-	private static final int VERTEX_COUNT = 128;
+	private final float width;
+	private final float depth;
+	private final float vertsPerMeter;
 
-	private float x;
-	private float z;
+	private float xUpperLeft; // true x coordinate of upper left corner
+	private float zUpperLeft;
+	private Vector3f translation; // how much will be the terrain translated
 
 	private RawModel model;
 	
@@ -19,26 +23,27 @@ public class Terrain {
 	private TerrainTexture blendMap;
 	
 	private IHeightGenerator heightGenerator;
-
-	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap) {
-		this(gridX, gridZ, loader, texturePack, blendMap, (x, y) -> 0);
+	
+	public Terrain(Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap) {
+		this(0f, -800f, new Vector3f(), 800f, 800f, 0.2f, loader, texturePack, blendMap, new UniformHeightGenerator());
 	}
 	
-	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap, IHeightGenerator heightGenerator) {
+	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth, float vertsPerMeter, Loader loader,
+			TerrainTexturePack texturePack, TerrainTexture blendMap, IHeightGenerator heightGenerator) {
+		this.xUpperLeft = xUpperLeft;
+		this.zUpperLeft = zUpperLeft;
+		this.translation = position;
+		this.width = width;
+		this.depth = depth;
+		this.vertsPerMeter = vertsPerMeter;
 		this.texturePack = texturePack;
 		this.blendMap = blendMap;
-		this.x = gridX * SIZE;
-		this.z = gridZ * SIZE;
 		this.heightGenerator = heightGenerator;
 		this.model = generateTerrain(loader);
 	}
-
-	public float getX() {
-		return x;
-	}
-
-	public float getZ() {
-		return z;
+	
+	public Vector3f getTranslation() {
+		return translation;
 	}
 
 	public RawModel getModel() {
@@ -54,37 +59,43 @@ public class Terrain {
 	}
 
 	private RawModel generateTerrain(Loader loader) {
-		int count = VERTEX_COUNT * VERTEX_COUNT;
+		int xVertices = (int) (width * vertsPerMeter);
+		int zVertices = (int) (depth * vertsPerMeter);
+		int count = xVertices * zVertices;
 		
 		float[] vertices = new float[count * 3];
 		float[] normals = new float[count * 3];
 		float[] textureCoords = new float[count * 2];
-		int[] indices = new int[6 * (VERTEX_COUNT - 1) * (VERTEX_COUNT - 1)];
+		int[] indices = new int[6 * (xVertices - 1) * (zVertices - 1)];
 		
 		int vertexPointer = 0;
-		for (int i = 0; i < VERTEX_COUNT; i++) {
-			for (int j = 0; j < VERTEX_COUNT; j++) {
-				vertices[vertexPointer * 3] = (float) j / ((float) VERTEX_COUNT - 1) * SIZE;
-				vertices[vertexPointer * 3 + 1] = heightGenerator.generateHeight(i, j);
-				vertices[vertexPointer * 3 + 2] = (float) i / ((float) VERTEX_COUNT - 1) * SIZE;
+		for (int z = 0; z < zVertices; z++) {
+			for (int x = 0; x < xVertices; x++) {
+				float xcoord = x / (float)(xVertices - 1) * width + xUpperLeft;
+				float zcoord = z / (float)(zVertices - 1) * depth + zUpperLeft;
 				
-				normals[vertexPointer * 3] = 0;
-				normals[vertexPointer * 3 + 1] = 1;
-				normals[vertexPointer * 3 + 2] = 0;
+				vertices[vertexPointer * 3] = xcoord;
+				vertices[vertexPointer * 3 + 1] = heightGenerator.getHeight(xcoord, zcoord);
+				vertices[vertexPointer * 3 + 2] = zcoord;
 				
-				textureCoords[vertexPointer * 2] = (float) j / ((float) VERTEX_COUNT - 1);
-				textureCoords[vertexPointer * 2 + 1] = (float) i / ((float) VERTEX_COUNT - 1);
+				Vector3f normal = heightGenerator.getNormal(xcoord, zcoord);
+				normals[vertexPointer * 3] = normal.x;
+				normals[vertexPointer * 3 + 1] = normal.y;
+				normals[vertexPointer * 3 + 2] = normal.z;
+				
+				textureCoords[vertexPointer * 2] = (float) x / ((float) xVertices - 1);
+				textureCoords[vertexPointer * 2 + 1] = (float) z / ((float) zVertices - 1);
 				
 				vertexPointer++;
 			}
 		}
 		
 		int pointer = 0;
-		for (int gz = 0; gz < VERTEX_COUNT - 1; gz++) {
-			for (int gx = 0; gx < VERTEX_COUNT - 1; gx++) {
-				int topLeft = (gz * VERTEX_COUNT) + gx;
+		for (int gz = 0; gz < zVertices - 1; gz++) {
+			for (int gx = 0; gx < xVertices - 1; gx++) {
+				int topLeft = (gz * xVertices) + gx;
 				int topRight = topLeft + 1;
-				int bottomLeft = ((gz + 1) * VERTEX_COUNT) + gx;
+				int bottomLeft = ((gz + 1) * xVertices) + gx;
 				int bottomRight = bottomLeft + 1;
 				
 				indices[pointer++] = topLeft;

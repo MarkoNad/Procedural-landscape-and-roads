@@ -1,7 +1,10 @@
 package terrains;
 
+import org.lwjgl.util.vector.Vector3f;
+
 public interface IHeightGenerator {
 	
-	public float generateHeight(float x, float y);
+	public float getHeight(float x, float z);
+	public Vector3f getNormal(float x, float z);
 
 }
