@@ -69,16 +69,34 @@ public class SimplexScene {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(0);
-		Terrain terrain = new Terrain(0f, -800f, 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
+		float width = 800;
+		float depth = 800;
+		Terrain terrain = new Terrain(0f, -800f, new Vector3f(), width, depth, 0.15f, loader, texturePack, blendMap, heightGenerator);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();
 		
 		for(int i = 0; i < 500; i++) {
-			entities.add(new Entity(tree, new Vector3f(rand.nextFloat() * 800, 0, - rand.nextFloat() * 800), 0, 0, 0, 5));
-			entities.add(new Entity(grass, new Vector3f(rand.nextFloat() * 800, 0, - rand.nextFloat() * 800), 0, 0, 0, 2));
-			entities.add(new Entity(fern, new Vector3f(rand.nextFloat() * 800, 0, - rand.nextFloat() * 800), 0, 0, 0, 1));
+			float x = rand.nextFloat() * width;
+			float z = -rand.nextFloat() * depth;
+			float y = heightGenerator.getHeight(x, z);
+			entities.add(new Entity(tree, new Vector3f(x, y, z), 0, 0, 0, 5));
+			
+			x = rand.nextFloat() * width;
+			z = -rand.nextFloat() * depth;
+			y = heightGenerator.getHeight(x, z);
+			entities.add(new Entity(grass, new Vector3f(x, y, z), 0, 0, 0, 2.0f));
+			
+			x = rand.nextFloat() * width;
+			z = -rand.nextFloat() * depth;
+			y = heightGenerator.getHeight(x, z);
+			entities.add(new Entity(fern, new Vector3f(x, y, z), 0, 0, 0, 1));
 		}
+		float meter = 7f;
+		entities.add(new Entity(tree, new Vector3f(0, 0, 0), 0, 0, 0, 5));
+		entities.add(new Entity(tree, new Vector3f(0, 0, -meter), 0, 0, 0, 5));
+		entities.add(new Entity(tree, new Vector3f(meter, 0, 0), 0, 0, 0, 5));
+		entities.add(new Entity(tree, new Vector3f(meter, 0, -meter), 0, 0, 0, 5));
 
 		while(!Display.isCloseRequested()) {
 			entity.increaseRotation(0, 0.5f, 0);

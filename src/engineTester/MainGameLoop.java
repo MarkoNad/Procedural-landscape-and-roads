@@ -73,7 +73,7 @@ public class MainGameLoop {
 		
 		//Terrain terrain = new Terrain(0, -1, loader, new ModelTexture(loader.loadTexture("grass")));
 		IHeightGenerator heightGenerator = new UniformHeightGenerator();
-		Terrain terrain = new Terrain(0f, -800f, 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
+		Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

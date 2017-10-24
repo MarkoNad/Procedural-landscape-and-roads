@@ -1,9 +1,9 @@
 MasterRenderer::prepare: switch clear and clearColor
-normal normalizing in Terrain correct? (inplace)
+samplingDistance in SimplexHeightGenerator => perhaps set to distance of the neighboring vertex
 
 
 
 
 
 
-vert i frag shaders -> unique variable names (they collide)
+vert and frag shaders -> unique variable names (they collide)

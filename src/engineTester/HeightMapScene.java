@@ -69,7 +69,7 @@ public class HeightMapScene {
 		
 		HeightMapHeightGenerator heightGenerator = new HeightMapHeightGenerator("res/heightMap.png");
 		//Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, heightGenerator, heightGenerator.getXPoints(), heightGenerator.getYPoints());
-		Terrain terrain = new Terrain(0f, -800f, 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
+		Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

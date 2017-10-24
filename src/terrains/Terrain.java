@@ -13,8 +13,9 @@ public class Terrain {
 	private final float depth;
 	private final float vertsPerMeter;
 
-	private float xUpperLeft;
+	private float xUpperLeft; // true x coordinate of upper left corner
 	private float zUpperLeft;
+	private Vector3f translation; // how much will be the terrain translated
 
 	private RawModel model;
 	
@@ -24,13 +25,14 @@ public class Terrain {
 	private IHeightGenerator heightGenerator;
 	
 	public Terrain(Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap) {
-		this(0f, -1f, 800f, 800f, 0.2f, loader, texturePack, blendMap, new UniformHeightGenerator());
+		this(0f, -800f, new Vector3f(), 800f, 800f, 0.2f, loader, texturePack, blendMap, new UniformHeightGenerator());
 	}
 	
-	public Terrain(float xUpperLeft, float zUpperLeft, float width, float depth, float vertsPerMeter, Loader loader,
+	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth, float vertsPerMeter, Loader loader,
 			TerrainTexturePack texturePack, TerrainTexture blendMap, IHeightGenerator heightGenerator) {
 		this.xUpperLeft = xUpperLeft;
 		this.zUpperLeft = zUpperLeft;
+		this.translation = position;
 		this.width = width;
 		this.depth = depth;
 		this.vertsPerMeter = vertsPerMeter;
@@ -39,13 +41,9 @@ public class Terrain {
 		this.heightGenerator = heightGenerator;
 		this.model = generateTerrain(loader);
 	}
-
-	public float getX() {
-		return xUpperLeft;
-	}
-
-	public float getZ() {
-		return zUpperLeft;
+	
+	public Vector3f getTranslation() {
+		return translation;
 	}
 
 	public RawModel getModel() {
@@ -70,21 +68,17 @@ public class Terrain {
 		float[] textureCoords = new float[count * 2];
 		int[] indices = new int[6 * (xVertices - 1) * (zVertices - 1)];
 		
-		//float neighbourDistance = 
-		
 		int vertexPointer = 0;
 		for (int z = 0; z < zVertices; z++) {
 			for (int x = 0; x < xVertices; x++) {
-				float xcoord = x / (float)(xVertices - 1) * width;
-				float zcoord = z / (float)(zVertices - 1) * depth;
+				float xcoord = x / (float)(xVertices - 1) * width + xUpperLeft;
+				float zcoord = z / (float)(zVertices - 1) * depth + zUpperLeft;
 				
 				vertices[vertexPointer * 3] = xcoord;
 				vertices[vertexPointer * 3 + 1] = heightGenerator.getHeight(xcoord, zcoord);
 				vertices[vertexPointer * 3 + 2] = zcoord;
 				
-				//Vector3f normal = heightGenerator.getNormal(x, z);
 				Vector3f normal = heightGenerator.getNormal(xcoord, zcoord);
-				if(Math.abs(normal.x) > 1e-6 || Math.abs(normal.z) > 1e-6) System.out.println(normal);
 				normals[vertexPointer * 3] = normal.x;
 				normals[vertexPointer * 3 + 1] = normal.y;
 				normals[vertexPointer * 3 + 2] = normal.z;
