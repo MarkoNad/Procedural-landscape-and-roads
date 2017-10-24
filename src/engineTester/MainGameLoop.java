@@ -70,7 +70,7 @@ public class MainGameLoop {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		//Terrain terrain = new Terrain(0, -1, loader, new ModelTexture(loader.loadTexture("grass")));
-		Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap);
+		Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, (x, z) -> 0, 128, 128);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

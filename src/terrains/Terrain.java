@@ -8,7 +8,9 @@ import textures.TerrainTexturePack;
 public class Terrain {
 
 	private static final float SIZE = 800;
-	private static final int VERTEX_COUNT = 128;
+	
+	private int xVertices; // x resolution
+	private int zVertices;
 
 	private float x;
 	private float z;
@@ -20,16 +22,20 @@ public class Terrain {
 	
 	private IHeightGenerator heightGenerator;
 
-	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap) {
-		this(gridX, gridZ, loader, texturePack, blendMap, (x, y) -> 0);
+	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, 
+			TerrainTexture blendMap, int xVertices, int zVertices) {
+		this(gridX, gridZ, loader, texturePack, blendMap, (x, y) -> 0, xVertices, zVertices);
 	}
 	
-	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap, IHeightGenerator heightGenerator) {
+	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, 
+			TerrainTexture blendMap, IHeightGenerator heightGenerator, int xVertices, int zVertices) {
 		this.texturePack = texturePack;
 		this.blendMap = blendMap;
 		this.x = gridX * SIZE;
 		this.z = gridZ * SIZE;
 		this.heightGenerator = heightGenerator;
+		this.xVertices = xVertices;
+		this.zVertices = zVertices;
 		this.model = generateTerrain(loader);
 	}
 
@@ -54,37 +60,37 @@ public class Terrain {
 	}
 
 	private RawModel generateTerrain(Loader loader) {
-		int count = VERTEX_COUNT * VERTEX_COUNT;
+		int count = xVertices * zVertices;
 		
 		float[] vertices = new float[count * 3];
 		float[] normals = new float[count * 3];
 		float[] textureCoords = new float[count * 2];
-		int[] indices = new int[6 * (VERTEX_COUNT - 1) * (VERTEX_COUNT - 1)];
+		int[] indices = new int[6 * (xVertices - 1) * (zVertices - 1)];
 		
 		int vertexPointer = 0;
-		for (int i = 0; i < VERTEX_COUNT; i++) {
-			for (int j = 0; j < VERTEX_COUNT; j++) {
-				vertices[vertexPointer * 3] = (float) j / ((float) VERTEX_COUNT - 1) * SIZE;
-				vertices[vertexPointer * 3 + 1] = heightGenerator.generateHeight(i, j);
-				vertices[vertexPointer * 3 + 2] = (float) i / ((float) VERTEX_COUNT - 1) * SIZE;
+		for (int z = 0; z < zVertices; z++) {
+			for (int x = 0; x < xVertices; x++) {
+				vertices[vertexPointer * 3] = (float) x / ((float) xVertices - 1) * SIZE;
+				vertices[vertexPointer * 3 + 1] = heightGenerator.getHeight(x, z);
+				vertices[vertexPointer * 3 + 2] = (float) z / ((float) zVertices - 1) * SIZE;
 				
 				normals[vertexPointer * 3] = 0;
 				normals[vertexPointer * 3 + 1] = 1;
 				normals[vertexPointer * 3 + 2] = 0;
 				
-				textureCoords[vertexPointer * 2] = (float) j / ((float) VERTEX_COUNT - 1);
-				textureCoords[vertexPointer * 2 + 1] = (float) i / ((float) VERTEX_COUNT - 1);
+				textureCoords[vertexPointer * 2] = (float) x / ((float) xVertices - 1);
+				textureCoords[vertexPointer * 2 + 1] = (float) z / ((float) zVertices - 1);
 				
 				vertexPointer++;
 			}
 		}
 		
 		int pointer = 0;
-		for (int gz = 0; gz < VERTEX_COUNT - 1; gz++) {
-			for (int gx = 0; gx < VERTEX_COUNT - 1; gx++) {
-				int topLeft = (gz * VERTEX_COUNT) + gx;
+		for (int gz = 0; gz < zVertices - 1; gz++) {
+			for (int gx = 0; gx < xVertices - 1; gx++) {
+				int topLeft = (gz * xVertices) + gx;
 				int topRight = topLeft + 1;
-				int bottomLeft = ((gz + 1) * VERTEX_COUNT) + gx;
+				int bottomLeft = ((gz + 1) * xVertices) + gx;
 				int bottomRight = bottomLeft + 1;
 				
 				indices[pointer++] = topLeft;

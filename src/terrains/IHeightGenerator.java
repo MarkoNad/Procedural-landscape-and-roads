@@ -2,6 +2,6 @@ package terrains;
 
 public interface IHeightGenerator {
 	
-	public float generateHeight(float x, float y);
+	public float getHeight(float x, float y);
 
 }
