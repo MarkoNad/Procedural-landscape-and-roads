@@ -9,13 +9,12 @@ import textures.TerrainTexturePack;
 
 public class Terrain {
 
-	private static final float SIZE = 800;
-	
-	private int xVertices; // x resolution
-	private int zVertices;
+	private final float width;
+	private final float depth;
+	private final float vertsPerMeter;
 
-	private float x;
-	private float z;
+	private float xUpperLeft;
+	private float zUpperLeft;
 
 	private RawModel model;
 	
@@ -23,30 +22,30 @@ public class Terrain {
 	private TerrainTexture blendMap;
 	
 	private IHeightGenerator heightGenerator;
-
-//	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, 
-//			TerrainTexture blendMap, int xVertices, int zVertices) {
-//		this(gridX, gridZ, loader, texturePack, blendMap, (x, y) -> 0, xVertices, zVertices);
-//	}
 	
-	public Terrain(int gridX, int gridZ, Loader loader, TerrainTexturePack texturePack, 
-			TerrainTexture blendMap, IHeightGenerator heightGenerator, int xVertices, int zVertices) {
+	public Terrain(Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap) {
+		this(0f, -1f, 800f, 800f, 0.2f, loader, texturePack, blendMap, new UniformHeightGenerator());
+	}
+	
+	public Terrain(float xUpperLeft, float zUpperLeft, float width, float depth, float vertsPerMeter, Loader loader,
+			TerrainTexturePack texturePack, TerrainTexture blendMap, IHeightGenerator heightGenerator) {
+		this.xUpperLeft = xUpperLeft;
+		this.zUpperLeft = zUpperLeft;
+		this.width = width;
+		this.depth = depth;
+		this.vertsPerMeter = vertsPerMeter;
 		this.texturePack = texturePack;
 		this.blendMap = blendMap;
-		this.x = gridX * SIZE;
-		this.z = gridZ * SIZE;
 		this.heightGenerator = heightGenerator;
-		this.xVertices = xVertices;
-		this.zVertices = zVertices;
 		this.model = generateTerrain(loader);
 	}
 
 	public float getX() {
-		return x;
+		return xUpperLeft;
 	}
 
 	public float getZ() {
-		return z;
+		return zUpperLeft;
 	}
 
 	public RawModel getModel() {
@@ -62,6 +61,8 @@ public class Terrain {
 	}
 
 	private RawModel generateTerrain(Loader loader) {
+		int xVertices = (int) (width * vertsPerMeter);
+		int zVertices = (int) (depth * vertsPerMeter);
 		int count = xVertices * zVertices;
 		
 		float[] vertices = new float[count * 3];
@@ -69,14 +70,21 @@ public class Terrain {
 		float[] textureCoords = new float[count * 2];
 		int[] indices = new int[6 * (xVertices - 1) * (zVertices - 1)];
 		
+		//float neighbourDistance = 
+		
 		int vertexPointer = 0;
 		for (int z = 0; z < zVertices; z++) {
 			for (int x = 0; x < xVertices; x++) {
-				vertices[vertexPointer * 3] = (float) x / ((float) xVertices - 1) * SIZE;
-				vertices[vertexPointer * 3 + 1] = heightGenerator.getHeight(x, z);
-				vertices[vertexPointer * 3 + 2] = (float) z / ((float) zVertices - 1) * SIZE;
+				float xcoord = x / (float)(xVertices - 1) * width;
+				float zcoord = z / (float)(zVertices - 1) * depth;
 				
-				Vector3f normal = heightGenerator.getNormal(x, z);
+				vertices[vertexPointer * 3] = xcoord;
+				vertices[vertexPointer * 3 + 1] = heightGenerator.getHeight(xcoord, zcoord);
+				vertices[vertexPointer * 3 + 2] = zcoord;
+				
+				//Vector3f normal = heightGenerator.getNormal(x, z);
+				Vector3f normal = heightGenerator.getNormal(xcoord, zcoord);
+				if(Math.abs(normal.x) > 1e-6 || Math.abs(normal.z) > 1e-6) System.out.println(normal);
 				normals[vertexPointer * 3] = normal.x;
 				normals[vertexPointer * 3 + 1] = normal.y;
 				normals[vertexPointer * 3 + 2] = normal.z;

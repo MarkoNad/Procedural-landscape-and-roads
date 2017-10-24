@@ -52,11 +52,19 @@ public class HeightMapHeightGenerator implements IHeightGenerator {
 	}
 	
 	@Override
-	public Vector3f getNormal(int x, int z) {
+	public Vector3f getNormal(float x, float z) {
 		float heightL = getHeight(x - 1, z);
 		float heightR = getHeight(x + 1, z);
 		float heightD = getHeight(x, z - 1);
 		float heightU = getHeight(x, z + 1);
+		
+		if(heightL > 0 || heightR > 0 || heightD > 0 || heightU > 0) {
+			System.out.println(heightL);
+			System.out.println(heightR);
+			System.out.println(heightD);
+			System.out.println(heightU);
+			System.out.println();
+		}
 		
 		Vector3f normal = new Vector3f(heightL - heightR, 2.0f, heightD - heightU);
 		normal.normalise();

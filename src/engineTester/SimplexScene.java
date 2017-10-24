@@ -20,13 +20,14 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
-import terrains.HeightMapHeightGenerator;
+import terrains.IHeightGenerator;
+import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 
-public class Scene1 {
+public class SimplexScene {
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
@@ -67,8 +68,8 @@ public class Scene1 {
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
-		HeightMapHeightGenerator heightGenerator = new HeightMapHeightGenerator("res/heightMap.png");
-		Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, heightGenerator, heightGenerator.getXPoints(), heightGenerator.getYPoints());
+		IHeightGenerator heightGenerator = new SimplexHeightGenerator(0);
+		Terrain terrain = new Terrain(0f, -800f, 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();
