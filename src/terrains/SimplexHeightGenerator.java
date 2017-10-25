@@ -10,7 +10,7 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	private static final float SAMPLING_DISTANCE = 2f; // in meters
 	
 	private final float octaves = 1;
-	private final float roughness = 0.2f;
+	private final float roughness = 0.5f;
 	
 	private OpenSimplexNoise simplexNoiseGenerator;
 	

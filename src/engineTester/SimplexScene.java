@@ -71,7 +71,9 @@ public class SimplexScene {
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(0);
 		float width = 4000;
 		float depth = 4000;
-		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, loader, texturePack, blendMap, heightGenerator);
+		float xTiles = width / 800f;
+		float zTiles = depth / 800f;
+		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

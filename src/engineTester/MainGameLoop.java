@@ -7,11 +7,11 @@ import java.util.Random;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
 
-import entities.ThirdPersonCamera;
 import entities.Camera;
 import entities.Entity;
 import entities.Light;
 import entities.Player;
+import entities.ThirdPersonCamera;
 import models.RawModel;
 import models.TexturedModel;
 import objConverter.ModelData;
@@ -20,9 +20,7 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
-import terrains.IHeightGenerator;
 import terrains.Terrain;
-import terrains.UniformHeightGenerator;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
@@ -72,8 +70,9 @@ public class MainGameLoop {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		//Terrain terrain = new Terrain(0, -1, loader, new ModelTexture(loader.loadTexture("grass")));
-		IHeightGenerator heightGenerator = new UniformHeightGenerator();
-		Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
+		//IHeightGenerator heightGenerator = new UniformHeightGenerator();
+		//Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
+		Terrain terrain = new Terrain(loader, texturePack, blendMap);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

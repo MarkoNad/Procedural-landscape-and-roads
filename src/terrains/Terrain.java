@@ -12,6 +12,9 @@ public class Terrain {
 	private final float width;
 	private final float depth;
 	private final float vertsPerMeter;
+	
+	private final float xTiles; // how many times the texture will be repeated in x direction
+	private final float zTiles;
 
 	private float xUpperLeft; // true x coordinate of upper left corner
 	private float zUpperLeft;
@@ -25,17 +28,20 @@ public class Terrain {
 	private IHeightGenerator heightGenerator;
 	
 	public Terrain(Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap) {
-		this(0f, -800f, new Vector3f(), 800f, 800f, 0.2f, loader, texturePack, blendMap, new UniformHeightGenerator());
+		this(0f, -800f, new Vector3f(), 800f, 800f, 0.2f, 1f, 1f, loader, texturePack, blendMap, new UniformHeightGenerator());
 	}
 	
-	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth, float vertsPerMeter, Loader loader,
-			TerrainTexturePack texturePack, TerrainTexture blendMap, IHeightGenerator heightGenerator) {
+	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth,
+			float vertsPerMeter, float xTiles, float zTiles, Loader loader, TerrainTexturePack texturePack,
+			TerrainTexture blendMap, IHeightGenerator heightGenerator) {
 		this.xUpperLeft = xUpperLeft;
 		this.zUpperLeft = zUpperLeft;
 		this.translation = position;
 		this.width = width;
 		this.depth = depth;
 		this.vertsPerMeter = vertsPerMeter;
+		this.xTiles = xTiles;
+		this.zTiles = zTiles;
 		this.texturePack = texturePack;
 		this.blendMap = blendMap;
 		this.heightGenerator = heightGenerator;
@@ -83,8 +89,8 @@ public class Terrain {
 				normals[vertexPointer * 3 + 1] = normal.y;
 				normals[vertexPointer * 3 + 2] = normal.z;
 				
-				textureCoords[vertexPointer * 2] = (float) x / ((float) xVertices - 1);
-				textureCoords[vertexPointer * 2 + 1] = (float) z / ((float) zVertices - 1);
+				textureCoords[vertexPointer * 2] = (float) x / ((float) xVertices - 1) * xTiles;
+				textureCoords[vertexPointer * 2 + 1] = (float) z / ((float) zVertices - 1) * zTiles;
 				
 				vertexPointer++;
 			}
