@@ -82,7 +82,7 @@ public class SimplexScene {
 			float x = rand.nextFloat() * width;
 			float z = -rand.nextFloat() * depth;
 			float y = heightGenerator.getHeight(x, z);
-			entities.add(new Entity(tree, new Vector3f(x, y, z), 0, 0, 0, 5));
+			entities.add(new Entity(tree, new Vector3f(x, y, z), 0, 0, 0, 7));
 			
 			x = rand.nextFloat() * width;
 			z = -rand.nextFloat() * depth;

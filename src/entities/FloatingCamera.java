@@ -8,9 +8,10 @@ import renderEngine.DisplayManager;
 
 public class FloatingCamera extends Camera {
 	
-	private static float ACCELERATION = 40f;
-	private static float BASE_SPEED = 20f;
-	private static float BASE_LARGE_SPEED = 120f;
+	private static float ACCELERATION = 80f;
+	private static float CRAWL_SPEED = 20f;
+	private static float BASE_SPEED = 100f;
+	private static float BASE_LARGE_SPEED = 200f;
 	private static final float ROTATION_SPEED = 12.5f;
 	
 	private float movementSpeed = 20;
@@ -37,6 +38,8 @@ public class FloatingCamera extends Camera {
 		if(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			if(movementSpeed < BASE_LARGE_SPEED) movementSpeed = BASE_LARGE_SPEED;
 			movementSpeed += ACCELERATION * DisplayManager.getFrameTimeSeconds();
+		} else if(Keyboard.isKeyDown(Keyboard.KEY_LCONTROL)) {
+			movementSpeed = CRAWL_SPEED;
 		} else {
 			movementSpeed = BASE_SPEED;
 		}
