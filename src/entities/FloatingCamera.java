@@ -2,23 +2,27 @@ package entities;
 
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.util.vector.Vector3f;
 
 import renderEngine.DisplayManager;
 
 public class FloatingCamera extends Camera {
 	
-	private static float ACCELERATION = 30f;
+	private static float ACCELERATION = 40f;
 	private static float BASE_SPEED = 20f;
-	private static float BASE_LARGE_SPEED = 60f;
-	private static float MAX_SPEED = 200;
+	private static float BASE_LARGE_SPEED = 120f;
 	private static final float ROTATION_SPEED = 12.5f;
 	
 	private float movementSpeed = 20;
 	
-	public FloatingCamera() {
+	public FloatingCamera(Vector3f position) {
 		super();
 		Mouse.setGrabbed(true);
-		position.y = 5;
+		this.position = position;
+	}
+	
+	public FloatingCamera() {
+		this(new Vector3f());
 	}
 
 	@Override
@@ -33,7 +37,6 @@ public class FloatingCamera extends Camera {
 		if(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			if(movementSpeed < BASE_LARGE_SPEED) movementSpeed = BASE_LARGE_SPEED;
 			movementSpeed += ACCELERATION * DisplayManager.getFrameTimeSeconds();
-			if(movementSpeed >= MAX_SPEED) movementSpeed = MAX_SPEED;
 		} else {
 			movementSpeed = BASE_SPEED;
 		}
