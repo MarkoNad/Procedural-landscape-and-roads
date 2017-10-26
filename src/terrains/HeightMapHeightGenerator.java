@@ -79,5 +79,10 @@ public class HeightMapHeightGenerator implements IHeightGenerator {
 	public int getYPoints() {
 		return image.getHeight();
 	}
+	
+	@Override
+	public float getMaxHeight() {
+		return MAX_HEIGHT;
+	}
 
 }

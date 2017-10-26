@@ -1,7 +1,8 @@
 #version 400 core
 
 in vec2 pass_textureCoordinates;
-in vec2 pass_textureInfluences;
+in vec3 pass_textureInfluences;
+//in float pass_textureInfluences[3];
 in vec3 surfaceNormal;
 in vec3 toLightVector;
 in vec3 toCameraVector;
@@ -24,14 +25,6 @@ uniform vec3 skyColour;
 const vec3 ambient = vec3(0.25, 0.25, 0.25);
 const float tiling = 40;
 
-vec4 getColor(float height, vec2 tiledCoords) {
-	if(height < 800) {
-		return texture(backgroundTexture, tiledCoords);
-	} else {
-		return texture(bTexture, tiledCoords);
-	}
-}
-
 void main(void) {
 	vec4 blendMapColour = texture(blendMap, pass_textureCoordinates);
 	
@@ -42,11 +35,9 @@ void main(void) {
 	vec4 gTextureColour = texture(gTexture, tiledCoords) * blendMapColour.g;
 	vec4 bTextureColour = texture(bTexture, tiledCoords) * blendMapColour.b;
 	
-	//vec4 totalColour = backgroundTextureColour + rTextureColour + gTextureColour + bTextureColour;
-	
-	//vec4 totalColour = getColor(height, tiledCoords);
-	
-	vec4 totalColour = pass_textureInfluences.x * texture(backgroundTexture, tiledCoords) + pass_textureInfluences.y * texture(bTexture, tiledCoords);
+	vec4 totalColour = pass_textureInfluences.x * texture(rTexture, tiledCoords) +
+					   pass_textureInfluences.y * texture(gTexture, tiledCoords) + 
+					   pass_textureInfluences.z * texture(bTexture, tiledCoords);
 
 
 	vec3 unitNormal = normalize(surfaceNormal);

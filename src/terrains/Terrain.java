@@ -24,7 +24,7 @@ public class Terrain {
 	
 	private TerrainTexturePack texturePack;
 	private TerrainTexture blendMap;
-	private TextureMap textureMap = new TextureMap();
+	private TextureMap textureMap;
 	
 	private IHeightGenerator heightGenerator;
 	
@@ -46,6 +46,7 @@ public class Terrain {
 		this.texturePack = texturePack;
 		this.blendMap = blendMap;
 		this.heightGenerator = heightGenerator;
+		this.textureMap = new TextureMap(heightGenerator.getMaxHeight());
 		this.model = generateTerrain(loader);
 	}
 	
@@ -73,7 +74,7 @@ public class Terrain {
 		float[] vertices = new float[count * 3];
 		float[] normals = new float[count * 3];
 		float[] textureCoords = new float[count * 2];
-		float[] textureInfluences = new float[count * 2]; // two textures per vertex
+		float[] textureInfluences = new float[count * 3]; // two textures per vertex
 		int[] indices = new int[6 * (xVertices - 1) * (zVertices - 1)];
 		
 		int vertexPointer = 0;
@@ -95,9 +96,10 @@ public class Terrain {
 				textureCoords[vertexPointer * 2] = (float) x / ((float) xVertices - 1) * xTiles;
 				textureCoords[vertexPointer * 2 + 1] = (float) z / ((float) zVertices - 1) * zTiles;
 				
-				float[] texStrengths = textureMap.getTextures(height);
-				textureInfluences[vertexPointer * 2] = texStrengths[0];
-				textureInfluences[vertexPointer * 2 + 1] = texStrengths[1];
+				float[] texStrengths = textureMap.getTextures(height, xcoord, zcoord);
+				textureInfluences[vertexPointer * 3] = texStrengths[0];
+				textureInfluences[vertexPointer * 3 + 1] = texStrengths[1];
+				textureInfluences[vertexPointer * 3 + 2] = texStrengths[2];
 				
 				vertexPointer++;
 			}
@@ -121,6 +123,9 @@ public class Terrain {
 		}
 		
 		//return loader.loadToVAO(vertices, textureCoords, normals, indices);
+//		for(int i = 0; i < textureInfluences.length / 3.0f; i++) {
+//			if(textureInfluences[i * 3 + 2] > 0) System.out.println("sand: " + textureInfluences[i * 3] + ", grass: " + textureInfluences[3 * i + 1] + ", snow: " + textureInfluences[3 * i + 2]);
+//		}
 		return loader.loadToVAO(vertices, textureCoords, normals, indices, textureInfluences);
 	}
 

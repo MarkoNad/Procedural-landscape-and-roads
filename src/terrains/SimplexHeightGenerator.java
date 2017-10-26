@@ -95,8 +95,7 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	##########################
 */
 	
-	private static final float HEIGHT = 1000.0f;
-	//private static final float BASE_FREQUENCY_MODIFIER = 0.001f;
+	private static final float MAX_HEIGHT = 1000.0f;
 	private static final float BASE_FREQUENCY_MODIFIER = 0.001f;
 	private static final float FREQ_INCREASE_FACTOR = 2f;
 	private static final float OCTAVES = 5;
@@ -124,7 +123,7 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		totalNoise /= normalizer;
 		totalNoise = (float) Math.pow(totalNoise + 0.25f, 6f);
 		
-		float height = totalNoise * HEIGHT;
+		float height = totalNoise * MAX_HEIGHT;
 		return height;
 	}
 	
@@ -143,6 +142,11 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		normal.normalise();
 		
 		return normal;
+	}
+	
+	@Override
+	public float getMaxHeight() {
+		return MAX_HEIGHT;
 	}
 
 }

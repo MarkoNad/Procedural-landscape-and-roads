@@ -62,8 +62,8 @@ public class SimplexBiomesScene {
 		fern.getTexture().setUsesFakeLighting(true);
 		
 		TerrainTexture backgroundTexture = new TerrainTexture(loader.loadTexture("grassy"));
-		TerrainTexture rTexture = new TerrainTexture(loader.loadTexture("dirt"));
-		TerrainTexture gTexture = new TerrainTexture(loader.loadTexture("pinkFlowers"));
+		TerrainTexture rTexture = new TerrainTexture(loader.loadTexture("sand"));
+		TerrainTexture gTexture = new TerrainTexture(loader.loadTexture("grassy"));
 		TerrainTexture bTexture = new TerrainTexture(loader.loadTexture("snow"));
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));

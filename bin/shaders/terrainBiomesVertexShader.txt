@@ -3,10 +3,10 @@
 in vec3 position;
 in vec2 textureCoordinates;
 in vec3 normal;
-in vec2 textureInfluences;
+in vec3 textureInfluences;
 
 out vec2 pass_textureCoordinates;
-out vec2 pass_textureInfluences;
+out vec3 pass_textureInfluences;
 out vec3 surfaceNormal;
 out vec3 toLightVector;
 out vec3 toCameraVector;
@@ -18,8 +18,7 @@ uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 uniform vec3 lightPosition;
 
-//const float density = 0.003;
-const float density = 0.0;
+const float density = 0.0; // 0.003;
 const float gradient = 1.5;
 
 void main(void) {
