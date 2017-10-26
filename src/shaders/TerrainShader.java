@@ -9,8 +9,10 @@ import toolbox.Maths;
 
 public class TerrainShader extends ShaderProgram {
 	
-	private static final String VERTEX_FILE = "src/shaders/terrainVertexShader.txt";
-	private static final String FRAGMENT_FILE = "src/shaders/terrainFragmentShader.txt";
+//	private static final String VERTEX_FILE = "src/shaders/terrainVertexShader.txt";
+//	private static final String FRAGMENT_FILE = "src/shaders/terrainFragmentShader.txt";
+	private static final String VERTEX_FILE = "src/shaders/terrainBiomesVertexShader.txt";
+	private static final String FRAGMENT_FILE = "src/shaders/terrainBiomesFragmentShader.txt";
 	
 	private int location_transformationMatrix;
 	private int location_projectionMatrix;
@@ -35,6 +37,7 @@ public class TerrainShader extends ShaderProgram {
 		super.bindAttribute(0, "position");
 		super.bindAttribute(1, "textureCoordinates");
 		super.bindAttribute(2, "normal");
+		super.bindAttribute(3, "textureInfluences");
 	}
 
 	@Override

@@ -24,6 +24,7 @@ public class Terrain {
 	
 	private TerrainTexturePack texturePack;
 	private TerrainTexture blendMap;
+	private TextureMap textureMap = new TextureMap();
 	
 	private IHeightGenerator heightGenerator;
 	
@@ -72,6 +73,7 @@ public class Terrain {
 		float[] vertices = new float[count * 3];
 		float[] normals = new float[count * 3];
 		float[] textureCoords = new float[count * 2];
+		float[] textureInfluences = new float[count * 2]; // two textures per vertex
 		int[] indices = new int[6 * (xVertices - 1) * (zVertices - 1)];
 		
 		int vertexPointer = 0;
@@ -79,9 +81,10 @@ public class Terrain {
 			for (int x = 0; x < xVertices; x++) {
 				float xcoord = x / (float)(xVertices - 1) * width + xUpperLeft;
 				float zcoord = z / (float)(zVertices - 1) * depth + zUpperLeft;
+				float height = heightGenerator.getHeight(xcoord, zcoord);
 				
 				vertices[vertexPointer * 3] = xcoord;
-				vertices[vertexPointer * 3 + 1] = heightGenerator.getHeight(xcoord, zcoord);
+				vertices[vertexPointer * 3 + 1] = height;
 				vertices[vertexPointer * 3 + 2] = zcoord;
 				
 				Vector3f normal = heightGenerator.getNormal(xcoord, zcoord);
@@ -91,6 +94,10 @@ public class Terrain {
 				
 				textureCoords[vertexPointer * 2] = (float) x / ((float) xVertices - 1) * xTiles;
 				textureCoords[vertexPointer * 2 + 1] = (float) z / ((float) zVertices - 1) * zTiles;
+				
+				float[] texStrengths = textureMap.getTextures(height);
+				textureInfluences[vertexPointer * 2] = texStrengths[0];
+				textureInfluences[vertexPointer * 2 + 1] = texStrengths[1];
 				
 				vertexPointer++;
 			}
@@ -113,7 +120,8 @@ public class Terrain {
 			}
 		}
 		
-		return loader.loadToVAO(vertices, textureCoords, normals, indices);
+		//return loader.loadToVAO(vertices, textureCoords, normals, indices);
+		return loader.loadToVAO(vertices, textureCoords, normals, indices, textureInfluences);
 	}
 
 }

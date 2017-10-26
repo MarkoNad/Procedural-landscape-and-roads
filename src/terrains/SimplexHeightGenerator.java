@@ -96,6 +96,7 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 */
 	
 	private static final float HEIGHT = 1000.0f;
+	//private static final float BASE_FREQUENCY_MODIFIER = 0.001f;
 	private static final float BASE_FREQUENCY_MODIFIER = 0.001f;
 	private static final float FREQ_INCREASE_FACTOR = 2f;
 	private static final float OCTAVES = 5;
