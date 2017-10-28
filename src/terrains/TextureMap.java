@@ -11,23 +11,26 @@ public class TextureMap {
 	private final float maxHeight;
 	
 	public TextureMap(float maxHeight) {
-		this.variationMap = new HeightVariationMap(0, 50, 0.005f);
+		//this.variationMap = new HeightVariationMap(0, 50, 0.005f);
+		this.variationMap = new HeightVariationMap(0, 450, 0.0005f);
 		this.texMaps = new ArrayList<>();
 		this.maxHeight = maxHeight;
 		createTexMaps();
 	}
 	
 	private void createTexMaps() {
-		texMaps.add(new TexMap(0, 100 - INTERP / 2, INTERP));
-		texMaps.add(new TexMap(100 + INTERP / 2, 500 - INTERP / 2, INTERP));
-		texMaps.add(new TexMap(500 + INTERP / 2, 2000 - INTERP / 2, INTERP));
+		texMaps.add(new TexMap(-10000, 700 - INTERP / 2, INTERP));//100
+		texMaps.add(new TexMap(700 + INTERP / 2, 3000 - INTERP / 2, INTERP));//500
+		texMaps.add(new TexMap(3000 + INTERP / 2, 20000 - INTERP / 2, INTERP));//2000
 	}
 	
 	// height can be computed directly from coordinates, it is provided here to avoid duplicate calculations
 	public float[] getTextures(float height, float xcoord, float zcoord) {
 		float[] texStrengths = new float[texMaps.size()];
 		
-		float modifiedHeight = (float) (height + variationMap.getVariation(xcoord, zcoord) * Math.pow(4 * (height + 100) / maxHeight, 1.5));
+		//float modifiedHeight = (float) (height + variationMap.getVariation(xcoord, zcoord) * Math.pow(4 * (height + 100) / maxHeight, 1.5));
+		//float modifiedHeight = (float) (height + variationMap.getVariation(xcoord, zcoord));
+		float modifiedHeight = (float) (height + variationMap.getVariation(xcoord, zcoord) * Math.pow(4 * (height + 1000) / maxHeight, 1.5));
 		for(int i = 0; i < texMaps.size(); i++) {
 			texStrengths[i] = texMaps.get(i).getStrength(modifiedHeight);
 		}
