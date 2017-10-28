@@ -23,7 +23,7 @@ uniform float reflectivity;
 uniform vec3 skyColour;
 
 const vec3 ambient = vec3(0.25, 0.25, 0.25);
-const float tiling = 40;
+const float tiling = 40; // 40;
 
 void main(void) {
 	vec4 blendMapColour = texture(blendMap, pass_textureCoordinates);

@@ -12,6 +12,7 @@ import entities.Entity;
 import entities.FloatingCamera;
 import entities.Light;
 import entities.Player;
+import entities.standard.Cube;
 import models.RawModel;
 import models.TexturedModel;
 import objConverter.ModelData;
@@ -75,7 +76,23 @@ public class SimplexBiomesScene {
 		float zTiles = depth / 800f;
 		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
 		
+		Entity cube = new Cube(loader);
+		List<Entity> gridElems = new ArrayList<>();
+		float vertsPerMeter = 0.15f;
+		int xVertices = (int) (width * vertsPerMeter);
+		int zVertices = (int) (depth * vertsPerMeter);
+		for(int z = 0; z < 50; z++) {
+			for(int x = 0; x < 50; x++) {
+				float xcoord = x / (float)(xVertices - 1) * width;
+				float zcoord = z / (float)(zVertices - 1) * depth;
+				float height = heightGenerator.getHeight(xcoord, zcoord);
+				gridElems.add(new Entity(fern, new Vector3f(xcoord, 0, zcoord), 0, 0, 0, 0.1f));
+			}
+		}
+		
 		List<Entity> entities = new ArrayList<>();
+		entities.addAll(gridElems);
+		entities.add(cube);
 		Random rand = new Random();
 		
 		for(int i = 0; i < 500; i++) {
@@ -95,10 +112,10 @@ public class SimplexBiomesScene {
 			entities.add(new Entity(fern, new Vector3f(x, y, z), 0, 0, 0, 1));
 		}
 		float meter = 7f;
-		entities.add(new Entity(tree, new Vector3f(0, 0, 0), 0, 0, 0, 5));
-		entities.add(new Entity(tree, new Vector3f(0, 0, -meter), 0, 0, 0, 5));
-		entities.add(new Entity(tree, new Vector3f(meter, 0, 0), 0, 0, 0, 5));
-		entities.add(new Entity(tree, new Vector3f(meter, 0, -meter), 0, 0, 0, 5));
+//		entities.add(new Entity(tree, new Vector3f(0, 0, 0), 0, 0, 0, 5));
+//		entities.add(new Entity(tree, new Vector3f(0, 0, -meter), 0, 0, 0, 5));
+//		entities.add(new Entity(tree, new Vector3f(meter, 0, 0), 0, 0, 0, 5));
+//		entities.add(new Entity(tree, new Vector3f(meter, 0, -meter), 0, 0, 0, 5));
 
 		while(!Display.isCloseRequested()) {
 			entity.increaseRotation(0, 0.5f, 0);

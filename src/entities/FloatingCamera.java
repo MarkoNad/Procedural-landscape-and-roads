@@ -28,13 +28,19 @@ public class FloatingCamera extends Camera {
 
 	@Override
 	public void update() {
+		rotate();
+		move();
+	}
+	
+	private void rotate() {
 		pitch -= Mouse.getDY() * DisplayManager.getFrameTimeSeconds() * ROTATION_SPEED;
+		if(pitch > 90) pitch = 90;
+		if(pitch < -90) pitch = -90;
+		
 		yaw += Mouse.getDX() * DisplayManager.getFrameTimeSeconds() * ROTATION_SPEED;
-		
-		float distance = movementSpeed * DisplayManager.getFrameTimeSeconds();
-		float xzDistance = (float) (distance * Math.cos(Math.toRadians(pitch)));
-		float yDistance = - (float) (distance * Math.sin(Math.toRadians(pitch)));
-		
+	}
+
+	private void move() {
 		if(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
 			if(movementSpeed < BASE_LARGE_SPEED) movementSpeed = BASE_LARGE_SPEED;
 			movementSpeed += ACCELERATION * DisplayManager.getFrameTimeSeconds();
@@ -44,10 +50,10 @@ public class FloatingCamera extends Camera {
 			movementSpeed = BASE_SPEED;
 		}
 		
-		move(distance, xzDistance, yDistance);
-	}
-
-	protected void move(float distance, float xzDistance, float yDistance) {
+		float distance = movementSpeed * DisplayManager.getFrameTimeSeconds();
+		float xzDistance = (float) (distance * Math.cos(Math.toRadians(pitch)));
+		float yDistance = - (float) (distance * Math.sin(Math.toRadians(pitch)));
+		
 		if(Keyboard.isKeyDown(Keyboard.KEY_W)) {
 			moveForward(xzDistance, yDistance);
 		} else if(Keyboard.isKeyDown(Keyboard.KEY_S)) {

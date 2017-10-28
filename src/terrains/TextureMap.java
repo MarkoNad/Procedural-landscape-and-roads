@@ -23,6 +23,7 @@ public class TextureMap {
 		texMaps.add(new TexMap(500 + INTERP / 2, 2000 - INTERP / 2, INTERP));
 	}
 	
+	// height can be computed directly from coordinates, it is provided here to avoid duplicate calculations
 	public float[] getTextures(float height, float xcoord, float zcoord) {
 		float[] texStrengths = new float[texMaps.size()];
 		
