@@ -17,9 +17,8 @@ uniform vec3 lightPosition;
 
 uniform float useFakeLighting;
 
-//const float density = 0.003;
-const float density = 0.0;
-const float gradient = 1.5;
+const float density = 0; // 0.0003; //0.003;
+const float gradient = 5; // 1.5;
 
 void main(void) {
 	vec4 worldPosition = transformationMatrix * vec4(position, 1.0);

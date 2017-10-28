@@ -95,12 +95,13 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	##########################
 */
 	
-	private static final float MAX_HEIGHT = 1000.0f;
-	private static final float BASE_FREQUENCY_MODIFIER = 0.001f;
+	private static final float MAX_HEIGHT = 9000.0f;
+	private static final float BASE_FREQUENCY_MODIFIER = 0.0001f; // 0.001
 	private static final float FREQ_INCREASE_FACTOR = 2f;
 	private static final float OCTAVES = 5;
-	private static final float ROUGHNESS = 0.4f;
-	private static final float SAMPLING_DISTANCE = 2f; // in meters
+	private static final float ROUGHNESS = 0.4f; // 0.4
+	//private static final float SAMPLING_DISTANCE = 2f; // in meters
+	private static final float SAMPLING_DISTANCE = 1.5f; // in meters
 	
 	private OpenSimplexNoise simplexNoiseGenerator;
 	
@@ -121,7 +122,8 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		}
 		
 		totalNoise /= normalizer;
-		totalNoise = (float) Math.pow(totalNoise + 0.25f, 6f);
+		//totalNoise = (float) Math.pow(totalNoise + 0.25f, 6f);
+		totalNoise = (float) Math.pow(totalNoise + 0.2f, 5f);
 		
 		float height = totalNoise * MAX_HEIGHT;
 		return height;
