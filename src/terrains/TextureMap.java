@@ -7,7 +7,7 @@ public class TextureMap {
 	
 	private List<TexMap> texMaps;
 	private HeightVariationMap variationMap;
-	private static final float INTERP = 20;
+	private static final float INTERP = 50;
 	private final float maxHeight;
 	
 	public TextureMap(float maxHeight) {

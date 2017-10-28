@@ -62,9 +62,14 @@ public class SimplexBiomesScene {
 		fern.getTexture().setHasTransparency(true);
 		fern.getTexture().setUsesFakeLighting(true);
 		
+		//TexturedModel cube = new TexturedModel(OBJLoader.loadObjModel("cube", loader), new ModelTexture(loader.loadTexture("cube")));
+		
 		TerrainTexture backgroundTexture = new TerrainTexture(loader.loadTexture("grassy"));
-		TerrainTexture rTexture = new TerrainTexture(loader.loadTexture("sand"));
-		TerrainTexture gTexture = new TerrainTexture(loader.loadTexture("grassy"));
+//		TerrainTexture rTexture = new TerrainTexture(loader.loadTexture("sand"));
+//		TerrainTexture gTexture = new TerrainTexture(loader.loadTexture("grassy"));
+//		TerrainTexture bTexture = new TerrainTexture(loader.loadTexture("snow"));
+		TerrainTexture rTexture = new TerrainTexture(loader.loadTexture("grassy"));
+		TerrainTexture gTexture = new TerrainTexture(loader.loadTexture("cliff2"));
 		TerrainTexture bTexture = new TerrainTexture(loader.loadTexture("snow"));
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
@@ -72,34 +77,47 @@ public class SimplexBiomesScene {
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(0);
 		float width = 4000;
 		float depth = 4000;
-		float xTiles = width / 800f;
-		float zTiles = depth / 800f;
+		float xTiles = width / 100f * 1;
+		float zTiles = depth / 100f * 1;
 		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
-		
-		Entity cube = new Cube(loader);
-		List<Entity> gridElems = new ArrayList<>();
-		float vertsPerMeter = 0.15f;
-		int xVertices = (int) (width * vertsPerMeter);
-		int zVertices = (int) (depth * vertsPerMeter);
+
+//		// per vertex
+//		List<Entity> gridElems = new ArrayList<>();
+//		float vertsPerMeter = 0.15f;
+//		int xVertices = (int) (width * vertsPerMeter);
+//		int zVertices = (int) (depth * vertsPerMeter);
+//		for(int z = 0; z < 50; z++) {
+//			for(int x = 0; x < 50; x++) {
+//				float xcoord = x / (float)(xVertices - 1) * width + 100;
+//				float zcoord = -z / (float)(zVertices - 1) * depth;
+//				float height = heightGenerator.getHeight(xcoord, zcoord);
+//				gridElems.add(new Entity(fern, new Vector3f(xcoord, height, zcoord), 0, 0, 0, 0.1f));
+//			}
+//		}
+//		
+		// per meter
+		List<Entity> meterElems = new ArrayList<>();
 		for(int z = 0; z < 50; z++) {
 			for(int x = 0; x < 50; x++) {
-				float xcoord = x / (float)(xVertices - 1) * width;
-				float zcoord = z / (float)(zVertices - 1) * depth;
-				float height = heightGenerator.getHeight(xcoord, zcoord);
-				gridElems.add(new Entity(fern, new Vector3f(xcoord, 0, zcoord), 0, 0, 0, 0.1f));
+				float height = heightGenerator.getHeight(x + 100, -z);
+				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z), 0, 0, 0, 0.2f));
 			}
 		}
 		
 		List<Entity> entities = new ArrayList<>();
-		entities.addAll(gridElems);
+		
+//		entities.addAll(gridElems);
+		entities.addAll(meterElems);
+		Entity cube = new Cube(loader);
 		entities.add(cube);
+		//entities.add(new Entity(cube, new Vector3f(0, 0, 0), 0, 0, 0, 1));
 		Random rand = new Random();
 		
 		for(int i = 0; i < 500; i++) {
 			float x = rand.nextFloat() * width;
 			float z = -rand.nextFloat() * depth;
 			float y = heightGenerator.getHeight(x, z);
-			entities.add(new Entity(tree, new Vector3f(x, y, z), 0, 0, 0, 7));
+			entities.add(new Entity(tree, new Vector3f(x, y, z), 0, 0, 0, 20));
 			
 			x = rand.nextFloat() * width;
 			z = -rand.nextFloat() * depth;
