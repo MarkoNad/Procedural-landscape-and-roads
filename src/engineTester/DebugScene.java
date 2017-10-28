@@ -11,7 +11,6 @@ import entities.Entity;
 import entities.FloatingCamera;
 import entities.Light;
 import entities.Player;
-import entities.standard.Cube;
 import models.RawModel;
 import models.TexturedModel;
 import objConverter.ModelData;
@@ -62,8 +61,6 @@ public class DebugScene {
 		TexturedModel fern = new TexturedModel(OBJLoader.loadObjModel("fern", loader), new ModelTexture(loader.loadTexture("fern")));
 		fern.getTexture().setHasTransparency(true);
 		fern.getTexture().setUsesFakeLighting(true);
-		
-		TexturedModel tree1 = load("tree1_1", "leaves", loader);
 		
 		TerrainTexture backgroundTexture = new TerrainTexture(loader.loadTexture("grassy"));
 		TerrainTexture rTexture = new TerrainTexture(loader.loadTexture("grassy"));
