@@ -34,7 +34,7 @@ public class SimplexScene {
 		
 		Loader loader = new Loader();
 		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
-		Camera camera = new FloatingCamera();
+		Camera camera = new FloatingCamera(new Vector3f(0.0f, 100.0f, 0.0f));
 		MasterRenderer renderer = new MasterRenderer();
 
 		ModelTexture dragonTexture = new ModelTexture(loader.loadTexture("stall"));
@@ -69,9 +69,11 @@ public class SimplexScene {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(0);
-		float width = 800;
-		float depth = 800;
-		Terrain terrain = new Terrain(0f, -800f, new Vector3f(), width, depth, 0.15f, loader, texturePack, blendMap, heightGenerator);
+		float width = 4000;
+		float depth = 4000;
+		float xTiles = width / 800f;
+		float zTiles = depth / 800f;
+		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();
@@ -80,7 +82,7 @@ public class SimplexScene {
 			float x = rand.nextFloat() * width;
 			float z = -rand.nextFloat() * depth;
 			float y = heightGenerator.getHeight(x, z);
-			entities.add(new Entity(tree, new Vector3f(x, y, z), 0, 0, 0, 5));
+			entities.add(new Entity(tree, new Vector3f(x, y, z), 0, 0, 0, 7));
 			
 			x = rand.nextFloat() * width;
 			z = -rand.nextFloat() * depth;
