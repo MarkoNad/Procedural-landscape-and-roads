@@ -1,7 +1,9 @@
 package engineTester;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -17,11 +19,12 @@ import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
+import terrains.BiomesMap;
 import terrains.IHeightGenerator;
-import terrains.OpenSimplexNoise;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import terrains.TreePlacer;
+import terrains.BiomesMap.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
@@ -36,7 +39,8 @@ public class SimplexBiomesScene {
 		Camera camera = new FloatingCamera(new Vector3f(0.0f, 100.0f, 0.0f));
 		MasterRenderer renderer = new MasterRenderer();
 
-		TexturedModel tree = load("tree", "tree", loader);
+		TexturedModel pine = load("tree", "tree", loader);
+		TexturedModel oak = load("oak-lp", "snow", loader);
 		TexturedModel grass = load("grassModel", "grassTexture", loader);
 		TexturedModel fern = load("fern", "fern", loader);
 		
@@ -44,6 +48,14 @@ public class SimplexBiomesScene {
 		grass.getTexture().setUsesFakeLighting(true);
 		fern.getTexture().setHasTransparency(true);
 		fern.getTexture().setUsesFakeLighting(true);
+		
+		Map<TreeType, TexturedModel> modelForType = new HashMap<>();
+		modelForType.put(TreeType.OAK, oak);
+		modelForType.put(TreeType.PINE, pine);
+		
+		Map<TexturedModel, Float> scaleForModel = new HashMap<>();
+		scaleForModel.put(oak, 1.0f);
+		scaleForModel.put(pine, 30.0f);
 		
 		TerrainTexture backgroundTexture = new TerrainTexture(loader.loadTexture("grassy"));
 		TerrainTexture rTexture = new TerrainTexture(loader.loadTexture("grassy"));
@@ -62,30 +74,23 @@ public class SimplexBiomesScene {
 				zTiles, loader, texturePack, blendMap, heightGenerator);
 
 		List<Entity> entities = new ArrayList<>();
-		TreePlacer placer = new TreePlacer(noiseHGenerator, 0, 2000, -2000, 0, 50, 100, 70);
-		List<Vector3f> locations = placer.computeLocations();
+		BiomesMap biomesMap = new BiomesMap(heightGenerator);
+		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, 0, 15000, -10000, 0, 50, 100, 70);
+		//TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, 0, 10000, -5000, 0, 50, 100, 70);
 		
-		for(Vector3f location : locations) {
-			entities.add(new Entity(tree, location, 0, 0, 0, 25));
+		long start = System.nanoTime();
+		Map<TreeType, List<Vector3f>> locations = placer.computeLocations();
+		long duration = System.nanoTime() - start;
+		System.out.println(duration + " " + duration * 1e-9);
+		
+		for(TreeType type : locations.keySet()) {
+			TexturedModel model = modelForType.get(type);
+			float scale = scaleForModel.get(model);
+			
+			for(Vector3f location : locations.get(type)) {
+				entities.add(new Entity(model, location, 0, 0, 0, scale));
+			}
 		}
-		
-//		Random rand = new Random();
-//		for(int i = 0; i < 500; i++) {
-//			float x = rand.nextFloat() * 2000 + 2000;
-//			float z = -rand.nextFloat() * 2000;
-//			float y = heightGenerator.getHeight(x, z);
-//			entities.add(new Entity(tree, new Vector3f(x, y, z), 0, 0, 0, 25));
-//			
-//			x = rand.nextFloat() * width;
-//			z = -rand.nextFloat() * depth;
-//			y = heightGenerator.getHeight(x, z);
-//			entities.add(new Entity(grass, new Vector3f(x, y, z), 0, 0, 0, 2.0f));
-//			
-//			x = rand.nextFloat() * width;
-//			z = -rand.nextFloat() * depth;
-//			y = heightGenerator.getHeight(x, z);
-//			entities.add(new Entity(fern, new Vector3f(x, y, z), 0, 0, 0, 1));
-//		}
 
 		while(!Display.isCloseRequested()) {
 			camera.update();
@@ -107,38 +112,5 @@ public class SimplexBiomesScene {
 		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getIndices());
 		return new TexturedModel(model, new ModelTexture(loader.loadTexture(pngFile)));
 	}
-	
-	private static IHeightGenerator noiseHGenerator = new IHeightGenerator() {
-		private float amplitude = 100;
-		private float freq = 0.01f;
-		private final float SAMPLING_DISTANCE = 1.5f;
-		private OpenSimplexNoise noise = new OpenSimplexNoise();
-		
-		@Override
-		public Vector3f getNormal(float x, float z) {
-			float heightL = getHeight(x - SAMPLING_DISTANCE, z);
-			float heightR = getHeight(x + SAMPLING_DISTANCE, z);
-			float heightD = getHeight(x, z - SAMPLING_DISTANCE);
-			float heightU = getHeight(x, z + SAMPLING_DISTANCE);
-			
-			Vector3f normal = new Vector3f(heightL - heightR, 2.0f, heightD - heightU);
-			normal.normalise();
-			
-			return normal;
-		}
-		
-		@Override
-		public float getMaxHeight() {
-			return 1000;
-		}
-		
-		@Override
-		public float getHeight(float x, float z) {
-			float height = (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
-			System.out.println(height);
-			return height;
-			//return (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
-		}
-	};
 	
 }
