@@ -73,7 +73,7 @@ public class DebugScene {
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
-		IHeightGenerator heightGenerator = new SimplexHeightGenerator(0);
+		IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
 		float width = 20000;
 		float depth = 20000;
 		float xTiles = width / 100f * 0.5f;
@@ -199,8 +199,8 @@ public class DebugScene {
 	private static IHeightGenerator noiseHGenerator = new IHeightGenerator() {
 //		private float amplitude = 100;
 //		private float freq = 0.01f;
-		private float amplitude = 5000;
-		private float freq = 0.00013f;
+		private float amplitude = 3000;
+		private float freq = 0.0003f;
 		private final float SAMPLING_DISTANCE = 1.5f;
 		private OpenSimplexNoise noise = new OpenSimplexNoise(1);
 		
@@ -224,10 +224,10 @@ public class DebugScene {
 		
 		@Override
 		public float getHeight(float x, float z) {
-//			float height = (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
-//			System.out.println(height);
-//			return height;
-			return (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
+			float height = (float) (noise.eval(x * freq, z * freq) + 1) / 2;
+			height = 0.8f * height;
+			height = (float) (Math.pow(height, 2) * amplitude);
+			return height;
 		}
 	};
 	

@@ -45,6 +45,7 @@ public class TreePlacer {
 			for (int x = (int) xmin; x < xmax; x += outerStep) {
 				float maxNoise = noiseMap.getPrenormalizedNoise(x, z);
 				float radius = (float) (baseRadius * Math.pow((1 / biomesMap.getTreeDensity(x, z)), 2f));
+				//float radius = baseRadius * (1 - biomesMap.getTreeDensity(x, z)) * (1 - biomesMap.getTreeDensity(x, z));
 				
 				for(int zn = (int) (z - radius); zn < z + radius; zn += innerStep) {
 					for(int xn = (int) (x - radius); xn < x + radius; xn += innerStep) {

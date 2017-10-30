@@ -16,7 +16,8 @@ public class BiomesMap {
 	
 	public BiomesMap(IHeightGenerator heightMap) {
 		this.heightMap = heightMap;
-		moistureMap = new NoiseMap(1, 0.00013f, 1);
+		//moistureMap = new NoiseMap(1, 0.00013f, 1);
+		moistureMap = new NoiseMap(1, 0.0003f, 1);
 	}
 	
 	public TreeType getTreeType(float x, float z) {
@@ -27,15 +28,18 @@ public class BiomesMap {
 	}
 	
 	public float getTreeDensity(float x, float z) {
-//		float slope = Vector3f.angle(Y_AXIS, heightMap.getNormal(x, z));
-//		float moisture = moistureMap.getPrenormalizedNoise(x, z);
-//		return (float) (Math.cos(slope) + moisture);
-		
 		float slope = Vector3f.angle(Y_AXIS, heightMap.getNormal(x, z));
 		float moisture = moistureMap.getPrenormalizedNoise(x, z);
-		//return (float) Math.cos(slope) * moisture;
+		return (float) (Math.cos(slope) * moisture);
 		
-		return (float) Math.cos(slope);
+		//return (float) Math.cos(slope);
+	}
+	
+	private float getMoisture(float x, float z) {
+		float moisture = moistureMap.getPrenormalizedNoise(x, z);
+		moisture *= 0.8f;
+		moisture = (float) Math.pow(moisture, 2);
+		return moisture;
 	}
 
 }
