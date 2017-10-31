@@ -224,10 +224,16 @@ public class DebugScene {
 		
 		@Override
 		public float getHeight(float x, float z) {
-			float height = (float) (noise.eval(x * freq, z * freq) + 1) / 2;
-			height = 0.8f * height;
-			height = (float) (Math.pow(height, 2) * amplitude);
-			return height;
+//			float height = (float) (noise.eval(x * freq, z * freq) + 1) / 2;
+//			height = 0.8f * height;
+//			height = (float) (Math.pow(height, 2) * amplitude);
+//			return height;
+			
+			float moisture = (float) (noise.eval(x * freq, z * freq) + 1) / 2;
+			float factor = 1.5f;
+			moisture *= factor;
+			moisture = (float) Math.pow(moisture * factor - factor, 2);
+			return moisture * amplitude;
 		}
 	};
 	

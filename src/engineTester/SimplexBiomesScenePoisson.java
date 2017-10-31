@@ -1,9 +1,10 @@
-package temp;
+package engineTester;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -28,6 +29,7 @@ import terrains.BiomesMap.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.PoissonDiskSampler;
 
 public class SimplexBiomesScenePoisson {
 	
@@ -75,43 +77,31 @@ public class SimplexBiomesScenePoisson {
 
 		List<Entity> entities = new ArrayList<>();
 		BiomesMap biomesMap = new BiomesMap(heightGenerator);
-		//TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, 0, 10000, -5000, 0, 50, 100, 70);
-		//TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, 0, 15000, -10000, 0, 50, 100, 70);
-		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, 0, 15000, -10000, 0, 50, 100, 100);
+		
+		BiFunction<Float, Float, Float> distribution = (x, z) -> Math.max(0.25f, 1 - biomesMap.getTreeDensity(x, z));
+		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 10000, 15000, 400, distribution, 1);
+		
+		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		
 		long start = System.nanoTime();
-		Map<TreeType, List<Vector3f>> locations = placer.computeLocations();
+		Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
 		long duration = System.nanoTime() - start;
-		System.out.println(duration + " " + duration * 1e-9);
-		System.out.println(locations.get(TreeType.OAK).size() + locations.get(TreeType.PINE).size() + " " + locations.values().size());
+		System.out.println(duration * 1e-9 + " seconds.");
+		System.out.println("Size: " + (locationsPerType.get(TreeType.OAK).size() + locationsPerType.get(TreeType.PINE).size()));
 		
-//		for(TreeType type : locations.keySet()) {
-//			TexturedModel model = modelForType.get(type);
-//			float scale = scaleForModel.get(model);
-//			
-//			for(Vector3f location : locations.get(type)) {
-//				entities.add(new Entity(model, location, 0, 0, 0, scale));
-//			}
-//		}
-		
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, -10000, 10000, 0, 2000, biomesMap, heightGenerator);
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 10000, 10000, 2000, biomesMap, heightGenerator);
-		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 10000, 15000, 200, biomesMap, heightGenerator);
-		start = System.nanoTime();
-		List<Vector3f> locs = sampler.sample();
-		duration = System.nanoTime() - start;
-		System.out.println(duration + " " + duration * 1e-9);
-		System.out.println(locs.size());
-		for(Vector3f location : locs) {
-			//Vector3f location = new Vector3f((float)p.x, 0f, -(float)p.y);
-			//System.out.println(location);
-			entities.add(new Entity(pine, location, 0, 0, 0, 30));
+		for(TreeType type : locationsPerType.keySet()) {
+			TexturedModel model = modelForType.get(type);
+			float scale = scaleForModel.get(model);
+			
+			for(Vector3f location : locationsPerType.get(type)) {
+				entities.add(new Entity(model, location, 0, 0, 0, scale));
+			}
 		}
-//		for(Point p : locs) {
-//			Vector3f location = new Vector3f((float)p.x, 0f, -(float)p.y);
-//			System.out.println(location);
-//			entities.add(new Entity(pine, location, 0, 0, 0, 30));
-//		}
+		
+		entities.add(new Entity(pine, new Vector3f(0f, 0f, 0f), 0, 0, 0, 30));
+		entities.add(new Entity(pine, new Vector3f(100f, 0f, 0f), 0, 0, 0, 30));
+		entities.add(new Entity(pine, new Vector3f(0f, 0f, 100f), 0, 0, 0, 30));
+		entities.add(new Entity(pine, new Vector3f(100f, 0f, 100f), 0, 0, 0, 30));
 
 		while(!Display.isCloseRequested()) {
 			camera.update();
