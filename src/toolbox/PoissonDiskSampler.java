@@ -25,7 +25,9 @@ public class PoissonDiskSampler extends Sampler {
 		// x i z coordinates are received, but the algorithm works with x (left - right) and y 
 		//(forward - backward). World negative Z axis is equivalent to Y axis here, 
 		// so this coordinate system needs to be translated to match the world space. 
-		super(new Point2D.Float(x0, z0 - z1), new Point2D.Float(x1, z1 - z1)); 
+		super(new Point2D.Float(x0, z1), new Point2D.Float(x1, z0));
+		z0 *= -1;
+		z1 *= -1;
 		
 		dimensions = new Point2D.Float(x1 - x0, z1 - z0);
 		this.minDist = minDist;
