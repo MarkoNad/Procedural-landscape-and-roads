@@ -97,7 +97,6 @@ public class SimplexBiomesScenePoisson {
 		
 		BiFunction<Float, Float, Float> distribution = (x, z) -> Math.max(0.25f, 1 - biomesMap.getTreeDensity(x, z));
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 10000, -15000, 400, distribution, 1);
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 1000, -1500, 400, distribution, 1);
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		
@@ -107,7 +106,8 @@ public class SimplexBiomesScenePoisson {
 		System.out.println(duration * 1e-9 + " seconds.");
 		System.out.println("Size: " + (locationsPerType.get(TreeType.OAK).size() + locationsPerType.get(TreeType.PINE).size()));
 		
-		LODGrid grid = new LODGrid(500, scaleForModel, lodLevelsForType);
+		//LODGrid grid = new LODGrid(500, scaleForModel, lodLevelsForType);
+		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
 		grid.addToGrid(locationsPerType);
 
 		while(!Display.isCloseRequested()) {

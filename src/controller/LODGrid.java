@@ -19,18 +19,15 @@ public class LODGrid {
 	
 	private float cellSize;
 	private Map<Point, Map<TreeType, List<Vector3f>>> grid;
-	//private Map<TreeType, TexturedModel> modelForType;
 	private Map<TexturedModel, Float> scaleForModel;
 	private Map<TreeType, NavigableMap<Float, TexturedModel>> lodLevelsForType;
 	
 	public LODGrid(
 			float cellSize,
-			//Map<TreeType, TexturedModel> modelForType,
 			Map<TexturedModel, Float> scaleForModel,
 			Map<TreeType, NavigableMap<Float, TexturedModel>> lodLevelsForType
 	) {
 		this.cellSize = cellSize;
-		//this.modelForType = modelForType;
 		this.scaleForModel = scaleForModel;
 		this.lodLevelsForType = lodLevelsForType;
 		grid = new HashMap<>();
@@ -66,22 +63,19 @@ public class LODGrid {
 		List<Entity> entities = new ArrayList<>();
 		int searchRange = searchRange();
 		
-		//List<Point> nearCells = cellsToCheck(position);
-		//System.out.println(grid.entrySet().size());
-		//System.out.println(nearCells.size());
-		
+		// traverse all cells, but discard those that are too far
 		for(Map.Entry<Point, Map<TreeType, List<Vector3f>>> cellEntry : grid.entrySet()) {
-		//for(Point cellCoords : nearCells) {
 			Point cellCoords = cellEntry.getKey();
-			if(tooFar(cellCoords, index(position), searchRange));
+			if(tooFar(cellCoords, index(position), searchRange)) continue;
+			
 			Map<TreeType, List<Vector3f>> cellData = cellEntry.getValue();
-			//Map<TreeType, List<Vector3f>> cellData = grid.get(cellCoords);
-			if(cellData == null) continue; // cell is outside of grid, no objects at that location
+			if(cellData == null) continue; // cell is in range but outside of grid, no objects at that location
+			
+			// determine what types are in the cell, types not present will not be even considered to render afterwards
 			float cellDistance = minimalCellXZDistance(cellCoords, position);
 			Set<TreeType> typesToRender = new HashSet<>();
 			for(TreeType candidateType : cellData.keySet()) {
 				float typeMaxRenderDistance = lodLevelsForType.get(candidateType).lastKey();
-				//if(typeMaxRenderDistance + cellSize * Math.sqrt(2) / 2.0> cellDistance) {
 				if(typeMaxRenderDistance > cellDistance) {
 					typesToRender.add(candidateType);
 				}
@@ -93,8 +87,10 @@ public class LODGrid {
 							Math.pow(position.y - location.y, 2) + Math.pow(position.z - location.z, 2));
 					NavigableMap<Float, TexturedModel> lodLevels = lodLevelsForType.get(type);
 					Map.Entry<Float, TexturedModel> entry = lodLevels.ceilingEntry(distance);
-					if(entry == null) continue;
-					TexturedModel model = lodLevels.ceilingEntry(distance).getValue();
+					
+					if(entry == null) continue; // type's render distance is too small
+					
+					TexturedModel model = entry.getValue();
 					float scale = scaleForModel.get(model);
 					entities.add(new Entity(model, location, 0, 0, 0, scale));
 				}
@@ -118,35 +114,19 @@ public class LODGrid {
 		return (int) (renderDistance / cellSize + 1);
 	}
 	
-	private List<Point> cellsToCheck(Vector3f position) {
-		List<Point> cells = new ArrayList<>();
-
-		// render distance is the maximum distance at which any of the types is still rendered
-		float renderDistance = 0;
-		for(TreeType type : lodLevelsForType.keySet()) {
-			float typeRenderDistance = lodLevelsForType.get(type).lastKey();
-			if(typeRenderDistance > renderDistance) renderDistance = typeRenderDistance;
-		}
-		
-		Point positionCell = index(position);
-		int range = (int) (renderDistance / cellSize + 1);
-		
-		for(int y = positionCell.y - range; y <= positionCell.y + range; y++) {  // y is actually z here
-			for(int x = positionCell.x - range; x <= positionCell.x + range; x++) {
-				Point candidateCell = new Point(x, y);
-				if(grid.containsKey(candidateCell)) cells.add(candidateCell);
-			}
-		}
-		
-		return cells;
-	}
-	
 	private Point index(Vector3f location) {
 		return new Point(Math.round(location.x / cellSize), Math.round(location.z / cellSize));
 	}
 	
+	/**
+	 * Distance from position projected to x-z plane from the cell bounding circle.
+	 * 
+	 * @param cell Coordinates of the cell center.
+	 * @param position Position whose distance to cell bounding circle is calculated.
+	 * @return Distance from position projected to x-z plane from the cell bounding circle.
+	 */
 	private float minimalCellXZDistance(Point cell, Vector3f position) {
-		return (float) Math.max(0, Math.hypot(position.x - cell.x, position.y - cell.y) - cellSize * Math.sqrt(2) / 2.0);
+		return (float) Math.max(0, Math.hypot(position.x - cell.x * cellSize, position.z - cell.y * cellSize) - cellSize * Math.sqrt(2) / 2.0);
 	}
 
 }
