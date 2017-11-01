@@ -1,7 +1,9 @@
 package engineTester;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -19,11 +21,13 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
+import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.OpenSimplexNoise;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import terrains.TreePlacer;
+import terrains.BiomesMap.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
@@ -69,7 +73,7 @@ public class DebugScene {
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
-		IHeightGenerator heightGenerator = new SimplexHeightGenerator(0);
+		IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
 		float width = 20000;
 		float depth = 20000;
 		float xTiles = width / 100f * 0.5f;
@@ -131,17 +135,17 @@ public class DebugScene {
 //				//return (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
 //			}
 //		};
-		Terrain noiseTerrain = new Terrain(0f, -2000, new Vector3f(), 2000, 2000, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, noiseHGenerator);
+		Terrain noiseTerrain = new Terrain(0f, -20000, new Vector3f(), 20000, 20000, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, noiseHGenerator);
 		
 		List<Entity> entities = new ArrayList<>();
-		TreePlacer placer = new TreePlacer(noiseHGenerator, 0, 2000, -2000, 0, 50, 100, 70);
-		List<Vector3f> locations = placer.computeLocations();
-		System.out.println(locations.size());
-		
-		for(Vector3f location : locations) {
-			System.out.println(location);
-			entities.add(new Entity(tree, location, 0, 0, 0, 25));
-		}
+//		TreePlacer placer = new TreePlacer(noiseHGenerator, 0, 2000, -2000, 0, 50, 100, 70);
+//		List<Vector3f> locations = placer.computeLocations();
+//		System.out.println(locations.size());
+//		
+//		for(Vector3f location : locations) {
+//			System.out.println(location);
+//			entities.add(new Entity(tree, location, 0, 0, 0, 25));
+//		}
 		
 //		entities.addAll(gridElems);
 //		entities.addAll(meterElems);
@@ -193,10 +197,12 @@ public class DebugScene {
 	}
 	
 	private static IHeightGenerator noiseHGenerator = new IHeightGenerator() {
-		private float amplitude = 100;
-		private float freq = 0.01f;
+//		private float amplitude = 100;
+//		private float freq = 0.01f;
+		private float amplitude = 3000;
+		private float freq = 0.0003f;
 		private final float SAMPLING_DISTANCE = 1.5f;
-		private OpenSimplexNoise noise = new OpenSimplexNoise();
+		private OpenSimplexNoise noise = new OpenSimplexNoise(1);
 		
 		@Override
 		public Vector3f getNormal(float x, float z) {
@@ -218,10 +224,16 @@ public class DebugScene {
 		
 		@Override
 		public float getHeight(float x, float z) {
-			float height = (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
-			System.out.println(height);
-			return height;
-			//return (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
+//			float height = (float) (noise.eval(x * freq, z * freq) + 1) / 2;
+//			height = 0.8f * height;
+//			height = (float) (Math.pow(height, 2) * amplitude);
+//			return height;
+			
+			float moisture = (float) (noise.eval(x * freq, z * freq) + 1) / 2;
+			float factor = 1.5f;
+			moisture *= factor;
+			moisture = (float) Math.pow(moisture * factor - factor, 2);
+			return moisture * amplitude;
 		}
 	};
 	

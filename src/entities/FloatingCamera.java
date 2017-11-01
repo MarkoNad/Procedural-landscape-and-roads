@@ -10,7 +10,7 @@ public class FloatingCamera extends Camera {
 	
 	private static float ACCELERATION = 120f;
 	private static float CRAWL_SPEED = 20f;
-	private static float BASE_SPEED = 200f;
+	private static float BASE_SPEED = 100f;
 	private static float BASE_LARGE_SPEED = 400f;
 	private static final float ROTATION_SPEED = 12.5f;
 	
