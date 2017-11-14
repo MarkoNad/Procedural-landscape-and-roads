@@ -1,5 +1,6 @@
 package engineTester;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import entities.Camera;
 import entities.Entity;
 import entities.FloatingCamera;
 import entities.Light;
+import entities.standard.Cube;
 import models.RawModel;
 import models.TexturedModel;
 import objConverter.ModelData;
@@ -22,6 +24,7 @@ import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
+import roads.Road;
 import terrains.BiomesMap;
 import terrains.BiomesMap.TreeType;
 import terrains.IHeightGenerator;
@@ -33,7 +36,7 @@ import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.PoissonDiskSampler;
 
-public class SimplexBiomesScenePoisson {
+public class RoadsScene {
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
@@ -99,6 +102,14 @@ public class SimplexBiomesScenePoisson {
 		float vertsPerMeter = 0.025f;
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
 				zTiles, loader, texturePack, blendMap, heightGenerator);
+		
+		List<Vector3f> waypoints = new ArrayList<>();
+		waypoints.add(new Vector3f(0, 0, 0));
+		waypoints.add(new Vector3f(100, 0, 0));
+		waypoints.add(new Vector3f(200, 0, 100));
+		waypoints.add(new Vector3f(300, 0, 0));
+		Road road = new Road(loader, waypoints, 100, heightGenerator);
+		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 
 		BiomesMap biomesMap = new BiomesMap(heightGenerator);
 		
@@ -117,13 +128,18 @@ public class SimplexBiomesScenePoisson {
 		//LODGrid grid = new LODGrid(500, scaleForModel, lodLevelsForType);
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
 		grid.addToGrid(locationsPerType);
+		
+		//Cube cube = new Cube(loader);
 
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
 			renderer.processTerrain(terrain);
-			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			entities.add(new Entity(fir, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 30f));
+			List<Entity> entities = new ArrayList<>();
+			//List<Entity> entities = grid.proximityEntities(camera.getPosition());
+			//entities.add(new Entity(fir, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 30f));
+			//entities.add(cube);
+			entities.add(new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f));
 			entities.forEach(e -> renderer.processEntity(e));
 			renderer.render(light, camera);
 			
