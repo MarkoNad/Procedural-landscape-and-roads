@@ -1,9 +1,7 @@
 package engineTester;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -15,19 +13,14 @@ import entities.Light;
 import entities.Player;
 import models.RawModel;
 import models.TexturedModel;
-import objConverter.ModelData;
-import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
-import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.OpenSimplexNoise;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
-import terrains.TreePlacer;
-import terrains.BiomesMap.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
@@ -50,9 +43,9 @@ public class DebugScene {
 		TexturedModel texturedModel = new TexturedModel(dragonModel, dragonTexture);
 		Entity entity = new Entity(texturedModel, new Vector3f(100, -5, -20), 0, 0, 0, 1);
 		
-		ModelData data = OBJFileLoader.loadOBJ("tree");
-		RawModel treeModel = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getIndices());
-		TexturedModel tree = new TexturedModel(treeModel, new ModelTexture(loader.loadTexture("tree")));
+		//ModelData data = OBJFileLoader.loadOBJ("tree");
+		//RawModel treeModel = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getIndices());
+		//TexturedModel tree = new TexturedModel(treeModel, new ModelTexture(loader.loadTexture("tree")));
 		
 		RawModel bunnyModel = OBJLoader.loadObjModel("stanfordBunny", loader);
 		TexturedModel stanfordBunny = new TexturedModel(bunnyModel, new ModelTexture(loader.loadTexture("white")));
@@ -190,11 +183,11 @@ public class DebugScene {
 		DisplayManager.closeDisplay();
 	}
 	
-	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
-		ModelData data = OBJFileLoader.loadOBJ(objFile);
-		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getIndices());
-		return new TexturedModel(model, new ModelTexture(loader.loadTexture(pngFile)));
-	}
+//	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
+//		ModelData data = OBJFileLoader.loadOBJ(objFile);
+//		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getIndices());
+//		return new TexturedModel(model, new ModelTexture(loader.loadTexture(pngFile)));
+//	}
 	
 	private static IHeightGenerator noiseHGenerator = new IHeightGenerator() {
 //		private float amplitude = 100;

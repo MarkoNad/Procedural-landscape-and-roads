@@ -13,19 +13,20 @@ import org.lwjgl.util.vector.Vector3f;
 
 import entities.Entity;
 import models.TexturedModel;
+import models.TexturedModelComp;
 import terrains.BiomesMap.TreeType;
 
 public class LODGrid {
 	
 	private float cellSize;
 	private Map<Point, Map<TreeType, List<Vector3f>>> grid;
-	private Map<TexturedModel, Float> scaleForModel;
-	private Map<TreeType, NavigableMap<Float, TexturedModel>> lodLevelsForType;
+	private Map<TexturedModelComp, Float> scaleForModel;
+	private Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType;
 	
 	public LODGrid(
 			float cellSize,
-			Map<TexturedModel, Float> scaleForModel,
-			Map<TreeType, NavigableMap<Float, TexturedModel>> lodLevelsForType
+			Map<TexturedModelComp, Float> scaleForModel,
+			Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType
 	) {
 		this.cellSize = cellSize;
 		this.scaleForModel = scaleForModel;
@@ -85,14 +86,17 @@ public class LODGrid {
 				for(Vector3f location : cellData.get(type)) {
 					float distance = (float) Math.sqrt(Math.pow(position.x - location.x, 2) + 
 							Math.pow(position.y - location.y, 2) + Math.pow(position.z - location.z, 2));
-					NavigableMap<Float, TexturedModel> lodLevels = lodLevelsForType.get(type);
-					Map.Entry<Float, TexturedModel> entry = lodLevels.ceilingEntry(distance);
+					NavigableMap<Float, TexturedModelComp> lodLevels = lodLevelsForType.get(type);
+					Map.Entry<Float, TexturedModelComp> entry = lodLevels.ceilingEntry(distance);
 					
 					if(entry == null) continue; // type's render distance is too small
 					
-					TexturedModel model = entry.getValue();
-					float scale = scaleForModel.get(model);
-					entities.add(new Entity(model, location, 0, 0, 0, scale));
+					TexturedModelComp compModel = entry.getValue();
+					for(TexturedModel model : compModel.children) {
+						//float scale = scaleForModel.get(model);
+						float scale = scaleForModel.get(compModel);
+						entities.add(new Entity(model, location, 0, 0, 0, scale));
+					}
 				}
 			}
 		}
