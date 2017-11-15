@@ -2,6 +2,9 @@ MasterRenderer::prepare: switch clear and clearColor
 samplingDistance in SimplexHeightGenerator => perhaps set to distance of the neighboring vertex
 
 
+floor is x-z plane, but points are x-y. implement xz points
+
+
 
 
 
