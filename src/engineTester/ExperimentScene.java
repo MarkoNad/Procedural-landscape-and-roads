@@ -36,7 +36,7 @@ import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.PoissonDiskSampler;
 
-public class RoadsScene {
+public class ExperimentScene {
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();

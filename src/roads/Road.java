@@ -37,8 +37,6 @@ public class Road {
 	
 	private RawModel generate() {
 		final int vertCount = 2 * waypoints.size();
-		final int tripletsOffset = 3 * waypoints.size();
-		final int tuplesOffset = 2 * waypoints.size();
 		
 		float[] vertices = new float[vertCount * 3];
 		float[] normals = new float[vertCount * 3];
@@ -56,68 +54,114 @@ public class Road {
 		
 		// first waypoint
 		Vector3f direction = Vector3f.sub(waypoints.get(1), waypoints.get(0), null);
-		Vector3f right = Vector3f.cross(direction, Constants.Y_AXIS, null).normalise(null);
+		Vector3f right = (Vector3f) Vector3f.cross(direction, Constants.Y_AXIS, null).normalise(null).scale(width);
 		Vector3f leftV = Vector3f.add(right.negate(null), waypoints.get(0), null);
 		Vector3f rightV = Vector3f.add(right, waypoints.get(0), null);
+		float leftH = heightMap.getHeight(leftV.x, leftV.z);
+		float rightH = heightMap.getHeight(rightV.x, rightV.z);
+		float h = Math.max(leftH, rightH);
 		vertices[0] = leftV.x;
-		vertices[1] = leftV.y;
+		//vertices[1] = h;
 		vertices[2] = leftV.z;
-		vertices[0 + tripletsOffset] = rightV.x;
-		vertices[1 + tripletsOffset] = rightV.y;
-		vertices[2 + tripletsOffset] = rightV.z;
+		vertices[0 + 3 * waypoints.size()] = rightV.x;
+		//vertices[1 + 3 * waypoints.size()] = h;
+		vertices[2 + 3 * waypoints.size()] = rightV.z;
+		//waypoints.get(0).setY(h);
+
 		
 		// last waypoint
 		direction = Vector3f.sub(waypoints.get(waypoints.size()-1), waypoints.get(waypoints.size()-2), null);
-		right = Vector3f.cross(direction, Constants.Y_AXIS, null).normalise(null);
+		right = (Vector3f) Vector3f.cross(direction, Constants.Y_AXIS, null).normalise(null).scale(width);
 		leftV = Vector3f.add(right.negate(null), waypoints.get(waypoints.size()-1), null);
 		rightV = Vector3f.add(right, waypoints.get(waypoints.size()-1), null);
+		leftH = heightMap.getHeight(leftV.x, leftV.z);
+		rightH = heightMap.getHeight(rightV.x, rightV.z);
+		h = Math.max(leftH, rightH);
 		vertices[(waypoints.size() - 1) * 3] = leftV.x;
-		vertices[(waypoints.size() - 1) * 3 + 1] = leftV.y;
+		//vertices[(waypoints.size() - 1) * 3 + 1] = h;
 		vertices[(waypoints.size() - 1) * 3 + 2] = leftV.z;
 		vertices[(2 * waypoints.size() - 1) * 3] = rightV.x;
-		vertices[(2 * waypoints.size() - 1) * 3 + 1] = rightV.y;
+		//vertices[(2 * waypoints.size() - 1) * 3 + 1] = h;
 		vertices[(2 * waypoints.size() - 1) * 3 + 2] = rightV.z;
+		//waypoints.get(waypoints.size() - 1).setY(h);
 		
-		// uncomment
+		for(int wpPointer = 1; wpPointer < waypoints.size() - 1; wpPointer++) {
+			Vector3f prev = waypoints.get(wpPointer - 1);
+			Vector3f curr = waypoints.get(wpPointer);
+			Vector3f next = waypoints.get(wpPointer + 1);
+			
+			Vector3f prevDirection = Vector3f.sub(curr, prev, null).normalise(null);
+			Vector3f nextDirection = Vector3f.sub(next, curr, null).normalise(null);
+			
+			prevDirection.y = 0;
+			nextDirection.y = 0;
+			
+			// vector pointing to the right of the prev and next directions, used for centerline
+			Vector3f prevRight = (Vector3f) Vector3f.cross(prevDirection, Constants.Y_AXIS, null).normalise(null);
+			Vector3f nextRight = (Vector3f) Vector3f.cross(nextDirection, Constants.Y_AXIS, null).normalise(null);
+			Vector3f centerlineDir = Vector3f.add(prevRight, nextRight, null).normalise(null);
+			
+			// centerline of angle between prev and next direction vectors, points to the right
+			System.out.println("centerline: " + centerlineDir);
+			
+			// road curvature at current waypoint
+			float angle = Vector3f.angle(nextDirection, prevDirection.negate(null));
+			System.out.println("angle: " + angle);
+			
+			// distance of new two vertices from the waypoint
+			float offset = (float) (width / Math.sin(angle / 2f));
+			System.out.println("offset: " + offset);
+			
+			float leftx = curr.x - centerlineDir.x * offset;
+			float leftz = curr.z - centerlineDir.z * offset;
+			
+			float rightx = curr.x + centerlineDir.x * offset;
+			float rightz = curr.z + centerlineDir.z * offset;
+			
+			float leftHeight = heightMap.getHeight(leftx, leftz);
+			float rightHeight = heightMap.getHeight(rightx, rightz);
+			float height = Math.max(leftHeight, rightHeight);
+			float lefty = height;
+			float righty = height;
+			
+			vertices[wpPointer * 3] = leftx;
+			//vertices[wpPointer * 3 + 1] = lefty;
+			vertices[wpPointer * 3 + 2] = leftz;
+			
+			vertices[(waypoints.size() + wpPointer) * 3] = rightx;
+			//vertices[(waypoints.size() + wpPointer) * 3 + 1] = righty;
+			vertices[(waypoints.size() + wpPointer) * 3 + 2] = rightz;
+			
+			curr.setY(height);
+		}
 		
-//		for(int wpPointer = 1; wpPointer < waypoints.size() - 1; wpPointer++) {
+		// waypoints now have appropriate height (max(left vertex, right vertex))
+		
+		for(int wpPointer = 0; wpPointer < waypoints.size(); wpPointer++) {
 //			Vector3f prev = waypoints.get(wpPointer - 1);
 //			Vector3f curr = waypoints.get(wpPointer);
 //			Vector3f next = waypoints.get(wpPointer + 1);
 //			
-//			Vector3f prevDirection = Vector3f.sub(curr, prev, null);
-//			Vector3f nextDirection = Vector3f.sub(next, curr, null);
+//			Vector3f prevDirection = Vector3f.sub(curr, prev, null).normalise(null);
+//			Vector3f nextDirection = Vector3f.sub(next, curr, null).normalise(null);
 //			
-//			prevDirection.y = 0;
-//			nextDirection.y = 0;
+//			Vector3f prevRight = (Vector3f) Vector3f.cross(prevDirection, Constants.Y_AXIS, null).normalise(null);
+//			Vector3f nextRight = (Vector3f) Vector3f.cross(nextDirection, Constants.Y_AXIS, null).normalise(null);
 //			
-//			// centerline of angle between prev and next direction vectors
-//			Vector3f centerlineDir = Vector3f.sub(nextDirection.normalise(null), prevDirection.normalise(null), null).normalise(null);
+//			Vector3f prevUp = (Vector3f) Vector3f.cross(prevRight, prevDirection, null).normalise(null);
+//			Vector3f nextUp = (Vector3f) Vector3f.cross(nextRight, nextDirection, null).normalise(null);
 //			
-//			// road curvature at current waypoint
-//			float angle = Vector3f.angle(nextDirection, prevDirection.negate(null));
+//			Vector3f normal = Vector3f.add(prevUp, nextUp, null).normalise(null);
+//			System.out.println("normal: " + normal);
 //			
-//			// distance from new two vertices from the waypoint
-//			float offset = (float) (width / Math.sin(angle / 2f));
+//			normals[wpPointer * 3] = normal.x;
+//			normals[wpPointer * 3 + 1] = normal.y;
+//			normals[wpPointer * 3 + 2] = normal.z;
 //			
-//			float upx = curr.x + ;
-//			float upy = 0;
-//			float upz = waypoint.z - width / 2f;
-//			
-//			float downx = waypoint.x;
-//			float downy = 0;
-//			float downz = waypoint.z + width / 2f;
-//			
-//			vertices[wpPointer * 3] = upx;
-//			vertices[wpPointer * 3 + 1] = upy;
-//			vertices[wpPointer * 3 + 2] = upz;
-//			
-//			vertices[(waypoints.size() + wpPointer) * 3] = downx;
-//			vertices[(waypoints.size() + wpPointer) * 3 + 1] = downy;
-//			vertices[(waypoints.size() + wpPointer) * 3 + 2] = downz;
-//		}
-		
-		for(int wpPointer = 0; wpPointer < waypoints.size(); wpPointer++) {
+//			normals[(waypoints.size() + wpPointer) * 3] = normal.x;
+//			normals[(waypoints.size() + wpPointer) * 3 + 1] = normal.y;
+//			normals[(waypoints.size() + wpPointer) * 3 + 2] = normal.z;
+			
 			normals[wpPointer * 3] = 0f;
 			normals[wpPointer * 3 + 1] = 1f;
 			normals[wpPointer * 3 + 2] = 0f;
