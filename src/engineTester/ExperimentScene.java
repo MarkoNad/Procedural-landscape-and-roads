@@ -34,6 +34,7 @@ import terrains.TreePlacer;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.CatmullRomSpline;
 import toolbox.PoissonDiskSampler;
 
 public class ExperimentScene {
@@ -111,7 +112,7 @@ public class ExperimentScene {
 		waypoints.add(new Vector3f(500, 0, -1000));
 		waypoints.add(new Vector3f(0, 0, -1000));
 		waypoints.add(new Vector3f(-500, 0, -1500));
-		Road road = new Road(loader, waypoints, 100, heightGenerator);
+		Road road = new Road(loader, waypoints, heightGenerator, 200, 200);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 
@@ -130,6 +131,40 @@ public class ExperimentScene {
 		
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
 		grid.addToGrid(locationsPerType);
+		
+		List<Vector3f> waypoints2 = new ArrayList<>();
+		waypoints2.add(new Vector3f(0, 0, -2000));
+		waypoints2.add(new Vector3f(100, 0, -2000));
+		waypoints2.add(new Vector3f(500, 0, -2000));
+		waypoints2.add(new Vector3f(1000, 0, -2500));
+		waypoints2.add(new Vector3f(2000, 0, -3500));
+		waypoints2.add(new Vector3f(3000, 0, -3500));
+		waypoints2.add(new Vector3f(4000, 0, -2500));
+		waypoints2.add(new Vector3f(6000, 0, -2000));
+		waypoints2.add(new Vector3f(7000, 0, -2500));
+		waypoints2.add(new Vector3f(8000, 0, -2200));
+		waypoints2.add(new Vector3f(9000, 0, -2000));
+		waypoints2.add(new Vector3f(10000, 0, -1500));
+		waypoints2.add(new Vector3f(10500, 0, -500));
+		waypoints2.add(new Vector3f(10500, 0, -100));
+		waypoints2.add(new Vector3f(10500, 0, 0));
+		Road road2 = new Road(loader, waypoints2, heightGenerator, 250, 200, 100);
+		TexturedModel roadTM2 = new TexturedModel(road2.getModel(), new ModelTexture(loader.loadTexture("road")));
+		roadTM2.getTexture().setHasTransparency(true);
+		Entity road2Entity = new Entity(roadTM2, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
+		
+		List<Vector3f> ctrlPoints = new ArrayList<>();
+		ctrlPoints.add(new Vector3f(0, 0, 0));
+		ctrlPoints.add(new Vector3f(200, 0, 200));
+		ctrlPoints.add(new Vector3f(400, 0, 200));
+		ctrlPoints.add(new Vector3f(600, 0, 0));
+		ctrlPoints.add(new Vector3f(800, 0, 0));
+		//BezierCurve curve = new BezierCurve(ctrlPoints, BezierType.APPROXIMATION, 10);
+		CatmullRomSpline curve = new CatmullRomSpline(ctrlPoints, 10);
+		
+		for(Vector3f bpoint : curve.getCurvePoints()) {
+			System.out.println(bpoint);
+		}
 
 		while(!Display.isCloseRequested()) {
 			camera.update();
@@ -138,6 +173,7 @@ public class ExperimentScene {
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
 			
 			entities.add(new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f));
+			entities.add(road2Entity);
 //			entities.add(new Entity(chestnutLOD1, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 180f));
 //			entities.add(new Entity(chestnutTreetop, new Vector3f(250f, 0f, 0f), 0f, 0f, 0f, 15f));
 //			entities.add(new Entity(chestnutTrunk, new Vector3f(250f, 0f, 0f), 0f, 0f, 0f, 15f));
@@ -153,6 +189,15 @@ public class ExperimentScene {
 			entities.add(new Entity(chestnutTrunk, new Vector3f(1000, 0f, 500f), 0f, 0f, 0f, 15f));
 			entities.add(new Entity(chestnutTreetop, new Vector3f(1500, 0f, 0f), 0f, 0f, 0f, 15f));
 			entities.add(new Entity(chestnutTrunk, new Vector3f(1500, 0f, 0f), 0f, 0f, 0f, 15f));
+			
+			for(Vector3f bpoint : curve.getCurvePoints()) {
+				entities.add(new Entity(chestnutTreetop, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));
+				entities.add(new Entity(chestnutTrunk, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));
+			}
+			for(Vector3f point : ctrlPoints) {
+				entities.add(new Entity(firTreetop, new Vector3f(point.x, point.y, point.z), 0f, 0f, 0f, 20f));
+				entities.add(new Entity(firTrunk, new Vector3f(point.x, point.y, point.z), 0f, 0f, 0f, 20f));
+			}
 			
 			entities.forEach(e -> renderer.processEntity(e));
 			renderer.render(light, camera);

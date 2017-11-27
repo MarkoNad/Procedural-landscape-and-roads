@@ -27,7 +27,7 @@ public class DisplayManager {
 		try {
 			Display.setDisplayMode(new DisplayMode(WIDTH, HEIGHT));
 			Display.create(new PixelFormat(), attribs);
-			Display.setTitle("The first display");
+			Display.setTitle("Procedural landscape and roads");
 		} catch(LWJGLException ex) {
 			ex.printStackTrace();
 			return;
