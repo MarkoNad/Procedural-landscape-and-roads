@@ -165,6 +165,14 @@ public class ExperimentScene {
 		for(Vector3f bpoint : curve.getCurvePoints()) {
 			System.out.println(bpoint);
 		}
+		
+		List<Entity> nmEntites = new ArrayList<>();
+		ModelData data = OBJFileLoader.loadOBJ("barrel");
+		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getTangents(), data.getIndices());
+		TexturedModel barrel = new TexturedModel(model, new ModelTexture(loader.loadTexture("barrel")));
+		barrel.getTexture().setShineDamper(10);
+		barrel.getTexture().setReflectivity(0.5f);
+		nmEntites.add(new Entity(barrel, new Vector3f(0.0f, 0.0f, 0.0f), 0, 0, 0, 10f));
 
 		while(!Display.isCloseRequested()) {
 			camera.update();
@@ -190,6 +198,8 @@ public class ExperimentScene {
 			entities.add(new Entity(chestnutTreetop, new Vector3f(1500, 0f, 0f), 0f, 0f, 0f, 15f));
 			entities.add(new Entity(chestnutTrunk, new Vector3f(1500, 0f, 0f), 0f, 0f, 0f, 15f));
 			
+			//entities.add(new Entity(barrel, new Vector3f(0.0f, 0.0f, 0.0f), 0, 0, 0, 10f));
+			
 			for(Vector3f bpoint : curve.getCurvePoints()) {
 				entities.add(new Entity(chestnutTreetop, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));
 				entities.add(new Entity(chestnutTrunk, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));
@@ -200,6 +210,7 @@ public class ExperimentScene {
 			}
 			
 			entities.forEach(e -> renderer.processEntity(e));
+			nmEntites.forEach(e -> renderer.processNMEntity(e));
 			renderer.render(light, camera);
 			
 			DisplayManager.updateDisplay();

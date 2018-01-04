@@ -23,9 +23,9 @@ public class MasterRenderer {
 	private static final float NEAR_PLANE = 0.1f;
 	private static final float FAR_PLANE = 100000;
 	
-	private static final float RED = 0.8f;
-	private static final float GREEN = 0.8f;
-	private static final float BLUE = 0.8f;
+	public static final float RED = 0.8f;
+	public static final float GREEN = 0.8f;
+	public static final float BLUE = 0.8f;
 	
 	private Matrix4f projectionMatrix;
 	
@@ -35,7 +35,11 @@ public class MasterRenderer {
 	private TerrainRenderer terrainRenderer;
 	private TerrainShader terrainShader = new TerrainShader();
 	
+	private NormalMappingRenderer normalMapRenderer;
+	private NormalMappingShader normalMapShader = new NormalMappingShader();
+	
 	private Map<TexturedModel, List<Entity>> entities = new HashMap<>();
+	private Map<TexturedModel, List<Entity>> normalMapEntities = new HashMap<>();
 	private List<Terrain> terrains = new ArrayList<>();
 	
 	public MasterRenderer() {
@@ -44,6 +48,7 @@ public class MasterRenderer {
 		createProjectionMatrix();
 		renderer = new EntityRenderer(shader, projectionMatrix);
 		terrainRenderer = new TerrainRenderer(terrainShader, projectionMatrix);
+		normalMapRenderer = new NormalMappingRenderer(normalMapShader, projectionMatrix);
 	}
 	
 	public static void enableCulling() {
@@ -65,6 +70,10 @@ public class MasterRenderer {
 		renderer.render(entities);
 		shader.stop();
 		
+		normalMapShader.start();
+		normalMapRenderer.render(normalMapEntities, sun, camera);
+		normalMapShader.stop();
+		
 		terrainShader.start();
 		terrainShader.loadSkyColour(RED, GREEN, BLUE);
 		terrainShader.loadLight(sun);
@@ -74,6 +83,7 @@ public class MasterRenderer {
 		
 		terrains.clear();
 		entities.clear();
+		normalMapEntities.clear();
 	}
 	
 	public void processTerrain(Terrain terrain) {
@@ -81,6 +91,14 @@ public class MasterRenderer {
 	}
 	
 	public void processEntity(Entity entity) {
+		processGenericEntity(entity, entities);
+	}
+	
+	public void processNMEntity(Entity entity) {
+		processGenericEntity(entity, normalMapEntities);
+	}
+	
+	private void processGenericEntity(Entity entity, Map<TexturedModel, List<Entity>> entities) {
 		TexturedModel entityModel = entity.getModel();
 		List<Entity> batch = entities.get(entityModel);
 		
@@ -102,6 +120,7 @@ public class MasterRenderer {
 	public void cleanUp() {
 		shader.cleanUp();
 		terrainShader.cleanUp();
+		normalMapShader.cleanUp();
 	}
 	
 	private void createProjectionMatrix(){

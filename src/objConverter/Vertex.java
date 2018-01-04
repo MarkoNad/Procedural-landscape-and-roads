@@ -1,5 +1,8 @@
 package objConverter;
  
+import java.util.ArrayList;
+import java.util.List;
+
 import org.lwjgl.util.vector.Vector3f;
  
 public class Vertex {
@@ -12,13 +15,45 @@ public class Vertex {
     private Vertex duplicateVertex = null;
     private int index;
     private float length;
-     
-    public Vertex(int index,Vector3f position){
+    private List<Vector3f> tangents;
+    private Vector3f averagedTangent;
+    
+    public Vertex(int index, Vector3f position, List<Vector3f> tangents) {
         this.index = index;
         this.position = position;
         this.length = position.length();
+        this.tangents = tangents;
     }
-     
+    
+    public Vertex(int index, Vector3f position){
+        this(index, position, new ArrayList<>());
+    }
+    
+    public void addTangent(Vector3f tangent) {
+    	tangents.add(tangent);
+    }
+    
+    public Vertex duplicate(int newIndex) {
+    	return new Vertex(newIndex, position, tangents);
+    }
+    
+    private void averageTangents() {
+    	if(tangents.isEmpty()) return;
+    	
+    	averagedTangent = new Vector3f(0.0f, 0.0f, 0.0f);
+    	
+    	for(Vector3f tangent : tangents) {
+    		Vector3f.add(averagedTangent, tangent, averagedTangent);
+    	}
+    	
+    	averagedTangent.normalise();
+    }
+    
+    public Vector3f getAveragedTangent() {
+    	if(averagedTangent == null) averageTangents();
+		return averagedTangent;
+	}
+    
     public int getIndex(){
         return index;
     }
@@ -32,7 +67,7 @@ public class Vertex {
     }
      
     public boolean hasSameTextureAndNormal(int textureIndexOther,int normalIndexOther){
-        return textureIndexOther==textureIndex && normalIndexOther==normalIndex;
+        return textureIndexOther == textureIndex && normalIndexOther == normalIndex;
     }
      
     public void setTextureIndex(int textureIndex){
