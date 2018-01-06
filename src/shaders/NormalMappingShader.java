@@ -1,4 +1,4 @@
-package renderEngine;
+package shaders;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
@@ -6,13 +6,12 @@ import org.lwjgl.util.vector.Vector4f;
 
 import entities.Camera;
 import entities.Light;
-import shaders.ShaderProgram;
 import toolbox.Maths;
 
 public class NormalMappingShader extends ShaderProgram {
 	
-	private static final String VERTEX_FILE = "src/shaders/vertexShader.txt";
-	private static final String FRAGMENT_FILE = "src/shaders/fragmentShader.txt";
+	private static final String VERTEX_FILE = "src/shaders/normalMapVShader.txt";
+	private static final String FRAGMENT_FILE = "src/shaders/normalMapFShader.txt";
 	
 	private int location_transformationMatrix;
 	private int location_projectionMatrix;
@@ -24,6 +23,7 @@ public class NormalMappingShader extends ShaderProgram {
 	private int location_useFakeLighting;
 	private int location_skyColour;
 	private int location_modelTexture;
+	private int location_normalMap;
 
 	public NormalMappingShader() {
 		super(VERTEX_FILE, FRAGMENT_FILE);
@@ -49,10 +49,12 @@ public class NormalMappingShader extends ShaderProgram {
 		location_useFakeLighting = super.getUniformLocation("useFakeLighting");
 		location_skyColour = super.getUniformLocation("skyColour");
 		location_modelTexture = super.getUniformLocation("modelTexture");
+		location_normalMap = super.getUniformLocation("normalMap");
 	}
 	
 	public void connectTextureUnits(){
 		super.loadInt(location_modelTexture, 0);
+		super.loadInt(location_normalMap, 1);
 	}
 	
 	public void loadTransformationMatrix(Matrix4f matrix) {

@@ -1,8 +1,11 @@
 package textures;
 
 public class ModelTexture {
+	
+	private static final int NO_ID = -1;
 
-	private int textureID;
+	private final int textureID;
+	private final int normalMapID;
 	
 	private float shineDamper = 1;
 	private float reflectivity = 0;
@@ -11,7 +14,12 @@ public class ModelTexture {
 	private boolean usesFakeLighting = false;
 
 	public ModelTexture(int textureID) {
+		this(textureID, NO_ID);
+	}
+	
+	public ModelTexture(int textureID, int normalMapID) {
 		this.textureID = textureID;
+		this.normalMapID = normalMapID;
 	}
 
 	public boolean hasTransparency() {
@@ -32,6 +40,10 @@ public class ModelTexture {
 
 	public int getTextureID() {
 		return textureID;
+	}
+	
+	public int getNormalMapID() {
+		return normalMapID;
 	}
 
 	public float getShineDamper() {

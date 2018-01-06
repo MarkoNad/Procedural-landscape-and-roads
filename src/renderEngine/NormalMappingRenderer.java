@@ -14,6 +14,7 @@ import entities.Entity;
 import entities.Light;
 import models.RawModel;
 import models.TexturedModel;
+import shaders.NormalMappingShader;
 import textures.ModelTexture;
 import toolbox.Maths;
 
@@ -66,6 +67,8 @@ public class NormalMappingRenderer {
 		
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getTexture().getTextureID());
+		GL13.glActiveTexture(GL13.GL_TEXTURE1);
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getTexture().getNormalMapID());
 	}
 	
 	private void unbindTexturedModel() {

@@ -169,9 +169,10 @@ public class ExperimentScene {
 		List<Entity> nmEntites = new ArrayList<>();
 		ModelData data = OBJFileLoader.loadOBJ("barrel");
 		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getTangents(), data.getIndices());
-		TexturedModel barrel = new TexturedModel(model, new ModelTexture(loader.loadTexture("barrel")));
+		TexturedModel barrel = new TexturedModel(model, new ModelTexture(loader.loadTexture("barrel"), loader.loadTexture("barrelNormal")));
 		barrel.getTexture().setShineDamper(10);
 		barrel.getTexture().setReflectivity(0.5f);
+		barrel.getTexture().setUsesFakeLighting(false);
 		nmEntites.add(new Entity(barrel, new Vector3f(0.0f, 0.0f, 0.0f), 0, 0, 0, 10f));
 
 		while(!Display.isCloseRequested()) {

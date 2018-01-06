@@ -13,6 +13,7 @@ import entities.Camera;
 import entities.Entity;
 import entities.Light;
 import models.TexturedModel;
+import shaders.NormalMappingShader;
 import shaders.StaticShader;
 import shaders.TerrainShader;
 import terrains.Terrain;
