@@ -173,7 +173,7 @@ public class ExperimentScene {
 		barrel.getTexture().setShineDamper(10);
 		barrel.getTexture().setReflectivity(0.5f);
 		barrel.getTexture().setUsesFakeLighting(false);
-		nmEntites.add(new Entity(barrel, new Vector3f(0.0f, 0.0f, 0.0f), 0, 0, 0, 10f));
+		nmEntites.add(new Entity(barrel, new Vector3f(-100.0f, 0.0f, 0.0f), 0, 0, 0, 1f));
 
 		while(!Display.isCloseRequested()) {
 			camera.update();

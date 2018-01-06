@@ -13,6 +13,8 @@ import entities.Light;
 import entities.Player;
 import models.RawModel;
 import models.TexturedModel;
+import objConverter.ModelData;
+import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
@@ -162,12 +164,41 @@ public class DebugScene {
 //			y = heightGenerator.getHeight(x, z);
 //			entities.add(new Entity(fern, new Vector3f(x, y, z), 0, 0, 0, 1));
 //		}
+		
+		List<Entity> nmEntites = new ArrayList<>();
+
+		TexturedModel barrel = loadNM(loader, "barrel", "barrel", "barrelNormal");
+		TexturedModel crate = loadNM(loader, "crate", "crate", "crateNormal");
+		TexturedModel boulder = loadNM(loader, "boulder", "boulder", "boulderNormal");
+		
+		barrel.getTexture().setShineDamper(10);
+		barrel.getTexture().setReflectivity(0.5f);
+		barrel.getTexture().setUsesFakeLighting(false);
+		crate.getTexture().setShineDamper(10);
+		crate.getTexture().setReflectivity(0.5f);
+		crate.getTexture().setUsesFakeLighting(false);
+		boulder.getTexture().setShineDamper(10);
+		boulder.getTexture().setReflectivity(0.5f);
+		boulder.getTexture().setUsesFakeLighting(false);
+		
+		Entity barrelEntity = new Entity(barrel, new Vector3f(-10.0f, 0.0f, 0.0f), 0, 0, 0, 1f);
+		Entity crateEntity = new Entity(crate, new Vector3f(-20.0f, 0.0f, 0.0f), 0, 0, 0, 0.05f);
+		Entity boulderEntity = new Entity(boulder, new Vector3f(-30.0f, 0.0f, 0.0f), 0, 0, 0, 1f);
+		
+		nmEntites.add(barrelEntity);
+		nmEntites.add(crateEntity);
+		nmEntites.add(boulderEntity);
 
 		while(!Display.isCloseRequested()) {
 			entity.increaseRotation(0, 0.5f, 0);
 			camera.update();
 			player.move();
 			renderer.processEntity(player);
+			
+			barrelEntity.increaseRotation(0, 0.5f, 0);
+			crateEntity.increaseRotation(0, 0.5f, 0);
+			boulderEntity.increaseRotation(0, 0.5f, 0);
+			nmEntites.forEach(e -> renderer.processNMEntity(e));
 			
 			renderer.processTerrain(terrain);
 			renderer.processTerrain(noiseTerrain);
@@ -229,5 +260,11 @@ public class DebugScene {
 			return moisture * amplitude;
 		}
 	};
+	
+	private static TexturedModel loadNM(Loader loader, String modelFile, String textureFile, String normalMapFile) {
+		ModelData data = OBJFileLoader.loadOBJ(modelFile);
+		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getTangents(), data.getIndices());
+		return new TexturedModel(model, new ModelTexture(loader.loadTexture(textureFile), loader.loadTexture(normalMapFile)));
+	}
 	
 }

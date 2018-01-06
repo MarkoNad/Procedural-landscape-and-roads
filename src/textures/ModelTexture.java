@@ -67,6 +67,7 @@ public class ModelTexture {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (hasTransparency ? 1231 : 1237);
+		result = prime * result + normalMapID;
 		result = prime * result + Float.floatToIntBits(reflectivity);
 		result = prime * result + Float.floatToIntBits(shineDamper);
 		result = prime * result + textureID;
@@ -84,6 +85,8 @@ public class ModelTexture {
 			return false;
 		ModelTexture other = (ModelTexture) obj;
 		if (hasTransparency != other.hasTransparency)
+			return false;
+		if (normalMapID != other.normalMapID)
 			return false;
 		if (Float.floatToIntBits(reflectivity) != Float.floatToIntBits(other.reflectivity))
 			return false;
