@@ -21,9 +21,9 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
-import terrains.ITextureMap;
+import terrains.BiomesMap;
 import terrains.Terrain;
-import terrains.TextureMap;
+import terrains.UniformHeightGenerator;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
@@ -77,8 +77,8 @@ public class MainGameLoop {
 		//IHeightGenerator heightGenerator = new UniformHeightGenerator();
 		//Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 1), new Range(1, 2), new Range(2, 3));
-		ITextureMap textureMap = new TextureMap(textureRanges);
-		Terrain terrain = new Terrain(loader, texturePack, blendMap, textureMap);
+		BiomesMap biomesMap = new BiomesMap(new UniformHeightGenerator(), textureRanges);
+		Terrain terrain = new Terrain(loader, texturePack, blendMap, biomesMap);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

@@ -20,11 +20,10 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
+import terrains.BiomesMap;
 import terrains.IHeightGenerator;
-import terrains.ITextureMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
-import terrains.TextureMap;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
@@ -74,14 +73,14 @@ public class DebugScene {
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
-		ITextureMap textureMap = new TextureMap(textureRanges, 500f);
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		float width = 20000;
 		float depth = 20000;
 		float xTiles = width / 100f * 0.5f;
 		float zTiles = depth / 100f * 0.5f;
 		float vertsPerMeter = 0.025f;
 		//Terrain terrain = new Terrain(0f, -8000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator, textureMap);
+		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
 
 		// per vertex
 		List<Entity> gridElems = new ArrayList<>();
@@ -136,7 +135,7 @@ public class DebugScene {
 //				//return (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
 //			}
 //		};
-		Terrain noiseTerrain = new Terrain(0f, -20000, new Vector3f(), 20000, 20000, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, noiseHGenerator, textureMap);
+		Terrain noiseTerrain = new Terrain(0f, -20000, new Vector3f(), 20000, 20000, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, noiseHGenerator, biomesMap);
 		
 		List<Entity> entities = new ArrayList<>();
 //		TreePlacer placer = new TreePlacer(noiseHGenerator, 0, 2000, -2000, 0, 50, 100, 70);
