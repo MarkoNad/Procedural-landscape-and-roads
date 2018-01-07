@@ -6,7 +6,7 @@ import org.lwjgl.util.vector.Vector4f;
 
 import entities.Camera;
 import entities.Light;
-import toolbox.Maths;
+import toolbox.MatrixUtils;
 
 public class NormalMappingShader extends ShaderProgram {
 	
@@ -62,7 +62,7 @@ public class NormalMappingShader extends ShaderProgram {
 	}
 	
 	public void loadViewMatrix(Camera camera) {
-		Matrix4f viewMatrix = Maths.createViewMatrix(camera);
+		Matrix4f viewMatrix = MatrixUtils.createViewMatrix(camera);
 		super.loadMatrix(location_viewMatrix, viewMatrix);
 	}
 	

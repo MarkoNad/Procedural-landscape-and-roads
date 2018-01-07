@@ -1,5 +1,7 @@
 package terrains;
 
+import toolbox.OpenSimplexNoise;
+
 public class NoiseMap {
 	
 	private float amplitude;
@@ -11,10 +13,6 @@ public class NoiseMap {
 		this.freq = freq;
 		this.noise = new OpenSimplexNoise(seed);
 	}
-	
-//	public float rawNoise(float x, float z) {
-//		return (float) noise.eval(x * freq, z * freq);
-//	}
 
 	public float getNoise(float x, float z) {
 		return (float) (noise.eval(x * freq, z * freq)) * amplitude;

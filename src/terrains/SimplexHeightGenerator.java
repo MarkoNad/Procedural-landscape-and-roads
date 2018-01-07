@@ -2,6 +2,8 @@ package terrains;
 
 import org.lwjgl.util.vector.Vector3f;
 
+import toolbox.OpenSimplexNoise;
+
 public class SimplexHeightGenerator implements IHeightGenerator {
 	
 /*

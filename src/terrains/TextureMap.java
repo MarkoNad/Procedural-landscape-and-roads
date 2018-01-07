@@ -2,82 +2,124 @@ package terrains;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
-public class TextureMap {
+import toolbox.Range;
+import toolbox.TriFunction;
+import toolbox.WeightedFunctions;
+
+public class TextureMap implements ITextureMap {
 	
-	private List<TexMap> texMaps;
-	private HeightVariationMap variationMap;
-	private static final float INTERP = 500;
-	private final float maxHeight;
-	
-	public TextureMap(float maxHeight) {
-		//this.variationMap = new HeightVariationMap(0, 50, 0.005f);
-		this.variationMap = new HeightVariationMap(0, 450, 0.0005f);
-		this.texMaps = new ArrayList<>();
-		this.maxHeight = maxHeight;
-		createTexMaps();
+	private static final float EPS = 1e-6f;
+
+	private List<Function<Float, Float>> weightedFunctions;
+	private TriFunction<Float, Float, Float, Float> textureVariation;
+	private static final float DEFAULT_INTERPOLATION_INTERVAL = 0f;
+
+	public TextureMap(List<Range> textureRanges, float interpolationInterval,
+			TriFunction<Float, Float, Float, Float> textureVariation) {
+		this.textureVariation = textureVariation;
+		this.weightedFunctions = createWeightedFunctions(textureRanges, interpolationInterval);
 	}
 	
-	private void createTexMaps() {
-		texMaps.add(new TexMap(-10000, 700 - INTERP / 2, INTERP));//100
-		texMaps.add(new TexMap(700 + INTERP / 2, 3000 - INTERP / 2, INTERP));//500
-		texMaps.add(new TexMap(3000 + INTERP / 2, 20000 - INTERP / 2, INTERP));//2000
+	public TextureMap(List<Range> textureRanges) {
+		this(textureRanges, DEFAULT_INTERPOLATION_INTERVAL, (x, y, z) -> 0f);
 	}
 	
-	// height can be computed directly from coordinates, it is provided here to avoid duplicate calculations
-	public float[] getTextures(float height, float xcoord, float zcoord) {
-		float[] texStrengths = new float[texMaps.size()];
+	public TextureMap(List<Range> textureRanges, float interpolationInterval) {
+		this(textureRanges, interpolationInterval, (x, y, z) -> 0f);
+	}
+	
+	public TextureMap(List<Range> textureRanges, TriFunction<Float, Float, Float, Float> textureVariation) {
+		this(textureRanges, DEFAULT_INTERPOLATION_INTERVAL, textureVariation);
+	}
+	
+	private List<Function<Float, Float>> createWeightedFunctions(List<Range> ranges,
+			float interpolationInterval) {
+		List<Function<Float, Float>> weightedFunctions = new ArrayList<>();
 		
-		//float modifiedHeight = (float) (height + variationMap.getVariation(xcoord, zcoord) * Math.pow(4 * (height + 100) / maxHeight, 1.5));
-		//float modifiedHeight = (float) (height + variationMap.getVariation(xcoord, zcoord));
-		float modifiedHeight = (float) (height + variationMap.getVariation(xcoord, zcoord) * Math.pow(4 * (height + 1000) / maxHeight, 1.5));
-		for(int i = 0; i < texMaps.size(); i++) {
-			texStrengths[i] = texMaps.get(i).getStrength(modifiedHeight);
+		if(ranges.size() == 1) {
+			weightedFunctions.add(WeightedFunctions.constantFunction());
+			return weightedFunctions;
+		}
+		
+		final float d = interpolationInterval / 2.0f;
+		
+		Range firstRange = ranges.get(0);
+		
+		if(Math.abs(firstRange.getEnd() - ranges.get(1).getStart()) > EPS) {
+			throw new IllegalArgumentException("One texture range has to start where " +
+					"the previous one ends; end was" + firstRange.getEnd() + 
+					", and start: " + ranges.get(1).getStart());
+		}
+		
+		weightedFunctions.add(WeightedFunctions.lFunction(
+				firstRange.getEnd() - d,
+				firstRange.getEnd() + d)
+		);
+		
+		for(int i = 1; i < ranges.size() - 1; i++) {
+			Range curr = ranges.get(i);
+			Range next = ranges.get(i + 1);
+			
+			if(Math.abs(curr.getEnd() - next.getStart()) > EPS) {
+				throw new IllegalArgumentException("One texture range has to start where " +
+						"the previous one ends; end was" + curr.getEnd() + 
+						", and start: " + next.getStart());
+			}
+			
+			
+			weightedFunctions.add(WeightedFunctions.piFunction(
+					curr.getStart() - d,
+					curr.getStart() + d,
+					curr.getEnd() - d,
+					curr.getEnd() + d)
+			);
+		}
+		
+		Range lastRange = ranges.get(ranges.size() - 1);
+		
+		if(Math.abs(ranges.get(ranges.size() - 2).getEnd() - lastRange.getStart()) > EPS) {
+			throw new IllegalArgumentException("One texture range has to start where " +
+					"the previous one ends; end was" + ranges.get(ranges.size() - 2).getEnd() + 
+					", and start: " + lastRange.getStart());
+		}
+		
+		weightedFunctions.add(WeightedFunctions.gammaFunction(
+				lastRange.getStart() - d,
+				lastRange.getStart() + d)
+		);
+		
+		return weightedFunctions;
+	}
+	
+	// height can be computed directly from coordinates if heightmap is provided, 
+	// it is expected here to avoid duplicate calculations
+	@Override
+	public float[] textureInfluences(float xcoord, float height, float zcoord) {
+		float[] texStrengths = new float[weightedFunctions.size()];
+		
+		float modifiedHeight = height + textureVariation.apply(xcoord, height, zcoord);
+		
+		for(int i = 0; i < weightedFunctions.size(); i++) {
+			texStrengths[i] = weightedFunctions.get(i).apply(modifiedHeight);
 		}
 		
 		return texStrengths;
 	}
 	
-	private static class TexMap {
-		private float start;
-		private float end;
-		private float intermediate;
+	@Override
+	public void textureInfluences(float xcoord, float height, float zcoord, float[] buffer) {
+		float modifiedHeight = height + textureVariation.apply(xcoord, height, zcoord);
 		
-		public TexMap(float start, float end, float intermediate) {
-			if(start > end) {
-				throw new IllegalArgumentException("Invalid influence function definition, condition is: start < end.");
-			}
-			
-			this.start = start;
-			this.end = end;
-			this.intermediate = intermediate;
+		for(int i = 0; i < weightedFunctions.size(); i++) {
+			buffer[i] = weightedFunctions.get(i).apply(modifiedHeight);
 		}
-
-		public float getStrength(float height) {
-			if(height < start - intermediate || height > end + intermediate) return 0;
-			if(height >= start && height <= end) return 1;
-			if(height < start) return (height - (start - intermediate)) / intermediate;
-			return (end + intermediate - height) / intermediate;
-		}
-		
 	}
-	
-	private static class HeightVariationMap {
-		
-		private final float frequency;
-		private OpenSimplexNoise simplexNoiseGenerator;
-		private float amplitude;
 
-		public HeightVariationMap(long seed, float amplitude, float frequency) {
-			this.simplexNoiseGenerator = new OpenSimplexNoise(seed);
-			this.amplitude = amplitude;
-			this.frequency = frequency;
-		}
-		
-		public float getVariation(float xcoord, float zcoord) {
-			return (float) (amplitude * simplexNoiseGenerator.eval(xcoord * frequency, zcoord * frequency));
-		}
-		
+	@Override
+	public int getNumberOfInfluences() {
+		return weightedFunctions.size();
 	}
 
 }

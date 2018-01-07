@@ -16,7 +16,7 @@ import models.RawModel;
 import models.TexturedModel;
 import shaders.NormalMappingShader;
 import textures.ModelTexture;
-import toolbox.Maths;
+import toolbox.MatrixUtils;
 
 public class NormalMappingRenderer {
 	
@@ -83,14 +83,14 @@ public class NormalMappingRenderer {
 	}
 	
 	private void prepareInstance(Entity entity) {
-		Matrix4f transformationMatrix = Maths.createTransformationMatrix(entity.getPosition(),
+		Matrix4f transformationMatrix = MatrixUtils.createTransformationMatrix(entity.getPosition(),
 				entity.getRotX(), entity.getRotY(), entity.getRotZ(), entity.getScale());
 		shader.loadTransformationMatrix(transformationMatrix);
 	}
 	
 	private void prepare(Light light, Camera camera) {
 		shader.loadSkyColour(MasterRenderer.RED, MasterRenderer.GREEN, MasterRenderer.BLUE);
-		Matrix4f viewMatrix = Maths.createViewMatrix(camera);
+		Matrix4f viewMatrix = MatrixUtils.createViewMatrix(camera);
 		
 		shader.loadLight(light, viewMatrix);
 		shader.loadViewMatrix(viewMatrix);

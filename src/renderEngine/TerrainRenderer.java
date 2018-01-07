@@ -12,7 +12,7 @@ import models.RawModel;
 import shaders.TerrainShader;
 import terrains.Terrain;
 import textures.TerrainTexturePack;
-import toolbox.Maths;
+import toolbox.MatrixUtils;
 
 public class TerrainRenderer {
 	
@@ -82,7 +82,7 @@ public class TerrainRenderer {
 	
 	private void loadModelMatrix(Terrain terrain) {
 		//Matrix4f transformationMatrix = Maths.createTransformationMatrix(new Vector3f(terrain.getX(), 0, terrain.getZ()), 0, 0, 0, 1);
-		Matrix4f transformationMatrix = Maths.createTransformationMatrix(terrain.getTranslation(), 0, 0, 0, 1);
+		Matrix4f transformationMatrix = MatrixUtils.createTransformationMatrix(terrain.getTranslation(), 0, 0, 0, 1);
 		shader.loadTransformationMatrix(transformationMatrix);
 	}
 

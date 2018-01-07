@@ -1,6 +1,7 @@
 package engineTester;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.lwjgl.opengl.Display;
@@ -20,12 +21,15 @@ import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
 import terrains.IHeightGenerator;
-import terrains.OpenSimplexNoise;
+import terrains.ITextureMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
+import terrains.TextureMap;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.OpenSimplexNoise;
+import toolbox.Range;
 
 public class DebugScene {
 	
@@ -69,35 +73,37 @@ public class DebugScene {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
+		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
+		ITextureMap textureMap = new TextureMap(textureRanges, 500f);
 		float width = 20000;
 		float depth = 20000;
 		float xTiles = width / 100f * 0.5f;
 		float zTiles = depth / 100f * 0.5f;
 		float vertsPerMeter = 0.025f;
 		//Terrain terrain = new Terrain(0f, -8000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
+		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator, textureMap);
 
-//		// per vertex
-//		List<Entity> gridElems = new ArrayList<>();
-//		int xVertices = (int) (width * vertsPerMeter);
-//		int zVertices = (int) (depth * vertsPerMeter);
-//		for(int z = 0; z < 50; z++) {
-//			for(int x = 0; x < 50; x++) {
-//				float xcoord = x / (float)(xVertices - 1) * width;
-//				float zcoord = -z / (float)(zVertices - 1) * depth;
-//				float height = heightGenerator.getHeight(xcoord, zcoord);
-//				gridElems.add(new Entity(fern, new Vector3f(xcoord, height, zcoord), 0, 0, 0, 0.5f));
-//			}
-//		}
-//		
-//		// per meter
-//		List<Entity> meterElems = new ArrayList<>();
-//		for(int z = 0; z < 50; z++) {
-//			for(int x = 0; x < 50; x++) {
-//				float height = heightGenerator.getHeight(x + 100, -z);
-//				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z), 0, 0, 0, 0.2f));
-//			}
-//		}
+		// per vertex
+		List<Entity> gridElems = new ArrayList<>();
+		int xVertices = (int) (width * vertsPerMeter);
+		int zVertices = (int) (depth * vertsPerMeter);
+		for(int z = 0; z < 50; z++) {
+			for(int x = 0; x < 50; x++) {
+				float xcoord = x / (float)(xVertices - 1) * width;
+				float zcoord = -z / (float)(zVertices - 1) * depth;
+				float height = heightGenerator.getHeight(xcoord, zcoord);
+				gridElems.add(new Entity(fern, new Vector3f(xcoord, height, zcoord), 0, 0, 0, 0.5f));
+			}
+		}
+		
+		// per meter
+		List<Entity> meterElems = new ArrayList<>();
+		for(int z = 0; z < 50; z++) {
+			for(int x = 0; x < 50; x++) {
+				float height = heightGenerator.getHeight(x + 100, -z);
+				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z), 0, 0, 0, 0.2f));
+			}
+		}
 //		
 //		OpenSimplexNoise noise = new OpenSimplexNoise();
 //		IHeightGenerator noiseHGenerator = new IHeightGenerator() {
@@ -130,7 +136,7 @@ public class DebugScene {
 //				//return (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
 //			}
 //		};
-		Terrain noiseTerrain = new Terrain(0f, -20000, new Vector3f(), 20000, 20000, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, noiseHGenerator);
+		Terrain noiseTerrain = new Terrain(0f, -20000, new Vector3f(), 20000, 20000, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, noiseHGenerator, textureMap);
 		
 		List<Entity> entities = new ArrayList<>();
 //		TreePlacer placer = new TreePlacer(noiseHGenerator, 0, 2000, -2000, 0, 50, 100, 70);
@@ -142,8 +148,8 @@ public class DebugScene {
 //			entities.add(new Entity(tree, location, 0, 0, 0, 25));
 //		}
 		
-//		entities.addAll(gridElems);
-//		entities.addAll(meterElems);
+		entities.addAll(gridElems);
+		entities.addAll(meterElems);
 //		Entity cube = new Cube(loader);
 //		entities.add(cube);
 //		entities.add(new Entity(cube, new Vector3f(0, 0, 0), 0, 0, 0, 1));

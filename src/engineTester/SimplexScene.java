@@ -1,6 +1,7 @@
 package engineTester;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -21,11 +22,14 @@ import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
 import terrains.IHeightGenerator;
+import terrains.ITextureMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
+import terrains.TextureMap;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.Range;
 
 public class SimplexScene {
 	
@@ -69,11 +73,13 @@ public class SimplexScene {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(0);
+		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
+		ITextureMap textureMap = new TextureMap(textureRanges, 500f);
 		float width = 4000;
 		float depth = 4000;
 		float xTiles = width / 800f;
 		float zTiles = depth / 800f;
-		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
+		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator, textureMap);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

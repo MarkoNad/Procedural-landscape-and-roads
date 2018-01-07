@@ -1,5 +1,6 @@
 package engineTester;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -24,10 +25,12 @@ import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
+import roads.Road;
 import terrains.BiomesMap;
 import terrains.BiomesMap.TreeType;
 import terrains.IHeightGenerator;
 import terrains.ITextureMap;
+import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import terrains.TextureMap;
@@ -37,15 +40,16 @@ import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.PoissonDiskSampler;
 import toolbox.Range;
+import toolbox.TriFunction;
 
-public class SimplexBiomesScenePoisson {
+public class DevelopScene {
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
 		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
-		Camera camera = new FloatingCamera(new Vector3f(0.0f, 100.0f, 0.0f));
+		Camera camera = new FloatingCamera(new Vector3f(0.0f, 2000.0f, 0.0f));
 		MasterRenderer renderer = new MasterRenderer();
 
 		TexturedModel firLOD1 = load("fir_lod1", "fir_lod1", loader);
@@ -92,8 +96,12 @@ public class SimplexBiomesScenePoisson {
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
-		ITextureMap textureMap = new TextureMap(textureRanges, 500f);
-		
+		NoiseMap texVariationMap = new NoiseMap(450f, 0.0005f, 0);
+		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
+			final float maxHeight = textureRanges.get(textureRanges.size() - 1).getEnd();
+			return (float) (texVariationMap.getNoise(x, z) * Math.pow(4 * (h + 1000) / maxHeight, 1.5));
+		};
+		ITextureMap textureMap = new TextureMap(textureRanges, 500f, textureVariation);
 		float width = 20000;
 		float depth = 20000;
 		float xTiles = width / 200f;
@@ -103,35 +111,23 @@ public class SimplexBiomesScenePoisson {
 				zTiles, loader, texturePack, blendMap, heightGenerator, textureMap);
 
 		BiomesMap biomesMap = new BiomesMap(heightGenerator);
-		
 		BiFunction<Float, Float, Float> distribution = (x, z) -> Math.max(0.25f, 1 - biomesMap.getTreeDensity(x, z));
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 600, distribution, 1);
-		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
-		
-		long start = System.nanoTime();
 		Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
-		long duration = System.nanoTime() - start;
-		System.out.println(duration * 1e-9 + " seconds.");
-		System.out.println("Size: " + (locationsPerType.get(TreeType.OAK).size() + locationsPerType.get(TreeType.PINE).size()));
 		
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
 		grid.addToGrid(locationsPerType);
+		
+		Entity road = setupRoad(loader, heightGenerator);
 
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
 			renderer.processTerrain(terrain);
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			
-			entities.add(new Entity(chestnutLOD1, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 180f));
-			entities.add(new Entity(chestnutTreetop, new Vector3f(250f, 0f, 0f), 0f, 0f, 0f, 15f));
-			entities.add(new Entity(chestnutTrunk, new Vector3f(250f, 0f, 0f), 0f, 0f, 0f, 15f));
-			entities.add(new Entity(firLOD1, new Vector3f(500f, 0f, 0f), 0f, 0f, 0f, 140f));
-			entities.add(new Entity(firTreetop, new Vector3f(750f, 0f, 0f), 0f, 0f, 0f, 60f));
-			entities.add(new Entity(firTrunk, new Vector3f(750f, 0f, 0f), 0f, 0f, 0f, 60f));
-			
 			entities.forEach(e -> renderer.processEntity(e));
+			renderer.processEntity(road);
 			renderer.render(light, camera);
 			
 			DisplayManager.updateDisplay();
@@ -146,6 +142,31 @@ public class SimplexBiomesScenePoisson {
 		ModelData data = OBJFileLoader.loadOBJ(objFile);
 		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getIndices());
 		return new TexturedModel(model, new ModelTexture(loader.loadTexture(pngFile)));
+	}
+	
+	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator) {
+		List<Vector3f> waypoints = new ArrayList<>();
+		
+		waypoints.add(new Vector3f(0, 0, -2000));
+		waypoints.add(new Vector3f(100, 0, -2000));
+		waypoints.add(new Vector3f(500, 0, -2000));
+		waypoints.add(new Vector3f(1000, 0, -2500));
+		waypoints.add(new Vector3f(2000, 0, -3500));
+		waypoints.add(new Vector3f(3000, 0, -3500));
+		waypoints.add(new Vector3f(4000, 0, -2500));
+		waypoints.add(new Vector3f(6000, 0, -2000));
+		waypoints.add(new Vector3f(7000, 0, -2500));
+		waypoints.add(new Vector3f(8000, 0, -2200));
+		waypoints.add(new Vector3f(9000, 0, -2000));
+		waypoints.add(new Vector3f(10000, 0, -1500));
+		waypoints.add(new Vector3f(10500, 0, -500));
+		waypoints.add(new Vector3f(10500, 0, -100));
+		waypoints.add(new Vector3f(10500, 0, 0));
+		
+		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 100);
+		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
+		roadTM.getTexture().setHasTransparency(true);
+		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
 	}
 	
 }

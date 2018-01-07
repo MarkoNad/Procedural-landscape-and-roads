@@ -29,6 +29,10 @@ public class Vertex {
         this(index, position, new ArrayList<>());
     }
     
+    public Vertex(Vector3f position){
+        this(NO_INDEX, position);
+    }
+    
     public void addTangent(Vector3f tangent) {
     	tangents.add(tangent);
     }

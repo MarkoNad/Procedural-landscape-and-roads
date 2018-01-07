@@ -25,7 +25,8 @@ public class Loader {
 	private List<Integer> vbos = new ArrayList<>();
 	private List<Integer> textures = new ArrayList<>();
 
-	public RawModel loadToVAO(float[] positions, float[] textureCoords, float[] normals, int[] indices) {
+	public RawModel loadToVAO(float[] positions, float[] textureCoords, float[] normals,
+			int[] indices) {
 		int vaoID = createVAO();
 		bindIndicesBuffer(indices);
 		storeDataInAttributeList(0, 3, positions);
@@ -35,7 +36,8 @@ public class Loader {
 		return new RawModel(vaoID, indices.length);
 	}
 	
-	public RawModel loadToVAO(float[] positions, float[] textureCoords, float[] normals, int[] indices, float[] textureInfluences) {
+	public RawModel loadToVAO(float[] positions, float[] textureCoords, float[] normals,
+			int[] indices, float[] textureInfluences) {
 		int vaoID = createVAO();
 		bindIndicesBuffer(indices);
 		storeDataInAttributeList(0, 3, positions);
@@ -46,13 +48,27 @@ public class Loader {
 		return new RawModel(vaoID, indices.length);
 	}
 	
-	public RawModel loadToVAO(float[] positions, float[] textureCoords, float[] normals, float[] tangents, int[] indices) {
+	public RawModel loadToVAO(float[] positions, float[] textureCoords, float[] normals,
+			float[] tangents, int[] indices) {
 		int vaoID = createVAO();
 		bindIndicesBuffer(indices);
 		storeDataInAttributeList(0, 3, positions);
 		storeDataInAttributeList(1, 2, textureCoords);
 		storeDataInAttributeList(2, 3, normals);
 		storeDataInAttributeList(3, 3, tangents);
+		unbindVAO();
+		return new RawModel(vaoID, indices.length);
+	}
+	
+	public RawModel loadToVAO(float[] positions, float[] textureCoords, float[] normals,
+			float[] tangents, int[] indices, float[] textureInfluences) {
+		int vaoID = createVAO();
+		bindIndicesBuffer(indices);
+		storeDataInAttributeList(0, 3, positions);
+		storeDataInAttributeList(1, 2, textureCoords);
+		storeDataInAttributeList(2, 3, normals);
+		storeDataInAttributeList(3, 3, textureInfluences);
+		storeDataInAttributeList(4, 3, tangents);
 		unbindVAO();
 		return new RawModel(vaoID, indices.length);
 	}

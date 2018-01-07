@@ -1,6 +1,7 @@
 package engineTester;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,13 +29,16 @@ import roads.Road;
 import terrains.BiomesMap;
 import terrains.BiomesMap.TreeType;
 import terrains.IHeightGenerator;
+import terrains.ITextureMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
+import terrains.TextureMap;
 import terrains.TreePlacer;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.PoissonDiskSampler;
+import toolbox.Range;
 
 public class RoadsScene {
 	
@@ -89,13 +93,15 @@ public class RoadsScene {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
+		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
+		ITextureMap textureMap = new TextureMap(textureRanges, 500f);
 		float width = 20000;
 		float depth = 20000;
 		float xTiles = width / 200f;
 		float zTiles = depth / 200f;
 		float vertsPerMeter = 0.025f;
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator);
+				zTiles, loader, texturePack, blendMap, heightGenerator, textureMap);
 
 		BiomesMap biomesMap = new BiomesMap(heightGenerator);
 		BiFunction<Float, Float, Float> distribution = (x, z) -> Math.max(0.25f, 1 - biomesMap.getTreeDensity(x, z));
