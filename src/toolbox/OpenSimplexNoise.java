@@ -1,4 +1,4 @@
-package terrains;
+package toolbox;
 /*
  * OpenSimplex Noise in Java.
  * by Kurt Spencer

@@ -1,6 +1,7 @@
 package engineTester;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -20,12 +21,16 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
+import terrains.BiomesMap;
 import terrains.IHeightGenerator;
+import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.Range;
+import toolbox.TriFunction;
 
 public class SimplexScene {
 	
@@ -69,11 +74,18 @@ public class SimplexScene {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(0);
+		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
+		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
+			NoiseMap texVariationMap = new NoiseMap(450f, 0.0005f, 0);
+			final float maxHeight = textureRanges.get(textureRanges.size() - 1).getEnd();
+			return (float) (texVariationMap.getNoise(x, z) * Math.pow(4 * (h + 1000) / maxHeight, 1.5));
+		};
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		float width = 4000;
 		float depth = 4000;
 		float xTiles = width / 800f;
 		float zTiles = depth / 800f;
-		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
+		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

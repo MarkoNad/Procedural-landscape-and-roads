@@ -40,7 +40,7 @@ import toolbox.PoissonDiskSampler;
 import toolbox.Range;
 import toolbox.TriFunction;
 
-public class RoadsScene {
+public class DevelopScene {
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();

@@ -1,5 +1,6 @@
 package engineTester;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,15 +25,18 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import terrains.BiomesMap;
-import terrains.BiomesMap.TreeType;
 import terrains.IHeightGenerator;
+import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import terrains.TreePlacer;
+import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.PoissonDiskSampler;
+import toolbox.Range;
+import toolbox.TriFunction;
 
 public class SimplexBiomesScenePoisson {
 	
@@ -87,15 +91,21 @@ public class SimplexBiomesScenePoisson {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
+		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
+		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
+			NoiseMap texVariationMap = new NoiseMap(450f, 0.0005f, 0);
+			final float maxHeight = textureRanges.get(textureRanges.size() - 1).getEnd();
+			return (float) (texVariationMap.getNoise(x, z) * Math.pow(4 * (h + 1000) / maxHeight, 1.5));
+		};
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
+		
 		float width = 20000;
 		float depth = 20000;
 		float xTiles = width / 200f;
 		float zTiles = depth / 200f;
 		float vertsPerMeter = 0.025f;
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator);
-
-		BiomesMap biomesMap = new BiomesMap(heightGenerator);
+				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
 		
 		BiFunction<Float, Float, Float> distribution = (x, z) -> Math.max(0.25f, 1 - biomesMap.getTreeDensity(x, z));
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 600, distribution, 1);

@@ -1,6 +1,7 @@
 package engineTester;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -20,10 +21,13 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
+import terrains.BiomesMap;
 import terrains.Terrain;
+import terrains.UniformHeightGenerator;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.Range;
 
 public class MainGameLoop {
 	
@@ -72,7 +76,9 @@ public class MainGameLoop {
 		//Terrain terrain = new Terrain(0, -1, loader, new ModelTexture(loader.loadTexture("grass")));
 		//IHeightGenerator heightGenerator = new UniformHeightGenerator();
 		//Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
-		Terrain terrain = new Terrain(loader, texturePack, blendMap);
+		List<Range> textureRanges = Arrays.asList(new Range(0, 1), new Range(1, 2), new Range(2, 3));
+		BiomesMap biomesMap = new BiomesMap(new UniformHeightGenerator(), textureRanges);
+		Terrain terrain = new Terrain(loader, texturePack, blendMap, biomesMap);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

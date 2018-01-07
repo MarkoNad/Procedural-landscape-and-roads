@@ -14,7 +14,7 @@ import org.lwjgl.util.vector.Vector3f;
 import entities.Entity;
 import models.TexturedModel;
 import models.TexturedModelComp;
-import terrains.BiomesMap.TreeType;
+import terrains.TreeType;
 
 public class LODGrid {
 	

@@ -1,6 +1,7 @@
 package engineTester;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -20,11 +21,13 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
+import terrains.BiomesMap;
 import terrains.HeightMapHeightGenerator;
 import terrains.Terrain;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.Range;
 
 public class HeightMapScene {
 	
@@ -68,8 +71,10 @@ public class HeightMapScene {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		HeightMapHeightGenerator heightGenerator = new HeightMapHeightGenerator("res/heightMap.png");
+		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		//Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, heightGenerator, heightGenerator.getXPoints(), heightGenerator.getYPoints());
-		Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, 1f, 1f, loader, texturePack, blendMap, heightGenerator);
+		Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, 1f, 1f, loader, texturePack, blendMap, heightGenerator, biomesMap);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

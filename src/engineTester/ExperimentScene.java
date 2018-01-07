@@ -1,6 +1,7 @@
 package engineTester;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,16 +27,17 @@ import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import roads.Road;
 import terrains.BiomesMap;
-import terrains.BiomesMap.TreeType;
 import terrains.IHeightGenerator;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import terrains.TreePlacer;
+import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.CatmullRomSpline;
 import toolbox.PoissonDiskSampler;
+import toolbox.Range;
 
 public class ExperimentScene {
 	
@@ -90,13 +92,15 @@ public class ExperimentScene {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
+		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		float width = 20000;
 		float depth = 20000;
 		float xTiles = width / 200f;
 		float zTiles = depth / 200f;
 		float vertsPerMeter = 0.025f;
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator);
+				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
 		
 		List<Vector3f> waypoints = new ArrayList<>();
 		waypoints.add(new Vector3f(0, 0, 0));
@@ -115,8 +119,6 @@ public class ExperimentScene {
 		Road road = new Road(loader, waypoints, heightGenerator, 200, 200);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
-
-		BiomesMap biomesMap = new BiomesMap(heightGenerator);
 		
 		BiFunction<Float, Float, Float> distribution = (x, z) -> Math.max(0.25f, 1 - biomesMap.getTreeDensity(x, z));
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 600, distribution, 1);

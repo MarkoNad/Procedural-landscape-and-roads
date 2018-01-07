@@ -14,7 +14,7 @@ import models.RawModel;
 import models.TexturedModel;
 import shaders.StaticShader;
 import textures.ModelTexture;
-import toolbox.Maths;
+import toolbox.MatrixUtils;
 
 public class EntityRenderer {
 	
@@ -74,7 +74,7 @@ public class EntityRenderer {
 	}
 	
 	private void prepareInstance(Entity entity) {
-		Matrix4f transformationMatrix = Maths.createTransformationMatrix(entity.getPosition(),
+		Matrix4f transformationMatrix = MatrixUtils.createTransformationMatrix(entity.getPosition(),
 				entity.getRotX(), entity.getRotY(), entity.getRotZ(), entity.getScale());
 		shader.loadTransformationMatrix(transformationMatrix);
 	}

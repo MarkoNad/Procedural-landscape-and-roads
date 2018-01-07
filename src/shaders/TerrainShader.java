@@ -5,7 +5,7 @@ import org.lwjgl.util.vector.Vector3f;
 
 import entities.Camera;
 import entities.Light;
-import toolbox.Maths;
+import toolbox.MatrixUtils;
 
 public class TerrainShader extends ShaderProgram {
 	
@@ -62,7 +62,7 @@ public class TerrainShader extends ShaderProgram {
 	}
 	
 	public void loadViewMatrix(Camera camera) {
-		Matrix4f viewMatrix = Maths.createViewMatrix(camera);
+		Matrix4f viewMatrix = MatrixUtils.createViewMatrix(camera);
 		super.loadMatrix(location_viewMatrix, viewMatrix);
 	} 
 	
