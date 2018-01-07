@@ -8,7 +8,6 @@ import java.util.Map;
 
 import org.lwjgl.util.vector.Vector3f;
 
-import terrains.BiomesMap.TreeType;
 import toolbox.Sampler;
 
 public class TreePlacer {

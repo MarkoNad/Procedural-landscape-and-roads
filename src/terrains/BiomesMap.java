@@ -43,11 +43,6 @@ public class BiomesMap implements ITextureMap {
 		this(heightMap, textureRanges, DEFAULT_INTERPOLATION_INTERVAL, textureVariation);
 	}
 	
-	public static enum TreeType {
-		OAK,
-		PINE
-	}
-	
 	public TreeType getTreeType(float x, float z) {
 		float height = heightMap.getHeight(x, z);
 		float modifiedHeight = height + noiseMap.getNoise(x, z);
