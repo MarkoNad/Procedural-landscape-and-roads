@@ -108,8 +108,8 @@ public class DevelopScene {
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
 				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
 
-		BiFunction<Float, Float, Float> distribution = (x, z) -> Math.max(0.25f, 1 - biomesMap.getTreeDensity(x, z));
-		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 600, distribution, 1);
+		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
+		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 130f, 650f, distribution, 1);
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
 		
