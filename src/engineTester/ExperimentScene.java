@@ -120,7 +120,8 @@ public class ExperimentScene {
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		
-		BiFunction<Float, Float, Float> distribution = (x, z) -> Math.max(0.25f, 1 - biomesMap.getTreeDensity(x, z));
+		//BiFunction<Float, Float, Float> distribution = (x, z) -> Math.max(0.25f, 1 - biomesMap.getTreeDensity(x, z));
+		BiFunction<Float, Float, Float> distribution = (x, z) -> 1 - biomesMap.getTreeDensity(x, z); // TODO
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 600, distribution, 1);
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);

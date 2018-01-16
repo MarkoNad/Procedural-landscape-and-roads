@@ -14,12 +14,13 @@ public class PoissonDiskSampler extends Sampler {
 	private final int pointsToGenerate;
 	private final Point2D.Float dimensions;
 	private final float cellSize;
-	private final float minDist;
+	private final float minRadius = 100f;
+	private final float maxRadius;
 	private final int gridWidth, gridHeight;
 	private final BiFunction<Float, Float, Float> distribution;
 	private final Random random;
 
-	public PoissonDiskSampler(float x0, float z0, float x1, float z1, float minDist,
+	public PoissonDiskSampler(float x0, float z0, float x1, float z1, float maxRadius,
 			BiFunction<Float, Float, Float> distribution, long seed, int pointsToGenerate) {
 		
 		// x i z coordinates are received, but the algorithm works with x (left - right) and y 
@@ -30,11 +31,12 @@ public class PoissonDiskSampler extends Sampler {
 		z1 *= -1;
 		
 		dimensions = new Point2D.Float(x1 - x0, z1 - z0);
-		this.minDist = minDist;
+		//this.maxRadius = maxRadius;
+		this.maxRadius = 6f * minRadius;
 		this.distribution = distribution;
 		this.random = new Random(seed);
 		this.pointsToGenerate = pointsToGenerate;
-		cellSize = (float) (minDist / Math.sqrt(2));
+		cellSize = (float) (maxRadius / Math.sqrt(2));
 		gridWidth = (int) (dimensions.x / cellSize) + 1;
 		gridHeight = (int) (dimensions.y / cellSize) + 1;
 	}
@@ -81,7 +83,9 @@ public class PoissonDiskSampler extends Sampler {
 			List<Point2D.Float> pointList, Point2D.Float point) {
 		boolean found = false;
 		float fraction = distribution.apply(point.x, point.y);
-		Point2D.Float q = generateRandomAround(point, fraction * minDist);
+		//Point2D.Float q = generateRandomAround(point, fraction * minDist);
+		float minDist =  minRadius + fraction * (maxRadius - minRadius);
+		Point2D.Float q = generateRandomAround(point, minDist);//TODO
 
 		if ((q.x >= p0.x) && (q.x < p1.x) && (q.y > p0.y) && (q.y < p1.y)) {
 			Point qIndex = pointFloatToInt(q, p0, cellSize);
@@ -91,7 +95,8 @@ public class PoissonDiskSampler extends Sampler {
 			for (int i = Math.max(0, qIndex.x - 2); (i < Math.min(gridWidth, qIndex.x + 3)) && !tooClose; i++) {
 				for (int j = Math.max(0, qIndex.y - 2); (j < Math.min(gridHeight, qIndex.y + 3)) && !tooClose; j++) {
 					for (Point2D.Float gridPoint : grid[i][j]) {
-						if (gridPoint.distance(q) < minDist * fraction) {
+						//if (gridPoint.distance(q) < maxRadius * fraction) {
+						if (gridPoint.distance(q) < minDist) {
 							tooClose = true;
 						}
 					}
@@ -131,10 +136,10 @@ public class PoissonDiskSampler extends Sampler {
 
 	private Point2D.Float generateRandomAround(Point2D.Float centre, float minDist) {
 		float d = random.nextFloat();
-		float radius = (minDist + minDist * (d));
+		float radius = (minDist + minDist * d);
 
 		d = random.nextFloat();
-		float angle = (float) (2 * Math.PI * (d));
+		float angle = (float) (2 * Math.PI * d);
 
 		float newX = (float) (radius * Math.sin(angle));
 		float newY = (float) (radius * Math.cos(angle));
