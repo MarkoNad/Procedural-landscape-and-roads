@@ -44,7 +44,7 @@ public class Road {
 	}
 	
 	private List<Vector3f> generateTrajectory(List<Vector3f> waypoints) {
-		CatmullRomSpline curve = new CatmullRomSpline(waypoints, DEFAULT_SEGMENT_LEN);
+		CatmullRomSpline curve = new CatmullRomSpline(waypoints, DEFAULT_SEGMENT_LEN);//TODO: replace default with arg
 		return curve.getCurvePoints();
 	}
 

@@ -202,7 +202,15 @@ public class ExperimentScene {
 			entities.add(new Entity(chestnutTreetop, new Vector3f(1500, 0f, 0f), 0f, 0f, 0f, 15f));
 			entities.add(new Entity(chestnutTrunk, new Vector3f(1500, 0f, 0f), 0f, 0f, 0f, 15f));
 			
-			//entities.add(new Entity(barrel, new Vector3f(0.0f, 0.0f, 0.0f), 0, 0, 0, 10f));
+			entities.add(new Entity(barrel, new Vector3f(0.0f, 0.0f, 0.0f), 0, 0, 0, 10f));
+			
+			//entities.add(new Entity(chestnutTreetop, new Vector3f(0, 0f, 500f), 0f, 0f, 0f, 1f));
+			//entities.add(new Entity(chestnutTrunk, new Vector3f(0, 0f, 500f), 0f, 0f, 0f, 1f));
+			//entities.add(new Entity(chestnutLOD1, new Vector3f(40, 0f, 500f), 0f, 0f, 0f, 20f));
+			entities.add(new Entity(firTreetop, new Vector3f(-200, 0f, 500f), 0f, 0f, 0f, 15f));
+			entities.add(new Entity(firTrunk, new Vector3f(-200, 0f, 500f), 0f, 0f, 0f, 15f));
+			entities.add(new Entity(firLOD1, new Vector3f(-150, 0f, 500f), 0f, 0f, 0f, 35f));
+			
 			
 			for(Vector3f bpoint : curve.getCurvePoints()) {
 				entities.add(new Entity(chestnutTreetop, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));

@@ -26,6 +26,9 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import roads.Road;
+import search.AStar;
+import search.IProblem;
+import search.Node;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.NoiseMap;
@@ -43,6 +46,8 @@ import toolbox.TriFunction;
 public class DevelopScene {
 	
 	public static void main(String[] args) {
+		findPath();
+		
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
@@ -164,6 +169,144 @@ public class DevelopScene {
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
+	}
+	
+	private static void findPath() {
+		long start = System.nanoTime();
+		
+		IProblem<Vector3f> searchProblem = new IProblem<Vector3f>() {
+			
+			private Vector3f end = new Vector3f(50f, 0f, 50f);
+			
+			private final Vector3f left = new Vector3f(-10f, 0f, 0f);
+			private final Vector3f right = new Vector3f(10f, 0f, 0f);
+			private final Vector3f forward = new Vector3f(0f, 0f, -10f);
+			private final Vector3f backward = new Vector3f(0f, 0f, 10f);
+			
+			private static final double EPS = 1e-6;
+			
+			@Override
+			public Iterable<Vector3f> getSuccessors(Vector3f state) {
+				return Arrays.asList(
+					Vector3f.add(state, right, null),
+					Vector3f.add(state, left, null),
+					Vector3f.add(state, forward, null),
+					Vector3f.add(state, backward, null)
+				);
+			}
+
+			@Override
+			public double getTransitionCost(Vector3f first, Vector3f second) {
+				return Vector3f.sub(second, first, null).length();
+			}
+
+			@Override
+			public boolean isGoal(Vector3f state) {
+				return Math.abs(state.x - end.x) <= EPS &&
+					Math.abs(state.y - end.y) <= EPS && 
+					Math.abs(state.z - end.z) <= EPS;
+			}
+
+			@Override
+			public Vector3f getInitialState() {
+				return new Vector3f(0f, 0f, 0f);
+			}
+			
+		};
+		
+
+//		IProblem<Point> searchProblem = new IProblem<Point>() {
+//			private Point end = new Point(300, 300);
+//			
+//			@Override
+//			public Iterable<Point> getSuccessors(Point state) {
+//				return Arrays.asList(
+//					new Point(state.x - 1, state.y),
+//					new Point(state.x + 1, state.y),
+//					new Point(state.x, state.y - 1),
+//					new Point(state.x, state.y + 1)
+//				);
+//			}
+//	
+//			@Override
+//			public double getTransitionCost(Point first, Point second) {
+//				return Math.abs(first.x - second.x) + Math.abs(first.y - second.y);
+//			}
+//	
+//			@Override
+//			public boolean isGoal(Point state) {
+//				return state.x == end.x && state.y == end.y;
+//			}
+//
+//			@Override
+//			public Point getInitialState() {
+//				return new Point(0, 0);
+//			}
+//			
+//		};
+		
+//		AStar<Point> astar = new AStar<>(searchProblem, s -> 0.0);
+//		Node<Point> goal = astar.search();
+		
+		AStar<Vector3f> astar = new AStar<>(searchProblem, s -> 0.0);
+		Node<Vector3f> goal = astar.search();
+		
+		double duration = (System.nanoTime() - start) * 1e-9;
+		System.out.println("duration:" + duration);
+		
+		for(Vector3f point : goal.reconstructPath()) {
+			System.out.println(point);
+		}
+	}
+	
+private static class Point {
+		
+		private int x;
+		private int y;
+
+		public Point(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
+		
+		public int getX() {
+			return x;
+		}
+		
+		public int getY() {
+			return y;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + x;
+			result = prime * result + y;
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Point other = (Point) obj;
+			if (x != other.x)
+				return false;
+			if (y != other.y)
+				return false;
+			return true;
+		}
+		
+		@Override
+		public String toString() {
+			return "(" + x + ", " + y + ")";
+		}
+		
 	}
 	
 }
