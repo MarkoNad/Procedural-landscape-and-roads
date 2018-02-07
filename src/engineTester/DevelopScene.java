@@ -39,6 +39,8 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.Constants;
+import toolbox.Point2Df;
 import toolbox.PoissonDiskSampler;
 import toolbox.Range;
 import toolbox.TriFunction;
@@ -46,13 +48,11 @@ import toolbox.TriFunction;
 public class DevelopScene {
 	
 	public static void main(String[] args) {
-		findPath();
-		
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
 		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
-		Camera camera = new FloatingCamera(new Vector3f(0.0f, 2000.0f, 0.0f));
+		Camera camera = new FloatingCamera(new Vector3f(0.0f, 2000.0f, 0.0f), 20f, 100f, 2000f, 300f, 12.5f);
 		MasterRenderer renderer = new MasterRenderer();
 
 		TexturedModel firLOD1 = load("fir_lod1", "fir_lod1", loader);
@@ -119,15 +119,21 @@ public class DevelopScene {
 		Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
 		
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		grid.addToGrid(locationsPerType);
+		//grid.addToGrid(locationsPerType);
 		
-		Entity road = setupRoad(loader, heightGenerator);
+		List<Vector3f> roadWaypoints = findPath(heightGenerator);
+		//List<Vector3f> roadWaypoints = createWaypoints();
+		Entity road = setupRoad(loader, heightGenerator, roadWaypoints);
 
+		List<Entity> entities = new ArrayList<>();
+		roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeight(p.x, p.z), p.z), 0f, 0f, 0f, 10f)));
+		
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
 			renderer.processTerrain(terrain);
-			List<Entity> entities = grid.proximityEntities(camera.getPosition());
+			//List<Entity> entities = grid.proximityEntities(camera.getPosition());
+			//roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeight(p.x, p.z), p.z), 0f, 0f, 0f, 10f)));
 			entities.forEach(e -> renderer.processEntity(e));
 			renderer.processEntity(road);
 			renderer.render(light, camera);
@@ -142,11 +148,20 @@ public class DevelopScene {
 	
 	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
 		ModelData data = OBJFileLoader.loadOBJ(objFile);
-		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getIndices());
+		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(),
+				data.getNormals(), data.getIndices());
 		return new TexturedModel(model, new ModelTexture(loader.loadTexture(pngFile)));
 	}
 	
-	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator) {
+	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator,
+			List<Vector3f> waypoints) {
+		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 50f);
+		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
+		roadTM.getTexture().setHasTransparency(true);
+		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
+	}
+	
+	private static List<Vector3f> createWaypoints() {
 		List<Vector3f> waypoints = new ArrayList<>();
 		
 		waypoints.add(new Vector3f(0, 0, -2000));
@@ -165,148 +180,81 @@ public class DevelopScene {
 		waypoints.add(new Vector3f(10500, 0, -100));
 		waypoints.add(new Vector3f(10500, 0, 0));
 		
-		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 100);
-		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
-		roadTM.getTexture().setHasTransparency(true);
-		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
+		return waypoints;
 	}
 	
-	private static void findPath() {
+	private static List<Vector3f> findPath(IHeightGenerator heightGenerator) {
 		long start = System.nanoTime();
 		
-		IProblem<Vector3f> searchProblem = new IProblem<Vector3f>() {
-			
-			private Vector3f end = new Vector3f(50f, 0f, 50f);
-			
-			private final Vector3f left = new Vector3f(-10f, 0f, 0f);
-			private final Vector3f right = new Vector3f(10f, 0f, 0f);
-			private final Vector3f forward = new Vector3f(0f, 0f, -10f);
-			private final Vector3f backward = new Vector3f(0f, 0f, 10f);
-			
-			private static final double EPS = 1e-6;
+		IProblem<Point2Df> searchProblem = new IProblem<Point2Df>() {
+			private Point2Df end = new Point2Df(20000f, -20000f);
+			private final float step = 500f;
 			
 			@Override
-			public Iterable<Vector3f> getSuccessors(Vector3f state) {
+			public Iterable<Point2Df> getSuccessors(Point2Df state) {
 				return Arrays.asList(
-					Vector3f.add(state, right, null),
-					Vector3f.add(state, left, null),
-					Vector3f.add(state, forward, null),
-					Vector3f.add(state, backward, null)
+					new Point2Df(state.getX(), state.getZ() - step),
+					new Point2Df(state.getX() + step, state.getZ() - step),
+					new Point2Df(state.getX() + step, state.getZ()),
+					new Point2Df(state.getX() + step, state.getZ() + step),
+					new Point2Df(state.getX(), state.getZ() + step),
+					new Point2Df(state.getX() - step, state.getZ() + step),
+					new Point2Df(state.getX() - step, state.getZ()),
+					new Point2Df(state.getX() - step, state.getZ() - step)
 				);
 			}
-
+	
 			@Override
-			public double getTransitionCost(Vector3f first, Vector3f second) {
-				return Vector3f.sub(second, first, null).length();
+			public double getTransitionCost(Point2Df p1, Point2Df p2) {
+				double totalCost = 0.0;
+
+				double y1 = heightGenerator.getHeight(p1.getX(), p1.getZ());
+				double y2 = heightGenerator.getHeight(p2.getX(), p2.getZ());
+				double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
+						Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
+				double distanceCost = distance;
+				
+				Vector3f normal1 = heightGenerator.getNormal(p1.getX(), p1.getZ());
+				Vector3f normal2 = heightGenerator.getNormal(p2.getX(), p2.getZ());
+				double deltaSlope = Vector3f.angle(normal1, normal2);
+				double deltaSlopeCost = deltaSlope * 1000.0;
+				
+				double slope = Vector3f.angle(Constants.Y_AXIS, normal2);
+				double slopeCost = slope * 10_000.0;
+				
+				totalCost += distanceCost;
+				totalCost += deltaSlopeCost;
+				totalCost += slopeCost;
+				
+				return totalCost; 
 			}
-
+	
 			@Override
-			public boolean isGoal(Vector3f state) {
-				return Math.abs(state.x - end.x) <= EPS &&
-					Math.abs(state.y - end.y) <= EPS && 
-					Math.abs(state.z - end.z) <= EPS;
+			public boolean isGoal(Point2Df state) {
+				return state.equals(end);
 			}
-
+	
 			@Override
-			public Vector3f getInitialState() {
-				return new Vector3f(0f, 0f, 0f);
+			public Point2Df getInitialState() {
+				return new Point2Df(0, 0);
 			}
 			
 		};
 		
-
-//		IProblem<Point> searchProblem = new IProblem<Point>() {
-//			private Point end = new Point(300, 300);
-//			
-//			@Override
-//			public Iterable<Point> getSuccessors(Point state) {
-//				return Arrays.asList(
-//					new Point(state.x - 1, state.y),
-//					new Point(state.x + 1, state.y),
-//					new Point(state.x, state.y - 1),
-//					new Point(state.x, state.y + 1)
-//				);
-//			}
-//	
-//			@Override
-//			public double getTransitionCost(Point first, Point second) {
-//				return Math.abs(first.x - second.x) + Math.abs(first.y - second.y);
-//			}
-//	
-//			@Override
-//			public boolean isGoal(Point state) {
-//				return state.x == end.x && state.y == end.y;
-//			}
-//
-//			@Override
-//			public Point getInitialState() {
-//				return new Point(0, 0);
-//			}
-//			
-//		};
-		
-//		AStar<Point> astar = new AStar<>(searchProblem, s -> 0.0);
-//		Node<Point> goal = astar.search();
-		
-		AStar<Vector3f> astar = new AStar<>(searchProblem, s -> 0.0);
-		Node<Vector3f> goal = astar.search();
+		AStar<Point2Df> astar = new AStar<>(searchProblem, s -> 0.0);
+		Node<Point2Df> goal = astar.search();
 		
 		double duration = (System.nanoTime() - start) * 1e-9;
 		System.out.println("duration:" + duration);
 		
-		for(Vector3f point : goal.reconstructPath()) {
+		List<Vector3f> waypoints = new ArrayList<>();
+		
+		for(Point2Df point : goal.reconstructPath()) {
+			waypoints.add(new Vector3f(point.getX(), 0f, point.getZ()));
 			System.out.println(point);
 		}
-	}
-	
-private static class Point {
 		
-		private int x;
-		private int y;
-
-		public Point(int x, int y) {
-			this.x = x;
-			this.y = y;
-		}
-		
-		public int getX() {
-			return x;
-		}
-		
-		public int getY() {
-			return y;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + x;
-			result = prime * result + y;
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Point other = (Point) obj;
-			if (x != other.x)
-				return false;
-			if (y != other.y)
-				return false;
-			return true;
-		}
-		
-		@Override
-		public String toString() {
-			return "(" + x + ", " + y + ")";
-		}
-		
+		return waypoints;
 	}
 	
 }

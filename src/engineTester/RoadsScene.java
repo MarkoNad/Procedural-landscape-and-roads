@@ -160,7 +160,7 @@ public class RoadsScene {
 		waypoints.add(new Vector3f(10500, 0, -100));
 		waypoints.add(new Vector3f(10500, 0, 0));
 		
-		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 100);
+		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 50);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);

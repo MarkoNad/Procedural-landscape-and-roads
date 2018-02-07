@@ -18,11 +18,13 @@ public class Road {
 	private Loader loader;
 	private List<Vector3f> trajectory;
 	private IHeightGenerator heightMap;
-	private float width;
+	private final float width;
+	private final float segmentLength;
 	private float textureLen;
 	private RawModel model;
 
-	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap, float width, float textureLen, float segmentLen) {
+	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap, float width,
+			float textureLen, float segmentLen) {
 		if(waypoints == null || waypoints.size() <= 1) {
 			throw new IllegalArgumentException("At least two waypoints are required.");
 		}
@@ -31,20 +33,22 @@ public class Road {
 		}
 		
 		this.loader = loader;
-		this.trajectory = generateTrajectory(waypoints);
+		this.segmentLength = segmentLen;
 		this.heightMap = heightMap;
 		this.width = width;
 		this.textureLen = textureLen;
 		
+		this.trajectory = generateTrajectory(waypoints);
 		model = generate();
 	}
 	
-	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap, float width, float textureLen) {
+	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap,
+			float width, float textureLen) {
 		this(loader, waypoints, heightMap, width, textureLen, DEFAULT_SEGMENT_LEN);
 	}
 	
 	private List<Vector3f> generateTrajectory(List<Vector3f> waypoints) {
-		CatmullRomSpline curve = new CatmullRomSpline(waypoints, DEFAULT_SEGMENT_LEN);//TODO: replace default with arg
+		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
 		return curve.getCurvePoints();
 	}
 
