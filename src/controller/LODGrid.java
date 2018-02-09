@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 
 import org.lwjgl.util.vector.Vector3f;
 
@@ -23,6 +25,11 @@ public class LODGrid {
 	private Map<TexturedModelComp, Float> scaleForModel;
 	private Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType;
 	
+	private List<Entity> entityCache;
+	
+	private boolean addingToGrid;
+	private boolean readingFromGrid;
+	
 	public LODGrid(
 			float cellSize,
 			Map<TexturedModelComp, Float> scaleForModel,
@@ -32,6 +39,8 @@ public class LODGrid {
 		this.scaleForModel = scaleForModel;
 		this.lodLevelsForType = lodLevelsForType;
 		grid = new HashMap<>();
+		addingToGrid = false;
+		readingFromGrid = false;
 	}
 	
 	public void addToGrid(TreeType type, Vector3f location) {
@@ -60,7 +69,46 @@ public class LODGrid {
 		}
 	}
 	
+	public void addToGrid(BlockingQueue<Map<TreeType, List<Vector3f>>> locationsPerTypeQueue, ExecutorService executor) {
+		executor.submit(new Runnable() {
+			@Override
+			public void run() {
+				while(true) {
+					Map<TreeType, List<Vector3f>> locationsPerType = null;
+					try {
+						locationsPerType = locationsPerTypeQueue.take();
+						System.out.println("Grid taken from queue " + locationsPerType.values().stream().mapToInt(l -> l.size()).sum() +
+								" points. Queue size: " + locationsPerTypeQueue.size());
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+						System.exit(1);
+					}
+					
+					while(readingFromGrid) { // TODO
+						System.out.println("reading from grid: " + readingFromGrid);
+					};
+					
+					addingToGrid = true;
+					
+					for(TreeType type : locationsPerType.keySet()) {
+						for(Vector3f location : locationsPerType.get(type)) {
+							addToGrid(type, location);
+						}
+					}
+					
+					addingToGrid = false;
+				}
+			}
+		});
+	}
+	
 	public List<Entity> proximityEntities(Vector3f position) {
+		readingFromGrid = true;
+		if(addingToGrid) {
+			readingFromGrid = false;
+			return entityCache;
+		}
+		
 		List<Entity> entities = new ArrayList<>();
 		int searchRange = searchRange();
 		
@@ -101,6 +149,8 @@ public class LODGrid {
 			}
 		}
 		
+		entityCache = entities;
+		readingFromGrid = false;
 		return entities;
 	}
 	

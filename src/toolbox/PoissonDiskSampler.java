@@ -5,6 +5,7 @@ import java.awt.geom.Point2D;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
 import java.util.function.BiFunction;
 
 public class PoissonDiskSampler extends Sampler {
@@ -38,6 +39,8 @@ public class PoissonDiskSampler extends Sampler {
 	private final int pointsToGenerate;
 	private final int maxPoints;
 	private final Random random;
+	
+	private boolean samplingDone;
 
 	public PoissonDiskSampler(float x0, float z0, float x1, float z1, float minInnerRadius,
 			float maxInnerRadius, BiFunction<Float, Float, Float> distribution, long seed,
@@ -59,6 +62,7 @@ public class PoissonDiskSampler extends Sampler {
 		this.cellSize = (float) (maxInnerRadius / Math.sqrt(2));
 		this.gridWidth = (int) (dimensions.x / cellSize) + 1;
 		this.gridHeight = (int) (dimensions.y / cellSize) + 1;
+		samplingDone = false;
 	}
 
 	public PoissonDiskSampler(float x0, float z0, float x1, float z1, float minInnerRadius,
@@ -68,7 +72,14 @@ public class PoissonDiskSampler extends Sampler {
 	}
 	
 	@Override
+	public boolean samplingDone() {
+		return samplingDone;
+	}
+	
+	@Override
 	public List<Point2D.Float> sample() {
+		samplingDone = false;
+		
 		List<Point2D.Float> activeList = new LinkedList<>();
 		List<Point2D.Float> pointList = new LinkedList<>();
 		@SuppressWarnings("unchecked")
@@ -97,7 +108,49 @@ public class PoissonDiskSampler extends Sampler {
 			}
 		}
 
+		samplingDone = true;
 		return pointList;
+	}
+	
+	@Override
+	public void sample(int batchSize, BlockingQueue<List<Point2D.Float>> batchQueue)
+			throws InterruptedException {
+		samplingDone = false;
+		
+		List<Point2D.Float> activeList = new LinkedList<>();
+		List<Point2D.Float> pointList = new LinkedList<>();
+		@SuppressWarnings("unchecked")
+		List<Point2D.Float> grid[][] = new List[gridWidth][gridHeight];
+
+		for(int i = 0; i < gridWidth; i++) {
+			for(int j = 0; j < gridHeight; j++) {
+				grid[i][j] = new LinkedList<>();
+			}
+		}
+
+		addFirstPoint(grid, activeList, pointList);
+
+		while(!activeList.isEmpty() && (pointList.size() < maxPoints)) {
+			int listIndex = random.nextInt(activeList.size());
+
+			Point2D.Float point = activeList.get(listIndex);
+			boolean found = false;
+
+			for(int k = 0; k < pointsToGenerate; k++) {
+				found |= addNextPoint(grid, activeList, pointList, point);
+				if(pointList.size() == batchSize) {
+					batchQueue.put(pointList);
+					System.out.println("Sampler put to queue " + pointList.size() + " points. Queue size: " + batchQueue.size());
+					pointList = new LinkedList<>();
+				}
+			}
+
+			if(!found) {
+				activeList.remove(listIndex);
+			}
+		}
+		
+		samplingDone = true;
 	}
 
 	private boolean addNextPoint(List<Point2D.Float>[][] grid, List<Point2D.Float> activeList,

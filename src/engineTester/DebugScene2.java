@@ -1,5 +1,6 @@
 package engineTester;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -7,6 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.BiFunction;
 
 import org.lwjgl.opengl.Display;
@@ -100,7 +105,7 @@ public class DebugScene2 {
 //		chestnutLods.put(20000f, chestnutLOD1Comp);
 		
 		chestnutLods.put(100f, chestnutLOD0Comp);
-		chestnutLods.put(2000f, chestnutLOD1Comp);
+		chestnutLods.put(5000f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
 		//firLods.put(4000f, firLOD0Comp);
@@ -109,7 +114,7 @@ public class DebugScene2 {
 //		firLods.put(20000f, firLOD1Comp);
 		
 		firLods.put(100f, firLOD0Comp);
-		firLods.put(2000f, firLOD1Comp);
+		firLods.put(5000f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
 		lodLevelsForType.put(TreeType.OAK, chestnutLods);
@@ -149,17 +154,27 @@ public class DebugScene2 {
 		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 650f, distribution, 1);
 		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 5000, -5000, 10f, 50f, distribution, 1);
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 50f, distribution, 1, 30, 10_000_000);
+
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		
 		startTime = System.nanoTime();
-		Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
+		//Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
+		ExecutorService pool = Executors.newFixedThreadPool(3, new ThreadFactory() {	
+			@Override
+			public Thread newThread(Runnable r) {
+				Thread thread = new Thread(r);
+				thread.setDaemon(true);
+				return thread;
+			}
+		});
+		BlockingQueue<Map<TreeType, List<Vector3f>>> locationsPerType = placer.computeLocationsInBackground(pool);
 		double locationsDuration = (System.nanoTime() - startTime) / 1e9;
-		System.out.println("Location computation: " + locationsDuration + " s, " + locationsPerType.values().stream().mapToInt(c -> c.size()).sum() + " locations");
+		//System.out.println("Location computation: " + locationsDuration + " s, " + locationsPerType.values().stream().mapToInt(c -> c.size()).sum() + " locations");
 		
 		//LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		grid.addToGrid(locationsPerType);
+		grid.addToGrid(locationsPerType, pool);
 		
 		List<Vector3f> roadWaypoints = findPath(heightGenerator);
 		//List<Vector3f> roadWaypoints = createWaypoints();
