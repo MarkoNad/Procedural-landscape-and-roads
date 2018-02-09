@@ -17,6 +17,10 @@ public class Point2Df {
 	public float getZ() {
 		return z;
 	}
+	
+	public static float distance(Point2Df p1, Point2Df p2) {
+		return (float) Math.hypot(p1.x - p2.x, p1.z - p2.z);
+	}
 
 	@Override
 	public int hashCode() {

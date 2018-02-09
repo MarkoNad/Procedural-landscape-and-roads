@@ -189,19 +189,35 @@ public class DevelopScene {
 		IProblem<Point2Df> searchProblem = new IProblem<Point2Df>() {
 			private Point2Df end = new Point2Df(20000f, -20000f);
 			private final float step = 500f;
+			private final int succCount = 8;
+			private final float tolerance = 5000f;
 			
 			@Override
 			public Iterable<Point2Df> getSuccessors(Point2Df state) {
-				return Arrays.asList(
-					new Point2Df(state.getX(), state.getZ() - step),
-					new Point2Df(state.getX() + step, state.getZ() - step),
-					new Point2Df(state.getX() + step, state.getZ()),
-					new Point2Df(state.getX() + step, state.getZ() + step),
-					new Point2Df(state.getX(), state.getZ() + step),
-					new Point2Df(state.getX() - step, state.getZ() + step),
-					new Point2Df(state.getX() - step, state.getZ()),
-					new Point2Df(state.getX() - step, state.getZ() - step)
-				);
+				List<Point2Df> successors = new ArrayList<>();
+				
+				for(int i = 0; i < succCount; i++) {
+					double angle = 2.0 * Math.PI * i / succCount;
+					System.out.println(angle);
+					
+					float deltaX = (float) (step * Math.cos(angle));
+					float deltaZ = (float) (step * Math.sin(angle));
+					
+					successors.add(new Point2Df(state.getX() + deltaX, state.getZ() + deltaZ));
+				}
+				
+				return successors;
+				
+//				return Arrays.asList(
+//					new Point2Df(state.getX(), state.getZ() - step),
+//					new Point2Df(state.getX() + step, state.getZ() - step),
+//					new Point2Df(state.getX() + step, state.getZ()),
+//					new Point2Df(state.getX() + step, state.getZ() + step),
+//					new Point2Df(state.getX(), state.getZ() + step),
+//					new Point2Df(state.getX() - step, state.getZ() + step),
+//					new Point2Df(state.getX() - step, state.getZ()),
+//					new Point2Df(state.getX() - step, state.getZ() - step)
+//				);
 			}
 	
 			@Override
@@ -230,8 +246,9 @@ public class DevelopScene {
 			}
 	
 			@Override
-			public boolean isGoal(Point2Df state) {
-				return state.equals(end);
+			public boolean isGoal(Point2Df point) {
+				//return state.equals(end);
+				return Point2Df.distance(point, end) <= tolerance;
 			}
 	
 			@Override
