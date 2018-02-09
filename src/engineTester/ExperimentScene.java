@@ -151,7 +151,7 @@ public class ExperimentScene {
 		waypoints2.add(new Vector3f(10500, 0, -500));
 		waypoints2.add(new Vector3f(10500, 0, -100));
 		waypoints2.add(new Vector3f(10500, 0, 0));
-		Road road2 = new Road(loader, waypoints2, heightGenerator, 250, 200, 100);
+		Road road2 = new Road(loader, waypoints2, heightGenerator, 250, 200, 100, 7f);
 		TexturedModel roadTM2 = new TexturedModel(road2.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM2.getTexture().setHasTransparency(true);
 		Entity road2Entity = new Entity(roadTM2, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);

@@ -13,7 +13,7 @@ public class PoissonDiskSampler extends Sampler {
 	private static final int DEFAULT_POINTS_TO_GENERATE = 30;
 	
 	/** If max number of points is not specified, this one is used. */
-	private static final int DEFAULT_MAX_POINTS = 100000;
+	private static final int DEFAULT_MAX_POINTS = 100_000;
 	
 	/** 
 	 * Minimal allowed value for the inner radius of the circular crown in 
@@ -105,6 +105,8 @@ public class PoissonDiskSampler extends Sampler {
 		boolean found = false;
 		
 		float fraction = distribution.apply(point.x, point.y);
+		if(fraction < 0) throw new IllegalStateException("Density distribution returned value less than 0.");
+		
 		float minDist =  minInnerRadius + fraction * (maxInnerRadius - minInnerRadius);
 		
 		Point2D.Float q = generateRandomAround(point, minDist);

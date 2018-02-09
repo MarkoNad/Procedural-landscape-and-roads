@@ -15,7 +15,7 @@ public class FPSCamera extends Camera {
 	private static final float DEFAULT_BASE_HIGH_SPEED = 1000f;
 	private static final float DEFAULT_ROTATION_SPEED = 12.5f;
 	
-	private static final float GROUND_OFFSET = 2f;
+	private static final float GROUND_OFFSET = 1.8f;
 	
 	private IHeightGenerator heightMap;
 	

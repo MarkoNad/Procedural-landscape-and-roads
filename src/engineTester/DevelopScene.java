@@ -155,7 +155,7 @@ public class DevelopScene {
 	
 	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator,
 			List<Vector3f> waypoints) {
-		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 50f);
+		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 50f, 7f);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);

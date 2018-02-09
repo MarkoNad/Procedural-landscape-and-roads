@@ -14,22 +14,27 @@ public class OBJFileLoader {
     private static final String RES_LOC = "res/";
     
     public static ModelData loadOBJ(String objFileName) {
-    	return loadOBJ(objFileName, false);
+    	return loadOBJ(objFileName, false, false);
     }
  
     /**
      * Loads vertices, textures and normals from .obj file and creates tangents and indices. If 
-     * <code>prescaleToUnitCube</code> is <code>true</code>, vertices are scaled so that the 
-     * object is centered at the origin inside a unit cube (all coordinates are from interval 
-     * [-0.5, 0.5]).
+     * <code>scaleToUnitCube</code> is <code>true</code>, vertices are scaled so that the maximal 
+     * object length along any of the axes is 1. If the object was not previously centered at origin, 
+     * this means that it will still not be at origin - coordinates are not limited to any interval. 
+     * If it is specified that the object is moved to origin, the center is subtracted from it. If 
+     * both options are selected, the object will be centered at origin within the unit cube (all 
+     * coordinates are from interval [-0.5, 0.5]. Also, the object is first moved, then scaled).
      * 
      * @param objFileName .obj file name, without containing folder and extension
-     * @param prescaleToUnitCube if <code>true</code>, vertices are scaled so that the 
+     * @param scaleToUnitCube if <code>true</code>, vertices are scaled so that the 
      * object is centered at the origin inside a unit cube (all coordinates are from interval 
      * [-0.5, 0.5]).
+     * @param moveToOrigin whether to move the object to origin
      * @return the model data
      */
-    public static ModelData loadOBJ(String objFileName, boolean prescaleToUnitCube) {
+    public static ModelData loadOBJ(String objFileName, boolean moveToOrigin,
+    		boolean scaleToUnitCube) {
         List<Vertex> vertices = new ArrayList<Vertex>();
         List<Vector2f> textures = new ArrayList<Vector2f>();
         List<Vector3f> normals = new ArrayList<Vector3f>();
@@ -95,9 +100,7 @@ public class OBJFileLoader {
             }
         }
         
-        if(prescaleToUnitCube) {
-        	scaleModel(vertices, xmax, xmin, ymax, ymin, zmax, zmin);
-        }
+        preprocessModel(moveToOrigin, scaleToUnitCube, vertices, xmax, xmin, ymax, ymin, zmax, zmin);
         
         for(String fLine : faceLines) {
         	String[] currentLine = fLine.split(" ");
@@ -126,23 +129,39 @@ public class OBJFileLoader {
         return data;
     }
 
-	private static void scaleModel(List<Vertex> vertices, float xmax, float xmin, float ymax,
-			float ymin, float zmax, float zmin) {
+	private static void preprocessModel(boolean moveToOrigin, boolean scaleToUnitCube,
+			List<Vertex> vertices, float xmax, float xmin, float ymax, float ymin, float zmax,
+			float zmin) {
+		if(!(moveToOrigin || scaleToUnitCube)) return;
+		
 		final float xLength = xmax - xmin;
 		final float yLength = ymax - ymin;
 		final float zLength = zmax - zmin;
 		
-		final float xOffset = xLength / 2.0f;
-		final float yOffset = yLength / 2.0f;
-		final float zOffset = zLength / 2.0f;
+		final float xCenter = (xmax + xmin) / 2.0f;
+		final float yCenter = (ymax + ymin) / 2.0f;
+		final float zCenter = (zmax + zmin) / 2.0f;
 		
 		final float maxLength = Math.max(Math.max(xLength, yLength), zLength);
 		
 		for(Vertex vertex : vertices) {
 			Vector3f pos = vertex.getPosition();
-			pos.setX((pos.getX() - xOffset) / maxLength);
-			pos.setY((pos.getY() - yOffset) / maxLength);
-			pos.setZ((pos.getZ() - zOffset) / maxLength);
+			
+			float newX = pos.getX();
+			float newY = pos.getY();
+			float newZ = pos.getZ();
+			
+			if(moveToOrigin) newX -= xCenter;
+			if(moveToOrigin) newY -= yCenter;
+			if(moveToOrigin) newZ -= zCenter;
+			
+			if(scaleToUnitCube) newX /= maxLength;
+			if(scaleToUnitCube) newY /= maxLength;
+			if(scaleToUnitCube) newZ /= maxLength;
+
+			pos.setX(newX);
+			pos.setY(newY);
+			pos.setZ(newZ);
 		}
 	}
 
