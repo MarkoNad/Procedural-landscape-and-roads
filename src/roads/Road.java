@@ -14,7 +14,9 @@ import toolbox.Constants;
 public class Road {
 	
 	private static final float DEFAULT_SEGMENT_LEN = 50f; // in OpenGL units
-	private static final float GROUND_OFFSET = 7f; // distance of road from ground, to avoid jittering
+	private static final float DEFAULT_GROUND_OFFSET = 7f;
+	
+	private final float groundOffset; // distance of road from ground, to avoid jittering
 	private Loader loader;
 	private List<Vector3f> trajectory;
 	private IHeightGenerator heightMap;
@@ -24,7 +26,7 @@ public class Road {
 	private RawModel model;
 
 	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap, float width,
-			float textureLen, float segmentLen) {
+			float textureLen, float segmentLen, float groundOffset) {
 		if(waypoints == null || waypoints.size() <= 1) {
 			throw new IllegalArgumentException("At least two waypoints are required.");
 		}
@@ -37,6 +39,7 @@ public class Road {
 		this.heightMap = heightMap;
 		this.width = width;
 		this.textureLen = textureLen;
+		this.groundOffset = groundOffset;
 		
 		this.trajectory = generateTrajectory(waypoints);
 		model = generate();
@@ -44,7 +47,8 @@ public class Road {
 	
 	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap,
 			float width, float textureLen) {
-		this(loader, waypoints, heightMap, width, textureLen, DEFAULT_SEGMENT_LEN);
+		this(loader, waypoints, heightMap, width, textureLen, DEFAULT_SEGMENT_LEN,
+				DEFAULT_GROUND_OFFSET);
 	}
 	
 	private List<Vector3f> generateTrajectory(List<Vector3f> waypoints) {
@@ -107,7 +111,7 @@ public class Road {
 			
 			float leftHeight = heightMap.getHeight(leftx, leftz);
 			float rightHeight = heightMap.getHeight(rightx, rightz);
-			float height = Math.max(leftHeight, rightHeight) + GROUND_OFFSET;
+			float height = Math.max(leftHeight, rightHeight) + groundOffset;
 			float lefty = height;
 			float righty = height;
 			
@@ -195,7 +199,7 @@ public class Road {
 		
 		float leftHeightFirst = heightMap.getHeight(leftVFirst.x, leftVFirst.z);
 		float rightHeightFirst = heightMap.getHeight(rightVFirst.x, rightVFirst.z);
-		float heightFirst = Math.max(leftHeightFirst, rightHeightFirst) + GROUND_OFFSET;
+		float heightFirst = Math.max(leftHeightFirst, rightHeightFirst) + groundOffset;
 		
 		vertices[0] = leftVFirst.x;
 		vertices[1] = heightFirst;
@@ -215,7 +219,7 @@ public class Road {
 		
 		float leftHeightLast = heightMap.getHeight(leftVLast.x, leftVLast.z);
 		float rightHeightLast = heightMap.getHeight(rightVLast.x, rightVLast.z);
-		float heightLast = Math.max(leftHeightLast, rightHeightLast) + GROUND_OFFSET;
+		float heightLast = Math.max(leftHeightLast, rightHeightLast) + groundOffset;
 		
 		vertices[(waypoints.size() - 1) * 3] = leftVLast.x;
 		vertices[(waypoints.size() - 1) * 3 + 1] = heightLast;

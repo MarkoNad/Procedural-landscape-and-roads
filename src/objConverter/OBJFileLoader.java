@@ -12,8 +12,24 @@ import org.lwjgl.util.vector.Vector3f;
 public class OBJFileLoader {
      
     private static final String RES_LOC = "res/";
- 
+    
     public static ModelData loadOBJ(String objFileName) {
+    	return loadOBJ(objFileName, false);
+    }
+ 
+    /**
+     * Loads vertices, textures and normals from .obj file and creates tangents and indices. If 
+     * <code>prescaleToUnitCube</code> is <code>true</code>, vertices are scaled so that the 
+     * object is centered at the origin inside a unit cube (all coordinates are from interval 
+     * [-0.5, 0.5]).
+     * 
+     * @param objFileName .obj file name, without containing folder and extension
+     * @param prescaleToUnitCube if <code>true</code>, vertices are scaled so that the 
+     * object is centered at the origin inside a unit cube (all coordinates are from interval 
+     * [-0.5, 0.5]).
+     * @return the model data
+     */
+    public static ModelData loadOBJ(String objFileName, boolean prescaleToUnitCube) {
         List<Vertex> vertices = new ArrayList<Vertex>();
         List<Vector2f> textures = new ArrayList<Vector2f>();
         List<Vector3f> normals = new ArrayList<Vector3f>();
@@ -30,6 +46,14 @@ public class OBJFileLoader {
 		}
         List<String> faceLines = new ArrayList<>();
         
+        float xmax = 0;
+        float xmin = 0;
+        float ymax = 0;
+        float ymin = 0;
+        float zmax = 0;
+        float zmin = 0;
+        boolean boundariesInitialized = false;
+        
         for(String line : lines) {
         	if (line.startsWith("v ")) {
                 String[] currentLine = line.split(" ");
@@ -38,6 +62,23 @@ public class OBJFileLoader {
                         (float) Float.valueOf(currentLine[3]));
                 Vertex newVertex = new Vertex(vertices.size(), vertex);
                 vertices.add(newVertex);
+                
+                if(!boundariesInitialized) {
+                	xmax = vertex.x;
+                	xmin = vertex.x;
+                	ymax = vertex.y;
+                	ymin = vertex.y;
+                	zmax = vertex.z;
+                	zmin = vertex.z;
+                	boundariesInitialized = true;
+                }
+                
+                xmax = Math.max(xmax, vertex.x);
+                ymax = Math.max(ymax, vertex.y);
+                zmax = Math.max(zmax, vertex.z);
+                xmin = Math.min(xmin, vertex.x);
+                ymin = Math.min(ymin, vertex.y);
+                zmin = Math.min(zmin, vertex.z);
             } else if (line.startsWith("vt ")) {
                 String[] currentLine = line.split(" ");
                 Vector2f texture = new Vector2f((float) Float.valueOf(currentLine[1]),
@@ -52,6 +93,10 @@ public class OBJFileLoader {
             } else if(line.startsWith("f ")) {
             	faceLines.add(line);
             }
+        }
+        
+        if(prescaleToUnitCube) {
+        	scaleModel(vertices, xmax, xmin, ymax, ymin, zmax, zmin);
         }
         
         for(String fLine : faceLines) {
@@ -80,6 +125,26 @@ public class OBJFileLoader {
         ModelData data = new ModelData(verticesArray, texturesArray, normalsArray, tangentsArray, indicesArray, furthest);
         return data;
     }
+
+	private static void scaleModel(List<Vertex> vertices, float xmax, float xmin, float ymax,
+			float ymin, float zmax, float zmin) {
+		final float xLength = xmax - xmin;
+		final float yLength = ymax - ymin;
+		final float zLength = zmax - zmin;
+		
+		final float xOffset = xLength / 2.0f;
+		final float yOffset = yLength / 2.0f;
+		final float zOffset = zLength / 2.0f;
+		
+		final float maxLength = Math.max(Math.max(xLength, yLength), zLength);
+		
+		for(Vertex vertex : vertices) {
+			Vector3f pos = vertex.getPosition();
+			pos.setX((pos.getX() - xOffset) / maxLength);
+			pos.setY((pos.getY() - yOffset) / maxLength);
+			pos.setZ((pos.getZ() - zOffset) / maxLength);
+		}
+	}
 
 	private static Vertex processVertex(String[] vertex, List<Vertex> vertices, List<Integer> indices) {
         int index = Integer.parseInt(vertex[0]) - 1;

@@ -9,6 +9,7 @@ import org.lwjgl.util.vector.Vector3f;
 
 import entities.Camera;
 import entities.Entity;
+import entities.FPSCamera;
 import entities.FloatingCamera;
 import entities.Light;
 import entities.Player;
@@ -37,7 +38,7 @@ public class DebugScene {
 		
 		Loader loader = new Loader();
 		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
-		Camera camera = new FloatingCamera(new Vector3f(0.0f, 100.0f, 0.0f));
+		//Camera camera = new FloatingCamera(new Vector3f(0.0f, 100.0f, 0.0f));
 		MasterRenderer renderer = new MasterRenderer();
 
 		ModelTexture dragonTexture = new ModelTexture(loader.loadTexture("stall"));
@@ -97,10 +98,11 @@ public class DebugScene {
 		
 		// per meter
 		List<Entity> meterElems = new ArrayList<>();
+		final float zOffset = -5000;
 		for(int z = 0; z < 50; z++) {
 			for(int x = 0; x < 50; x++) {
-				float height = heightGenerator.getHeight(x + 100, -z);
-				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z), 0, 0, 0, 0.2f));
+				float height = heightGenerator.getHeight(x + 100, -z + zOffset);
+				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z + zOffset), 0, 0, 0, 0.2f));
 			}
 		}
 //		
@@ -190,9 +192,15 @@ public class DebugScene {
 		Entity crateEntity = new Entity(crate, new Vector3f(-20.0f, 0.0f, 0.0f), 0, 0, 0, 0.05f);
 		Entity boulderEntity = new Entity(boulder, new Vector3f(-30.0f, 0.0f, 0.0f), 0, 0, 0, 1f);
 		
+		Entity barrelEntity2 = new Entity(barrel, new Vector3f(100.0f, heightGenerator.getHeight(100f, -5000f), -5000.0f), 0, 0, 0, 1f);
+		
 		nmEntites.add(barrelEntity);
 		nmEntites.add(crateEntity);
 		nmEntites.add(boulderEntity);
+		
+		nmEntites.add(barrelEntity2);
+		
+		Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator);
 
 		while(!Display.isCloseRequested()) {
 			entity.increaseRotation(0, 0.5f, 0);
@@ -203,6 +211,7 @@ public class DebugScene {
 			barrelEntity.increaseRotation(0, 0.5f, 0);
 			crateEntity.increaseRotation(0, 0.5f, 0);
 			boulderEntity.increaseRotation(0, 0.5f, 0);
+			barrelEntity2.increaseRotation(0, 0.5f, 0);
 			nmEntites.forEach(e -> renderer.processNMEntity(e));
 			
 			renderer.processTerrain(terrain);

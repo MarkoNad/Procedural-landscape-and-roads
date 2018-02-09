@@ -15,6 +15,7 @@ import org.lwjgl.util.vector.Vector3f;
 import controller.LODGrid;
 import entities.Camera;
 import entities.Entity;
+import entities.FPSCamera;
 import entities.FloatingCamera;
 import entities.Light;
 import models.RawModel;
@@ -25,6 +26,7 @@ import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
+import renderEngine.OBJLoader;
 import roads.Road;
 import search.AStar;
 import search.IProblem;
@@ -45,14 +47,13 @@ import toolbox.PoissonDiskSampler;
 import toolbox.Range;
 import toolbox.TriFunction;
 
-public class DevelopScene {
+public class DebugScene2 {
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
 		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
-		Camera camera = new FloatingCamera(new Vector3f(0.0f, 2000.0f, 0.0f), 20f, 100f, 2000f, 300f, 12.5f);
 		MasterRenderer renderer = new MasterRenderer();
 
 		TexturedModel firLOD1 = load("fir_lod1", "fir_lod1", loader);
@@ -61,11 +62,14 @@ public class DevelopScene {
 		TexturedModel chestnutTrunk = load("chestnut_trunk", "chestnut_trunk", loader);
 		TexturedModel firTreetop = load("fir_treetop", "fir_treetop", loader);
 		TexturedModel firTrunk = load("fir_trunk", "fir_trunk", loader);
+		TexturedModel fern = new TexturedModel(OBJLoader.loadObjModel("fern", loader), new ModelTexture(loader.loadTexture("fern")));
 
 		chestnutTreetop.getTexture().setHasTransparency(true);
 		firTreetop.getTexture().setHasTransparency(true);
 		firLOD1.getTexture().setHasTransparency(true);
 		chestnutLOD1.getTexture().setHasTransparency(true);
+		fern.getTexture().setHasTransparency(true);
+		fern.getTexture().setUsesFakeLighting(true);
 		
 		TexturedModelComp firLOD1Comp = new TexturedModelComp(firLOD1);
 		TexturedModelComp chestnutLOD1Comp = new TexturedModelComp(chestnutLOD1);
@@ -73,17 +77,23 @@ public class DevelopScene {
 		TexturedModelComp firLOD0Comp = new TexturedModelComp(firTrunk, firTreetop);
 
 		Map<TexturedModelComp, Float> scaleForModel = new HashMap<>();
-		scaleForModel.put(firLOD0Comp, 60.0f);
-		scaleForModel.put(firLOD1Comp, 140.0f);
-		scaleForModel.put(chestnutLOD0Comp, 15.0f);
-		scaleForModel.put(chestnutLOD1Comp, 190.0f);
+//		scaleForModel.put(firLOD0Comp, 60.0f);
+//		scaleForModel.put(firLOD1Comp, 140.0f);
+//		scaleForModel.put(chestnutLOD0Comp, 15.0f);
+//		scaleForModel.put(chestnutLOD1Comp, 190.0f);
+		scaleForModel.put(firLOD0Comp, 8.0f);
+		scaleForModel.put(firLOD1Comp, 21.0f);
+		scaleForModel.put(chestnutLOD0Comp, 2.0f);
+		scaleForModel.put(chestnutLOD1Comp, 25.0f);
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
-		chestnutLods.put(4000f, chestnutLOD0Comp);
+		//chestnutLods.put(4000f, chestnutLOD0Comp);
+		chestnutLods.put(500f, chestnutLOD0Comp);
 		chestnutLods.put(20000f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
-		firLods.put(4000f, firLOD0Comp);
+		//firLods.put(4000f, firLOD0Comp);
+		firLods.put(500f, firLOD0Comp);
 		firLods.put(20000f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
@@ -107,14 +117,17 @@ public class DevelopScene {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		float width = 20000;
 		float depth = 20000;
-		float xTiles = width / 200f;
-		float zTiles = depth / 200f;
+		//float xTiles = width / 200f;
+		//float zTiles = depth / 200f;
+		float xTiles = width / 5f;
+		float zTiles = depth / 5f;
 		float vertsPerMeter = 0.025f;
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
 				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
-		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 130f, 650f, distribution, 1);
+		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 130f, 650f, distribution, 1);
+		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 650f, distribution, 1);
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
 		
@@ -128,13 +141,56 @@ public class DevelopScene {
 		//List<Entity> entities = new ArrayList<>();
 		//roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeight(p.x, p.z), p.z), 0f, 0f, 0f, 10f)));
 		
+		Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 2f, 5f, 50f, 50f, 12.5f);
+		//Camera camera = new FloatingCamera(new Vector3f(100.0f, 0.0f, -5000.0f));
+		
+		List<Entity> terrainGridElems = terrainVerticesGrid(fern, heightGenerator, width, depth, vertsPerMeter);
+		List<Entity> oglGridElems = oglUnitGrid(fern, heightGenerator);
+		
+		List<Entity> nmEntites = new ArrayList<>();
+
+		TexturedModel barrel = loadNM(loader, "barrel", "barrel", "barrelNormal");
+		TexturedModel crate = loadNM(loader, "crate", "crate", "crateNormal");
+		TexturedModel boulder = loadNM(loader, "boulder", "boulder", "boulderNormal");
+		
+		barrel.getTexture().setShineDamper(10);
+		barrel.getTexture().setReflectivity(0.5f);
+		barrel.getTexture().setUsesFakeLighting(false);
+		crate.getTexture().setShineDamper(10);
+		crate.getTexture().setReflectivity(0.5f);
+		crate.getTexture().setUsesFakeLighting(false);
+		boulder.getTexture().setShineDamper(10);
+		boulder.getTexture().setReflectivity(0.5f);
+		boulder.getTexture().setUsesFakeLighting(false);
+		
+		Entity barrelEntity = new Entity(barrel, new Vector3f(-10.0f, 0.0f, 0.0f), 0, 0, 0, 1f);
+		Entity crateEntity = new Entity(crate, new Vector3f(-20.0f, 0.0f, 0.0f), 0, 0, 0, 0.05f);
+		Entity boulderEntity = new Entity(boulder, new Vector3f(-30.0f, 0.0f, 0.0f), 0, 0, 0, 1f);
+		
+		Entity barrelEntity2 = new Entity(barrel, new Vector3f(100.0f, heightGenerator.getHeight(100f, -5000f) + 1f, -5000.0f), 0, 0, 0, 0.15f);
+		
+		nmEntites.add(barrelEntity);
+		nmEntites.add(crateEntity);
+		nmEntites.add(boulderEntity);
+		
+		nmEntites.add(barrelEntity2);
+		
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
+			barrelEntity.increaseRotation(0, 0.5f, 0);
+			crateEntity.increaseRotation(0, 0.5f, 0);
+			boulderEntity.increaseRotation(0, 0.5f, 0);
+			barrelEntity2.increaseRotation(0, 0.5f, 0);
+			
 			renderer.processTerrain(terrain);
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeight(p.x, p.z), p.z), 0f, 0f, 0f, 10f)));
+			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeight(p.x, p.z), p.z), 0f, 0f, 0f, 2f)));
+			entities.addAll(terrainGridElems);
+			entities.addAll(oglGridElems);
+			
 			entities.forEach(e -> renderer.processEntity(e));
+			nmEntites.forEach(e -> renderer.processNMEntity(e));
 			renderer.processEntity(road);
 			renderer.render(light, camera);
 			
@@ -144,6 +200,37 @@ public class DevelopScene {
 		renderer.cleanUp();
 		loader.cleanUp();
 		DisplayManager.closeDisplay();
+	}
+
+	protected static List<Entity> oglUnitGrid(TexturedModel fern, IHeightGenerator heightGenerator) {
+		List<Entity> meterElems = new ArrayList<>();
+		final float zOffset = -5000;
+		for(int z = 0; z < 50; z++) {
+			for(int x = 0; x < 50; x++) {
+				float height = heightGenerator.getHeight(x + 100, -z + zOffset);
+				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z + zOffset), 0, 0, 0, 0.1f));
+			}
+		}
+		return meterElems;
+	}
+
+	protected static List<Entity> terrainVerticesGrid(TexturedModel fern, IHeightGenerator heightGenerator, float width,
+			float depth, float vertsPerMeter) {
+		// per vertex
+		List<Entity> gridElems = new ArrayList<>();
+		int xVertices = (int) (width * vertsPerMeter);
+		int zVertices = (int) (depth * vertsPerMeter);
+		final float zOffset = -5000;
+		for(int z = 0; z < 50; z++) {
+			for(int x = 0; x < 50; x++) {
+				float xcoord = x / (float)(xVertices - 1) * width;
+				float zcoord = -z / (float)(zVertices - 1) * depth + zOffset;
+				float height = heightGenerator.getHeight(xcoord, zcoord);
+				gridElems.add(new Entity(fern, new Vector3f(xcoord, height, zcoord), 0, 0, 0, 0.5f));
+			}
+		}
+		
+		return gridElems;
 	}
 	
 	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
@@ -155,7 +242,8 @@ public class DevelopScene {
 	
 	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator,
 			List<Vector3f> waypoints) {
-		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 50f);
+		//Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 50f);
+		Road road = new Road(loader, waypoints, heightGenerator, 10, 20, 5f, 0.1f);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
@@ -272,6 +360,12 @@ public class DevelopScene {
 		}
 		
 		return waypoints;
+	}
+	
+	private static TexturedModel loadNM(Loader loader, String modelFile, String textureFile, String normalMapFile) {
+		ModelData data = OBJFileLoader.loadOBJ(modelFile);
+		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getTangents(), data.getIndices());
+		return new TexturedModel(model, new ModelTexture(loader.loadTexture(textureFile), loader.loadTexture(normalMapFile)));
 	}
 	
 }
