@@ -46,7 +46,7 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
-import toolbox.Constants;
+import toolbox.Globals;
 import toolbox.Point2Df;
 import toolbox.PoissonDiskSampler;
 import toolbox.QueueProduct;
@@ -370,7 +370,7 @@ public class DevelopScene {
 				double deltaSlope = Vector3f.angle(normal1, normal2);
 				double deltaSlopeCost = deltaSlope * 1000.0;
 				
-				double slope = Vector3f.angle(Constants.Y_AXIS, normal2);
+				double slope = Vector3f.angle(Globals.Y_AXIS, normal2);
 				double slopeCost = slope * 10_000.0;
 				
 				totalCost += distanceCost;

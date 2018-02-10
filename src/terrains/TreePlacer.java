@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.lwjgl.util.vector.Vector3f;
 
@@ -17,12 +19,14 @@ import toolbox.Sampler;
 
 public class TreePlacer {
 	
+	private static final Logger LOGGER = Logger.getLogger(TreePlacer.class.getName());
+	
 	public static final QueueProduct<Map<TreeType, List<Vector3f>>> THREAD_POISON = new QueueProduct<>(null);
 	
 	private static final int samplerQueueSize = 5000;
 	private static final int outQueueSize = 5000;
 	
-	private static final int BATCH_SIZE = 500;
+	private static final int BATCH_SIZE = 1000;
 
 	private IHeightGenerator heightMap;
 	private BiomesMap biomesMap;
@@ -46,8 +50,8 @@ public class TreePlacer {
 			public void run() {
 				try {
 					sampler.sample(BATCH_SIZE, inQueue);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+				} catch (InterruptedException ex) {
+					LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
 					System.exit(1);
 				}
 			}
@@ -63,16 +67,17 @@ public class TreePlacer {
 						
 						if(product == PoissonDiskSampler.THREAD_POISON) {
 							outQueue.put(TreePlacer.THREAD_POISON);
-							System.out.println("Tree placer received poison.");
-							System.out.println("Tree placer put poison.");
+							LOGGER.log(Level.FINE, "Tree placer received POISON.");
+							LOGGER.log(Level.FINE, "Tree placer put POISON.");
 							break;
 						}
 						
 						locations = product.getValue();
-						System.out.println("Placer taken from queue " + locations.size() +
+						
+						LOGGER.log(Level.FINE, "Placer taken from queue " + locations.size() +
 								" points. In queue size: " + inQueue.size());
-					} catch (InterruptedException e) {
-						e.printStackTrace();
+					} catch (InterruptedException ex) {
+						LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
 						System.exit(1);
 					}
 					
@@ -89,14 +94,13 @@ public class TreePlacer {
 					
 					try {
 						outQueue.put(new QueueProduct<>(locationsPerType));
-						System.out.println("Placer put to queue " + locationsPerType.values().stream().mapToInt(l -> l.size()).sum() +
-								" points. Out queue size: " + outQueue.size());
-					} catch (InterruptedException e) {
-						e.printStackTrace();
+						LOGGER.log(Level.FINE, "Placer put to queue " +
+										locationsPerType.values().stream().mapToInt(l -> l.size()).sum() +
+										" points. Out queue size: " + outQueue.size());
+					} catch (InterruptedException ex) {
+						LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
 						System.exit(1);
 					}
-					
-					System.out.println("Placer in loop.");
 				}
 			}
 		});

@@ -1,6 +1,5 @@
 package engineTester;
 
-import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -10,9 +9,11 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.function.BiFunction;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -21,7 +22,6 @@ import controller.LODGrid;
 import entities.Camera;
 import entities.Entity;
 import entities.FPSCamera;
-import entities.FloatingCamera;
 import entities.Light;
 import models.RawModel;
 import models.TexturedModel;
@@ -31,7 +31,6 @@ import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
-import renderEngine.OBJLoader;
 import roads.Road;
 import search.AStar;
 import search.IProblem;
@@ -46,7 +45,7 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
-import toolbox.Constants;
+import toolbox.Globals;
 import toolbox.Point2Df;
 import toolbox.PoissonDiskSampler;
 import toolbox.QueueProduct;
@@ -54,6 +53,7 @@ import toolbox.Range;
 import toolbox.TriFunction;
 
 public class DebugScene2 {
+	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
@@ -84,36 +84,16 @@ public class DebugScene2 {
 		TexturedModelComp firLOD0Comp = new TexturedModelComp(firTrunk, firTreetop);
 
 		Map<TexturedModelComp, Float> scaleForModel = new HashMap<>();
-//		scaleForModel.put(firLOD0Comp, 60.0f);
-//		scaleForModel.put(firLOD1Comp, 140.0f);
-//		scaleForModel.put(chestnutLOD0Comp, 15.0f);
-//		scaleForModel.put(chestnutLOD1Comp, 190.0f);
-		
-//		scaleForModel.put(firLOD0Comp, 8.0f);
-//		scaleForModel.put(firLOD1Comp, 21.0f);
-//		scaleForModel.put(chestnutLOD0Comp, 2.0f);
-//		scaleForModel.put(chestnutLOD1Comp, 25.0f);
-		
 		scaleForModel.put(firLOD0Comp, 10.0f);
 		scaleForModel.put(firLOD1Comp, 10.0f);
 		scaleForModel.put(chestnutLOD0Comp, 15.0f);
 		scaleForModel.put(chestnutLOD1Comp, 15.0f);
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
-		//chestnutLods.put(4000f, chestnutLOD0Comp);
-		
-//		chestnutLods.put(500f, chestnutLOD0Comp);
-//		chestnutLods.put(20000f, chestnutLOD1Comp);
-		
 		chestnutLods.put(200f, chestnutLOD0Comp);
 		chestnutLods.put(2000f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
-		//firLods.put(4000f, firLOD0Comp);
-
-//		firLods.put(500f, firLOD0Comp);
-//		firLods.put(20000f, firLOD1Comp);
-		
 		firLods.put(200f, firLOD0Comp);
 		firLods.put(2000f, firLOD1Comp);
 		
@@ -138,8 +118,6 @@ public class DebugScene2 {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		float width = 20000;
 		float depth = 20000;
-		//float xTiles = width / 200f;
-		//float zTiles = depth / 200f;
 		float xTiles = width / 5f;
 		float zTiles = depth / 5f;
 		float vertsPerMeter = 0.025f;
@@ -147,35 +125,17 @@ public class DebugScene2 {
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
 				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
 		double terrainDuration = (System.nanoTime() - startTime) / 1e9;
-		System.out.println("Terrain: " + terrainDuration + "s");
+		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
-		//BiFunction<Float, Float, Float> distribution = (x, z) -> 0.0f;
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 130f, 650f, distribution, 1);
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 650f, distribution, 1);
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 5000, -5000, 10f, 50f, distribution, 1);
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 50f, distribution, 1, 30, 10_000_000);
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 5000, -5000, 10f, 50f, distribution, 1, 30, 10_000_000);
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
-		
-		startTime = System.nanoTime();
-		ExecutorService pool = Executors.newFixedThreadPool(3, new ThreadFactory() {	
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread thread = new Thread(r);
-				thread.setDaemon(true);
-				return thread;
-			}
-		});
+		ExecutorService pool = Globals.getThreadPool();
 		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
-		//Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
-		double locationsDuration = (System.nanoTime() - startTime) / 1e9;
-		//System.out.println("Location computation: " + locationsDuration + " s, " + locationsPerType.values().stream().mapToInt(c -> c.size()).sum() + " locations");
 
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
 		grid.addToGrid(locationsPerType, pool);
-		//grid.addToGrid(locationsPerType);
 		
 		List<Vector3f> roadWaypoints = findPath(heightGenerator);
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints);
@@ -370,7 +330,7 @@ public class DebugScene2 {
 				double deltaSlope = Vector3f.angle(normal1, normal2);
 				double deltaSlopeCost = deltaSlope * 1000.0;
 				
-				double slope = Vector3f.angle(Constants.Y_AXIS, normal2);
+				double slope = Vector3f.angle(Globals.Y_AXIS, normal2);
 				double slopeCost = slope * 10_000.0;
 				
 				totalCost += distanceCost;
@@ -397,20 +357,19 @@ public class DebugScene2 {
 		Node<Point2Df> goal = astar.search();
 		
 		double duration = (System.nanoTime() - start) * 1e-9;
-		System.out.println("Astar duration:" + duration);
+		LOGGER.log(Level.FINE, "Astar duration:" + duration);
 		
 		List<Vector3f> waypoints = new ArrayList<>();
 		
 		for(Point2Df point : goal.reconstructPath()) {
 			waypoints.add(new Vector3f(point.getX(), 0f, point.getZ()));
-			System.out.println(point);
+			LOGGER.log(Level.FINER, "A star point: " + point.toString());
 		}
 		
 		return waypoints;
 	}
 	
 	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
-		//ModelData data = OBJFileLoader.loadOBJ(objFile);
 		ModelData data = OBJFileLoader.loadOBJ(objFile, false, true);
 		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(),
 				data.getNormals(), data.getIndices());
@@ -418,7 +377,6 @@ public class DebugScene2 {
 	}
 	
 	private static TexturedModel loadNM(Loader loader, String modelFile, String textureFile, String normalMapFile) {
-		//ModelData data = OBJFileLoader.loadOBJ(modelFile);
 		ModelData data = OBJFileLoader.loadOBJ(modelFile, false, true);
 		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getTangents(), data.getIndices());
 		return new TexturedModel(model, new ModelTexture(loader.loadTexture(textureFile), loader.loadTexture(normalMapFile)));

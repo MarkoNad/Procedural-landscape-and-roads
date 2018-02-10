@@ -7,10 +7,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BiFunction;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PoissonDiskSampler extends Sampler {
 	
 	public static final QueueProduct<List<Point2D.Float>> THREAD_POISON = new QueueProduct<>(null);
+	
+	private static final Logger LOGGER = Logger.getLogger(PoissonDiskSampler.class.getName());
 	
 	/** Number of points in the annulus of currently active one. */
 	private static final int DEFAULT_POINTS_TO_GENERATE = 30;
@@ -41,8 +45,6 @@ public class PoissonDiskSampler extends Sampler {
 	private final int pointsToGenerate;
 	private final int maxPoints;
 	private final Random random;
-	
-	private boolean samplingDone;
 
 	public PoissonDiskSampler(float x0, float z0, float x1, float z1, float minInnerRadius,
 			float maxInnerRadius, BiFunction<Float, Float, Float> distribution, long seed,
@@ -64,7 +66,6 @@ public class PoissonDiskSampler extends Sampler {
 		this.cellSize = (float) (maxInnerRadius / Math.sqrt(2));
 		this.gridWidth = (int) (dimensions.x / cellSize) + 1;
 		this.gridHeight = (int) (dimensions.y / cellSize) + 1;
-		samplingDone = false;
 	}
 
 	public PoissonDiskSampler(float x0, float z0, float x1, float z1, float minInnerRadius,
@@ -74,14 +75,7 @@ public class PoissonDiskSampler extends Sampler {
 	}
 	
 	@Override
-	public boolean samplingDone() {
-		return samplingDone;
-	}
-	
-	@Override
 	public List<Point2D.Float> sample() {
-		samplingDone = false;
-		
 		List<Point2D.Float> activeList = new LinkedList<>();
 		List<Point2D.Float> pointList = new LinkedList<>();
 		@SuppressWarnings("unchecked")
@@ -110,14 +104,12 @@ public class PoissonDiskSampler extends Sampler {
 			}
 		}
 
-		samplingDone = true;
 		return pointList;
 	}
 	
 	@Override
 	public void sample(int batchSize, BlockingQueue<QueueProduct<List<Point2D.Float>>> batchQueue)
 			throws InterruptedException {
-		samplingDone = false;
 		
 		List<Point2D.Float> activeList = new LinkedList<>();
 		List<Point2D.Float> pointList = new LinkedList<>();
@@ -142,7 +134,10 @@ public class PoissonDiskSampler extends Sampler {
 				found |= addNextPoint(grid, activeList, pointList, point);
 				if(pointList.size() == batchSize) {
 					batchQueue.put(new QueueProduct<>(pointList));
-					System.out.println("Sampler put to queue " + pointList.size() + " points. Queue size: " + batchQueue.size());
+					
+					LOGGER.log(Level.FINE, "Sampler put to queue " + pointList.size() +
+							" points. Queue size: " + batchQueue.size());
+					
 					pointList = new LinkedList<>();
 				}
 			}
@@ -158,10 +153,7 @@ public class PoissonDiskSampler extends Sampler {
 		
 		batchQueue.put(PoissonDiskSampler.THREAD_POISON);
 		
-		System.out.println("Sampler put POISON");
-		
-		samplingDone = true;
-		System.out.println("Sampler done.");
+		LOGGER.log(Level.FINE, "Sampler done - putting POISON to queue.");
 	}
 
 	private boolean addNextPoint(List<Point2D.Float>[][] grid, List<Point2D.Float> activeList,
