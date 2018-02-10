@@ -33,7 +33,8 @@ public class TreePlacer {
 			@Override
 			public void run() {
 				try {
-					sampler.sample(10000, inQueue);
+					//sampler.sample(10000, inQueue);
+					sampler.sample(100, inQueue); // TODO
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 					System.exit(1);
