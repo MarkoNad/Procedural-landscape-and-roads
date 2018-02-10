@@ -49,6 +49,7 @@ import textures.TerrainTexturePack;
 import toolbox.Constants;
 import toolbox.Point2Df;
 import toolbox.PoissonDiskSampler;
+import toolbox.QueueProduct;
 import toolbox.Range;
 import toolbox.TriFunction;
 
@@ -167,7 +168,7 @@ public class DevelopScene {
 				return thread;
 			}
 		});
-		BlockingQueue<Map<TreeType, List<Vector3f>>> locationsPerType = placer.computeLocationsInBackground(pool);
+		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
 		//Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
 		double locationsDuration = (System.nanoTime() - startTime) / 1e9;
 		//System.out.println("Location computation: " + locationsDuration + " s, " + locationsPerType.values().stream().mapToInt(c -> c.size()).sum() + " locations");

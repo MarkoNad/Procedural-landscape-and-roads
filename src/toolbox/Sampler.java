@@ -16,7 +16,7 @@ public abstract class Sampler {
 	}
 
 	public abstract List<Point2D.Float> sample();
-	public abstract void sample(int batchSize, BlockingQueue<List<Point2D.Float>> batchQueue)
+	public abstract void sample(int batchSize, BlockingQueue<QueueProduct<List<Point2D.Float>>> batchQueue)
 			throws InterruptedException;
 	public abstract boolean samplingDone();
 	

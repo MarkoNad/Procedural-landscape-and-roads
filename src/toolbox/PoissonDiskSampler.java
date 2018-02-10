@@ -10,6 +10,8 @@ import java.util.function.BiFunction;
 
 public class PoissonDiskSampler extends Sampler {
 	
+	public static final QueueProduct<List<Point2D.Float>> THREAD_POISON = new QueueProduct<>(null);
+	
 	/** Number of points in the annulus of currently active one. */
 	private static final int DEFAULT_POINTS_TO_GENERATE = 30;
 	
@@ -113,7 +115,7 @@ public class PoissonDiskSampler extends Sampler {
 	}
 	
 	@Override
-	public void sample(int batchSize, BlockingQueue<List<Point2D.Float>> batchQueue)
+	public void sample(int batchSize, BlockingQueue<QueueProduct<List<Point2D.Float>>> batchQueue)
 			throws InterruptedException {
 		samplingDone = false;
 		
@@ -139,7 +141,7 @@ public class PoissonDiskSampler extends Sampler {
 			for(int k = 0; k < pointsToGenerate; k++) {
 				found |= addNextPoint(grid, activeList, pointList, point);
 				if(pointList.size() == batchSize) {
-					batchQueue.put(pointList);
+					batchQueue.put(new QueueProduct<>(pointList));
 					System.out.println("Sampler put to queue " + pointList.size() + " points. Queue size: " + batchQueue.size());
 					pointList = new LinkedList<>();
 				}
@@ -151,8 +153,12 @@ public class PoissonDiskSampler extends Sampler {
 		}
 		
 		if(!pointList.isEmpty()) {
-			batchQueue.put(pointList);
+			batchQueue.put(new QueueProduct<>(pointList));
 		}
+		
+		batchQueue.put(PoissonDiskSampler.THREAD_POISON);
+		
+		System.out.println("Sampler put POISON");
 		
 		samplingDone = true;
 		System.out.println("Sampler done.");

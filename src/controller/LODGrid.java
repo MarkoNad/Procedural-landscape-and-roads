@@ -209,7 +209,9 @@ import org.lwjgl.util.vector.Vector3f;
 import entities.Entity;
 import models.TexturedModel;
 import models.TexturedModelComp;
+import terrains.TreePlacer;
 import terrains.TreeType;
+import toolbox.QueueProduct;
 
 public class LODGrid {
 	
@@ -257,14 +259,21 @@ public class LODGrid {
 		}
 	}
 	
-	public void addToGrid(BlockingQueue<Map<TreeType, List<Vector3f>>> locationsPerTypeQueue, ExecutorService executor) {
+	public void addToGrid(BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerTypeQueue, ExecutorService executor) {
 		executor.submit(new Runnable() {
 			@Override
 			public void run() {
 				while(true) {
 					Map<TreeType, List<Vector3f>> locationsPerType = null;
 					try {
-						locationsPerType = locationsPerTypeQueue.take();
+						QueueProduct<Map<TreeType, List<Vector3f>>> product = locationsPerTypeQueue.take();
+						
+						if(product == TreePlacer.THREAD_POISON) {
+							System.out.println("LOD grid received poison.");
+							break;
+						}
+						
+						locationsPerType = product.getValue();
 						System.out.println("Grid taken from queue " + locationsPerType.values().stream().mapToInt(l -> l.size()).sum() +
 								" points. Queue size: " + locationsPerTypeQueue.size());
 					} catch (InterruptedException e) {
