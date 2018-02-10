@@ -12,8 +12,29 @@ import org.lwjgl.util.vector.Vector3f;
 public class OBJFileLoader {
      
     private static final String RES_LOC = "res/";
- 
+    
     public static ModelData loadOBJ(String objFileName) {
+    	return loadOBJ(objFileName, false, false);
+    }
+ 
+    /**
+     * Loads vertices, textures and normals from .obj file and creates tangents and indices. If 
+     * <code>scaleToUnitCube</code> is <code>true</code>, vertices are scaled so that the maximal 
+     * object length along any of the axes is 1. If the object was not previously centered at origin, 
+     * this means that it will still not be at origin - coordinates are not limited to any interval. 
+     * If it is specified that the object is moved to origin, the center is subtracted from it. If 
+     * both options are selected, the object will be centered at origin within the unit cube (all 
+     * coordinates are from interval [-0.5, 0.5]. Also, the object is first moved, then scaled).
+     * 
+     * @param objFileName .obj file name, without containing folder and extension
+     * @param scaleToUnitCube if <code>true</code>, vertices are scaled so that the 
+     * object is centered at the origin inside a unit cube (all coordinates are from interval 
+     * [-0.5, 0.5]).
+     * @param moveToOrigin whether to move the object to origin
+     * @return the model data
+     */
+    public static ModelData loadOBJ(String objFileName, boolean moveToOrigin,
+    		boolean scaleToUnitCube) {
         List<Vertex> vertices = new ArrayList<Vertex>();
         List<Vector2f> textures = new ArrayList<Vector2f>();
         List<Vector3f> normals = new ArrayList<Vector3f>();
@@ -30,6 +51,14 @@ public class OBJFileLoader {
 		}
         List<String> faceLines = new ArrayList<>();
         
+        float xmax = 0;
+        float xmin = 0;
+        float ymax = 0;
+        float ymin = 0;
+        float zmax = 0;
+        float zmin = 0;
+        boolean boundariesInitialized = false;
+        
         for(String line : lines) {
         	if (line.startsWith("v ")) {
                 String[] currentLine = line.split(" ");
@@ -38,6 +67,23 @@ public class OBJFileLoader {
                         (float) Float.valueOf(currentLine[3]));
                 Vertex newVertex = new Vertex(vertices.size(), vertex);
                 vertices.add(newVertex);
+                
+                if(!boundariesInitialized) {
+                	xmax = vertex.x;
+                	xmin = vertex.x;
+                	ymax = vertex.y;
+                	ymin = vertex.y;
+                	zmax = vertex.z;
+                	zmin = vertex.z;
+                	boundariesInitialized = true;
+                }
+                
+                xmax = Math.max(xmax, vertex.x);
+                ymax = Math.max(ymax, vertex.y);
+                zmax = Math.max(zmax, vertex.z);
+                xmin = Math.min(xmin, vertex.x);
+                ymin = Math.min(ymin, vertex.y);
+                zmin = Math.min(zmin, vertex.z);
             } else if (line.startsWith("vt ")) {
                 String[] currentLine = line.split(" ");
                 Vector2f texture = new Vector2f((float) Float.valueOf(currentLine[1]),
@@ -53,6 +99,8 @@ public class OBJFileLoader {
             	faceLines.add(line);
             }
         }
+        
+        preprocessModel(moveToOrigin, scaleToUnitCube, vertices, xmax, xmin, ymax, ymin, zmax, zmin);
         
         for(String fLine : faceLines) {
         	String[] currentLine = fLine.split(" ");
@@ -80,6 +128,42 @@ public class OBJFileLoader {
         ModelData data = new ModelData(verticesArray, texturesArray, normalsArray, tangentsArray, indicesArray, furthest);
         return data;
     }
+
+	private static void preprocessModel(boolean moveToOrigin, boolean scaleToUnitCube,
+			List<Vertex> vertices, float xmax, float xmin, float ymax, float ymin, float zmax,
+			float zmin) {
+		if(!(moveToOrigin || scaleToUnitCube)) return;
+		
+		final float xLength = xmax - xmin;
+		final float yLength = ymax - ymin;
+		final float zLength = zmax - zmin;
+		
+		final float xCenter = (xmax + xmin) / 2.0f;
+		final float yCenter = (ymax + ymin) / 2.0f;
+		final float zCenter = (zmax + zmin) / 2.0f;
+		
+		final float maxLength = Math.max(Math.max(xLength, yLength), zLength);
+		
+		for(Vertex vertex : vertices) {
+			Vector3f pos = vertex.getPosition();
+			
+			float newX = pos.getX();
+			float newY = pos.getY();
+			float newZ = pos.getZ();
+			
+			if(moveToOrigin) newX -= xCenter;
+			if(moveToOrigin) newY -= yCenter;
+			if(moveToOrigin) newZ -= zCenter;
+			
+			if(scaleToUnitCube) newX /= maxLength;
+			if(scaleToUnitCube) newY /= maxLength;
+			if(scaleToUnitCube) newZ /= maxLength;
+
+			pos.setX(newX);
+			pos.setY(newY);
+			pos.setZ(newZ);
+		}
+	}
 
 	private static Vertex processVertex(String[] vertex, List<Vertex> vertices, List<Integer> indices) {
         int index = Integer.parseInt(vertex[0]) - 1;

@@ -9,12 +9,14 @@ import models.RawModel;
 import renderEngine.Loader;
 import terrains.IHeightGenerator;
 import toolbox.CatmullRomSpline;
-import toolbox.Constants;
+import toolbox.Globals;
 
 public class Road {
 	
 	private static final float DEFAULT_SEGMENT_LEN = 50f; // in OpenGL units
-	private static final float GROUND_OFFSET = 7f; // distance of road from ground, to avoid jittering
+	private static final float DEFAULT_GROUND_OFFSET = 7f;
+	
+	private final float groundOffset; // distance of road from ground, to avoid jittering
 	private Loader loader;
 	private List<Vector3f> trajectory;
 	private IHeightGenerator heightMap;
@@ -24,7 +26,7 @@ public class Road {
 	private RawModel model;
 
 	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap, float width,
-			float textureLen, float segmentLen) {
+			float textureLen, float segmentLen, float groundOffset) {
 		if(waypoints == null || waypoints.size() <= 1) {
 			throw new IllegalArgumentException("At least two waypoints are required.");
 		}
@@ -37,6 +39,7 @@ public class Road {
 		this.heightMap = heightMap;
 		this.width = width;
 		this.textureLen = textureLen;
+		this.groundOffset = groundOffset;
 		
 		this.trajectory = generateTrajectory(waypoints);
 		model = generate();
@@ -44,7 +47,8 @@ public class Road {
 	
 	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap,
 			float width, float textureLen) {
-		this(loader, waypoints, heightMap, width, textureLen, DEFAULT_SEGMENT_LEN);
+		this(loader, waypoints, heightMap, width, textureLen, DEFAULT_SEGMENT_LEN,
+				DEFAULT_GROUND_OFFSET);
 	}
 	
 	private List<Vector3f> generateTrajectory(List<Vector3f> waypoints) {
@@ -87,8 +91,8 @@ public class Road {
 			nextDirection.y = 0;
 			
 			// vector pointing to the right of the prev and next directions, used for centerline
-			Vector3f prevRight = (Vector3f) Vector3f.cross(prevDirection, Constants.Y_AXIS, null).normalise(null);
-			Vector3f nextRight = (Vector3f) Vector3f.cross(nextDirection, Constants.Y_AXIS, null).normalise(null);
+			Vector3f prevRight = (Vector3f) Vector3f.cross(prevDirection, Globals.Y_AXIS, null).normalise(null);
+			Vector3f nextRight = (Vector3f) Vector3f.cross(nextDirection, Globals.Y_AXIS, null).normalise(null);
 			
 			// centerline of angle between prev and next direction vectors, points to the right
 			Vector3f centerlineDir = Vector3f.add(prevRight, nextRight, null).normalise(null);
@@ -107,7 +111,7 @@ public class Road {
 			
 			float leftHeight = heightMap.getHeight(leftx, leftz);
 			float rightHeight = heightMap.getHeight(rightx, rightz);
-			float height = Math.max(leftHeight, rightHeight) + GROUND_OFFSET;
+			float height = Math.max(leftHeight, rightHeight) + groundOffset;
 			float lefty = height;
 			float righty = height;
 			
@@ -134,8 +138,8 @@ public class Road {
 			Vector3f prevDirection = Vector3f.sub(curr, prev, null).normalise(null);
 			Vector3f nextDirection = Vector3f.sub(next, curr, null).normalise(null);
 			
-			Vector3f prevRight = (Vector3f) Vector3f.cross(prevDirection, Constants.Y_AXIS, null).normalise(null);
-			Vector3f nextRight = (Vector3f) Vector3f.cross(nextDirection, Constants.Y_AXIS, null).normalise(null);
+			Vector3f prevRight = (Vector3f) Vector3f.cross(prevDirection, Globals.Y_AXIS, null).normalise(null);
+			Vector3f nextRight = (Vector3f) Vector3f.cross(nextDirection, Globals.Y_AXIS, null).normalise(null);
 			
 			Vector3f prevUp = (Vector3f) Vector3f.cross(prevRight, prevDirection, null).normalise(null);
 			Vector3f nextUp = (Vector3f) Vector3f.cross(nextRight, nextDirection, null).normalise(null);
@@ -189,13 +193,13 @@ public class Road {
 	private void setupEdgeVertices(List<Vector3f> waypoints, float[] vertices) {
 		// first waypoint vertices
 		Vector3f directionFirst = Vector3f.sub(waypoints.get(1), waypoints.get(0), null);
-		Vector3f rightFirst = (Vector3f) Vector3f.cross(directionFirst, Constants.Y_AXIS, null).normalise(null).scale(0.5f * width);
+		Vector3f rightFirst = (Vector3f) Vector3f.cross(directionFirst, Globals.Y_AXIS, null).normalise(null).scale(0.5f * width);
 		Vector3f leftVFirst = Vector3f.add(rightFirst.negate(null), waypoints.get(0), null);
 		Vector3f rightVFirst = Vector3f.add(rightFirst, waypoints.get(0), null);
 		
 		float leftHeightFirst = heightMap.getHeight(leftVFirst.x, leftVFirst.z);
 		float rightHeightFirst = heightMap.getHeight(rightVFirst.x, rightVFirst.z);
-		float heightFirst = Math.max(leftHeightFirst, rightHeightFirst) + GROUND_OFFSET;
+		float heightFirst = Math.max(leftHeightFirst, rightHeightFirst) + groundOffset;
 		
 		vertices[0] = leftVFirst.x;
 		vertices[1] = heightFirst;
@@ -209,13 +213,13 @@ public class Road {
 		
 		// last waypoint vertices
 		Vector3f directionLast = Vector3f.sub(waypoints.get(waypoints.size()-1), waypoints.get(waypoints.size()-2), null);
-		Vector3f rightLast = (Vector3f) Vector3f.cross(directionLast, Constants.Y_AXIS, null).normalise(null).scale(0.5f * width);
+		Vector3f rightLast = (Vector3f) Vector3f.cross(directionLast, Globals.Y_AXIS, null).normalise(null).scale(0.5f * width);
 		Vector3f leftVLast = Vector3f.add(rightLast.negate(null), waypoints.get(waypoints.size()-1), null);
 		Vector3f rightVLast = Vector3f.add(rightLast, waypoints.get(waypoints.size()-1), null);
 		
 		float leftHeightLast = heightMap.getHeight(leftVLast.x, leftVLast.z);
 		float rightHeightLast = heightMap.getHeight(rightVLast.x, rightVLast.z);
-		float heightLast = Math.max(leftHeightLast, rightHeightLast) + GROUND_OFFSET;
+		float heightLast = Math.max(leftHeightLast, rightHeightLast) + groundOffset;
 		
 		vertices[(waypoints.size() - 1) * 3] = leftVLast.x;
 		vertices[(waypoints.size() - 1) * 3 + 1] = heightLast;
@@ -230,7 +234,7 @@ public class Road {
 	private void setupEdgeNormals(List<Vector3f> waypoints, float[] normals) {
 		// first waypoint normals
 		Vector3f directionFirst = Vector3f.sub(waypoints.get(1), waypoints.get(0), null);
-		Vector3f rightFirst = (Vector3f) Vector3f.cross(directionFirst, Constants.Y_AXIS, null).normalise(null);
+		Vector3f rightFirst = (Vector3f) Vector3f.cross(directionFirst, Globals.Y_AXIS, null).normalise(null);
 		Vector3f normalFirst = (Vector3f) Vector3f.cross(rightFirst, directionFirst, null).normalise(null);
 		
 		normals[0] = normalFirst.x;
@@ -242,7 +246,7 @@ public class Road {
 		
 		// last waypoint normals
 		Vector3f directionLast = Vector3f.sub(waypoints.get(waypoints.size() - 1), waypoints.get(waypoints.size() - 2), null);
-		Vector3f rightLast = (Vector3f) Vector3f.cross(directionLast, Constants.Y_AXIS, null).normalise(null);
+		Vector3f rightLast = (Vector3f) Vector3f.cross(directionLast, Globals.Y_AXIS, null).normalise(null);
 		Vector3f normalLast = (Vector3f) Vector3f.cross(rightLast, directionLast, null).normalise(null);
 		
 		normals[(waypoints.size() - 1) * 3] = normalLast.x;
