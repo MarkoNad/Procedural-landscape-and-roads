@@ -13,6 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.lwjgl.util.vector.Vector3f;
 
@@ -37,12 +38,42 @@ public class LODGrid {
 			Map<TexturedModelComp, Float> scaleForModel,
 			Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType
 	) {
+		checkArgs(scaleForModel, lodLevelsForType);
 		this.cellSize = cellSize;
 		this.scaleForModel = scaleForModel;
 		this.lodLevelsForType = lodLevelsForType;
 		grid = new ConcurrentHashMap<>();
 	}
 	
+	private void checkArgs(Map<TexturedModelComp, Float> scaleForModel,
+			Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType) {
+		// checks if all models with lods have defined scale, and if all models with defined
+		// scale have defined lods
+		
+		List<TexturedModelComp> modelsWithLODs = lodLevelsForType
+				.values()
+				.stream()
+				.flatMap(m -> m.values().stream())
+				.collect(Collectors.toList());
+		List<TexturedModelComp> modelsWithScales = scaleForModel
+				.keySet()
+				.stream()
+				.collect(Collectors.toList());
+		
+		for(TexturedModelComp model : modelsWithLODs) {
+			if(!modelsWithScales.contains(model)) {
+				throw new IllegalArgumentException("Undefined scale for model: " + model);
+			}
+			modelsWithScales.remove(model);
+		}
+		
+		for(TexturedModelComp model : modelsWithScales) {
+			if(!modelsWithLODs.contains(model)) {
+				throw new IllegalArgumentException("Undefined LOD for model: " + model);
+			}
+		}
+	}
+
 	public void addToGrid(TreeType type, Vector3f location) {
 		Point index = index(location);
 		
@@ -79,7 +110,7 @@ public class LODGrid {
 						QueueProduct<Map<TreeType, List<Vector3f>>> product = locationsPerTypeQueue.take();
 						
 						if(product == TreePlacer.THREAD_POISON) {
-							LOGGER.log(Level.FINE, "LOD grid received poison.");
+							LOGGER.log(Level.FINE, "LOD grid received POISON.");
 							break;
 						}
 						
