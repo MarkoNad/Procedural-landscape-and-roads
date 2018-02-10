@@ -74,6 +74,8 @@ public class TreePlacer {
 						e.printStackTrace();
 						System.exit(1);
 					}
+					
+					System.out.println("Placer in loop.");
 				}
 			}
 		});

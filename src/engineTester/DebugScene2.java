@@ -104,8 +104,8 @@ public class DebugScene2 {
 //		chestnutLods.put(500f, chestnutLOD0Comp);
 //		chestnutLods.put(20000f, chestnutLOD1Comp);
 		
-		chestnutLods.put(100f, chestnutLOD0Comp);
-		chestnutLods.put(5000f, chestnutLOD1Comp);
+		chestnutLods.put(200f, chestnutLOD0Comp);
+		chestnutLods.put(2000f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
 		//firLods.put(4000f, firLOD0Comp);
@@ -113,8 +113,8 @@ public class DebugScene2 {
 //		firLods.put(500f, firLOD0Comp);
 //		firLods.put(20000f, firLOD1Comp);
 		
-		firLods.put(100f, firLOD0Comp);
-		firLods.put(5000f, firLOD1Comp);
+		firLods.put(200f, firLOD0Comp);
+		firLods.put(2000f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
 		lodLevelsForType.put(TreeType.OAK, chestnutLods);
@@ -154,12 +154,11 @@ public class DebugScene2 {
 		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 650f, distribution, 1);
 		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 5000, -5000, 10f, 50f, distribution, 1);
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 50f, distribution, 1, 30, 10_000_000);
-
+		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 5000, -5000, 10f, 50f, distribution, 1, 30, 10_000_000);
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		
 		startTime = System.nanoTime();
-		//Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
 		ExecutorService pool = Executors.newFixedThreadPool(3, new ThreadFactory() {	
 			@Override
 			public Thread newThread(Runnable r) {
@@ -169,22 +168,22 @@ public class DebugScene2 {
 			}
 		});
 		BlockingQueue<Map<TreeType, List<Vector3f>>> locationsPerType = placer.computeLocationsInBackground(pool);
+		//Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
 		double locationsDuration = (System.nanoTime() - startTime) / 1e9;
 		//System.out.println("Location computation: " + locationsDuration + " s, " + locationsPerType.values().stream().mapToInt(c -> c.size()).sum() + " locations");
-		
-		//LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
+
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
 		grid.addToGrid(locationsPerType, pool);
+		//grid.addToGrid(locationsPerType);
 		
 		List<Vector3f> roadWaypoints = findPath(heightGenerator);
-		//List<Vector3f> roadWaypoints = createWaypoints();
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints);
 
 		//List<Entity> entities = new ArrayList<>();
 		//roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeight(p.x, p.z), p.z), 0f, 0f, 0f, 10f)));
 		
-		//Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f);
-		Camera camera = new FloatingCamera(new Vector3f(100.0f, 0.0f, -5000.0f));
+		Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f);
+		//Camera camera = new FloatingCamera(new Vector3f(100.0f, 0.0f, -5000.0f));
 		
 		List<Entity> terrainGridElems = terrainVerticesGrid(fern, heightGenerator, width, depth, vertsPerMeter);
 		List<Entity> oglGridElems = oglUnitGrid(fern, heightGenerator);

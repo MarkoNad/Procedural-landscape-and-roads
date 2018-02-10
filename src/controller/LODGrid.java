@@ -97,6 +97,8 @@ public class LODGrid {
 					}
 					
 					addingToGrid = false;
+					
+					System.out.println("Grid in loop.");
 				}
 			}
 		});

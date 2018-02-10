@@ -150,7 +150,12 @@ public class PoissonDiskSampler extends Sampler {
 			}
 		}
 		
+		if(!pointList.isEmpty()) {
+			batchQueue.put(pointList);
+		}
+		
 		samplingDone = true;
+		System.out.println("Sampler done.");
 	}
 
 	private boolean addNextPoint(List<Point2D.Float>[][] grid, List<Point2D.Float> activeList,

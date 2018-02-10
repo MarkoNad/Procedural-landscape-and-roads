@@ -12,6 +12,7 @@ import org.lwjgl.util.vector.Vector3f;
 
 import models.RawModel;
 
+@Deprecated
 public class OBJLoader {
 
 	public static RawModel loadObjModel(String fileName, Loader loader) {
