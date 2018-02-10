@@ -2,21 +2,31 @@ package controller;
 
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.lwjgl.util.vector.Vector3f;
 
 import entities.Entity;
 import models.TexturedModel;
 import models.TexturedModelComp;
+import terrains.TreePlacer;
 import terrains.TreeType;
+import toolbox.QueueProduct;
 
 public class LODGrid {
+	
+	private static final Logger LOGGER = Logger.getLogger(LODGrid.class.getName());
 	
 	private float cellSize;
 	private Map<Point, Map<TreeType, List<Vector3f>>> grid;
@@ -28,24 +38,54 @@ public class LODGrid {
 			Map<TexturedModelComp, Float> scaleForModel,
 			Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType
 	) {
+		checkArgs(scaleForModel, lodLevelsForType);
 		this.cellSize = cellSize;
 		this.scaleForModel = scaleForModel;
 		this.lodLevelsForType = lodLevelsForType;
-		grid = new HashMap<>();
+		grid = new ConcurrentHashMap<>();
 	}
 	
+	private void checkArgs(Map<TexturedModelComp, Float> scaleForModel,
+			Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType) {
+		// checks if all models with lods have defined scale, and if all models with defined
+		// scale have defined lods
+		
+		List<TexturedModelComp> modelsWithLODs = lodLevelsForType
+				.values()
+				.stream()
+				.flatMap(m -> m.values().stream())
+				.collect(Collectors.toList());
+		List<TexturedModelComp> modelsWithScales = scaleForModel
+				.keySet()
+				.stream()
+				.collect(Collectors.toList());
+		
+		for(TexturedModelComp model : modelsWithLODs) {
+			if(!modelsWithScales.contains(model)) {
+				throw new IllegalArgumentException("Undefined scale for model: " + model);
+			}
+			modelsWithScales.remove(model);
+		}
+		
+		for(TexturedModelComp model : modelsWithScales) {
+			if(!modelsWithLODs.contains(model)) {
+				throw new IllegalArgumentException("Undefined LOD for model: " + model);
+			}
+		}
+	}
+
 	public void addToGrid(TreeType type, Vector3f location) {
 		Point index = index(location);
 		
 		Map<TreeType, List<Vector3f>> cellMap = grid.get(index);
 		if(cellMap == null) {
-			cellMap = new HashMap<>();
+			cellMap = new ConcurrentHashMap<>();
 			grid.put(index, cellMap);
 		}
 		
 		List<Vector3f> locations = cellMap.get(type);
 		if(locations == null) {
-			locations = new ArrayList<>();
+			locations = new CopyOnWriteArrayList<>();
 			cellMap.put(type, locations);
 		}
 		
@@ -58,6 +98,40 @@ public class LODGrid {
 				addToGrid(type, location);
 			}
 		}
+	}
+	
+	public void addToGrid(BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerTypeQueue, ExecutorService executor) {
+		executor.submit(new Runnable() {
+			@Override
+			public void run() {
+				while(true) {
+					Map<TreeType, List<Vector3f>> locationsPerType = null;
+					try {
+						QueueProduct<Map<TreeType, List<Vector3f>>> product = locationsPerTypeQueue.take();
+						
+						if(product == TreePlacer.THREAD_POISON) {
+							LOGGER.log(Level.FINE, "LOD grid received POISON.");
+							break;
+						}
+						
+						locationsPerType = product.getValue();
+						
+						LOGGER.log(Level.FINE, "Grid taken from queue " +
+								locationsPerType.values().stream().mapToInt(l -> l.size()).sum() +
+								" points. Queue size: " + locationsPerTypeQueue.size());
+					} catch (InterruptedException ex) {
+						LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+						System.exit(1);
+					}
+					
+					for(TreeType type : locationsPerType.keySet()) {
+						for(Vector3f location : locationsPerType.get(type)) {
+							addToGrid(type, location);
+						}
+					}
+				}
+			}
+		});
 	}
 	
 	public List<Entity> proximityEntities(Vector3f position) {
@@ -100,7 +174,7 @@ public class LODGrid {
 				}
 			}
 		}
-		
+
 		return entities;
 	}
 	
@@ -134,3 +208,4 @@ public class LODGrid {
 	}
 
 }
+

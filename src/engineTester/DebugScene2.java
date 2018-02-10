@@ -1,5 +1,6 @@
 package engineTester;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -7,7 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -15,7 +20,6 @@ import org.lwjgl.util.vector.Vector3f;
 import controller.LODGrid;
 import entities.Camera;
 import entities.Entity;
-import entities.FPSCamera;
 import entities.FloatingCamera;
 import entities.Light;
 import models.RawModel;
@@ -26,7 +30,6 @@ import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
-import renderEngine.OBJLoader;
 import roads.Road;
 import search.AStar;
 import search.IProblem;
@@ -41,13 +44,15 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
-import toolbox.Constants;
+import toolbox.Globals;
 import toolbox.Point2Df;
 import toolbox.PoissonDiskSampler;
+import toolbox.QueueProduct;
 import toolbox.Range;
 import toolbox.TriFunction;
 
 public class DebugScene2 {
+	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
@@ -78,37 +83,17 @@ public class DebugScene2 {
 		TexturedModelComp firLOD0Comp = new TexturedModelComp(firTrunk, firTreetop);
 
 		Map<TexturedModelComp, Float> scaleForModel = new HashMap<>();
-//		scaleForModel.put(firLOD0Comp, 60.0f);
-//		scaleForModel.put(firLOD1Comp, 140.0f);
-//		scaleForModel.put(chestnutLOD0Comp, 15.0f);
-//		scaleForModel.put(chestnutLOD1Comp, 190.0f);
-		
-//		scaleForModel.put(firLOD0Comp, 8.0f);
-//		scaleForModel.put(firLOD1Comp, 21.0f);
-//		scaleForModel.put(chestnutLOD0Comp, 2.0f);
-//		scaleForModel.put(chestnutLOD1Comp, 25.0f);
-		
 		scaleForModel.put(firLOD0Comp, 10.0f);
 		scaleForModel.put(firLOD1Comp, 10.0f);
 		scaleForModel.put(chestnutLOD0Comp, 15.0f);
 		scaleForModel.put(chestnutLOD1Comp, 15.0f);
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
-		//chestnutLods.put(4000f, chestnutLOD0Comp);
-		
-//		chestnutLods.put(500f, chestnutLOD0Comp);
-//		chestnutLods.put(20000f, chestnutLOD1Comp);
-		
-		chestnutLods.put(100f, chestnutLOD0Comp);
+		chestnutLods.put(200f, chestnutLOD0Comp);
 		chestnutLods.put(2000f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
-		//firLods.put(4000f, firLOD0Comp);
-
-//		firLods.put(500f, firLOD0Comp);
-//		firLods.put(20000f, firLOD1Comp);
-		
-		firLods.put(100f, firLOD0Comp);
+		firLods.put(200f, firLOD0Comp);
 		firLods.put(2000f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
@@ -132,8 +117,6 @@ public class DebugScene2 {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		float width = 20000;
 		float depth = 20000;
-		//float xTiles = width / 200f;
-		//float zTiles = depth / 200f;
 		float xTiles = width / 5f;
 		float zTiles = depth / 5f;
 		float vertsPerMeter = 0.025f;
@@ -141,28 +124,19 @@ public class DebugScene2 {
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
 				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
 		double terrainDuration = (System.nanoTime() - startTime) / 1e9;
-		System.out.println("Terrain: " + terrainDuration + "s");
+		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
-		//BiFunction<Float, Float, Float> distribution = (x, z) -> 0.0f;
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 130f, 650f, distribution, 1);
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 650f, distribution, 1);
-		//PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 5000, -5000, 10f, 50f, distribution, 1);
-		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 50f, distribution, 1, 30, 10_000_000);
+		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(0f, 0f));
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
-		
-		startTime = System.nanoTime();
-		Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
-		double locationsDuration = (System.nanoTime() - startTime) / 1e9;
-		System.out.println("Location computation: " + locationsDuration + " s, " + locationsPerType.values().stream().mapToInt(c -> c.size()).sum() + " locations");
-		
-		//LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
+		ExecutorService pool = Globals.getThreadPool();
+		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
+
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		grid.addToGrid(locationsPerType);
+		grid.addToGrid(locationsPerType, pool);
 		
 		List<Vector3f> roadWaypoints = findPath(heightGenerator);
-		//List<Vector3f> roadWaypoints = createWaypoints();
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints);
 
 		//List<Entity> entities = new ArrayList<>();
@@ -171,8 +145,8 @@ public class DebugScene2 {
 		//Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f);
 		Camera camera = new FloatingCamera(new Vector3f(100.0f, 0.0f, -5000.0f));
 		
-		List<Entity> terrainGridElems = terrainVerticesGrid(fern, heightGenerator, width, depth, vertsPerMeter);
-		List<Entity> oglGridElems = oglUnitGrid(fern, heightGenerator);
+		//List<Entity> terrainGridElems = terrainVerticesGrid(fern, heightGenerator, width, depth, vertsPerMeter);
+		//List<Entity> oglGridElems = oglUnitGrid(fern, heightGenerator);
 		
 		List<Entity> nmEntites = new ArrayList<>();
 
@@ -240,37 +214,6 @@ public class DebugScene2 {
 		loader.cleanUp();
 		DisplayManager.closeDisplay();
 	}
-
-	protected static List<Entity> oglUnitGrid(TexturedModel fern, IHeightGenerator heightGenerator) {
-		List<Entity> meterElems = new ArrayList<>();
-		final float zOffset = -5000;
-		for(int z = 0; z < 50; z++) {
-			for(int x = 0; x < 50; x++) {
-				float height = heightGenerator.getHeight(x + 100, -z + zOffset);
-				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z + zOffset), 0, 0, 0, 0.1f));
-			}
-		}
-		return meterElems;
-	}
-
-	protected static List<Entity> terrainVerticesGrid(TexturedModel fern, IHeightGenerator heightGenerator, float width,
-			float depth, float vertsPerMeter) {
-		// per vertex
-		List<Entity> gridElems = new ArrayList<>();
-		int xVertices = (int) (width * vertsPerMeter);
-		int zVertices = (int) (depth * vertsPerMeter);
-		final float zOffset = -5000;
-		for(int z = 0; z < 50; z++) {
-			for(int x = 0; x < 50; x++) {
-				float xcoord = x / (float)(xVertices - 1) * width;
-				float zcoord = -z / (float)(zVertices - 1) * depth + zOffset;
-				float height = heightGenerator.getHeight(xcoord, zcoord);
-				gridElems.add(new Entity(fern, new Vector3f(xcoord, height, zcoord), 0, 0, 0, 0.5f));
-			}
-		}
-		
-		return gridElems;
-	}
 	
 	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator,
 			List<Vector3f> waypoints) {
@@ -280,36 +223,14 @@ public class DebugScene2 {
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
 	}
-	
-	private static List<Vector3f> createWaypoints() {
-		List<Vector3f> waypoints = new ArrayList<>();
-		
-		waypoints.add(new Vector3f(0, 0, -2000));
-		waypoints.add(new Vector3f(100, 0, -2000));
-		waypoints.add(new Vector3f(500, 0, -2000));
-		waypoints.add(new Vector3f(1000, 0, -2500));
-		waypoints.add(new Vector3f(2000, 0, -3500));
-		waypoints.add(new Vector3f(3000, 0, -3500));
-		waypoints.add(new Vector3f(4000, 0, -2500));
-		waypoints.add(new Vector3f(6000, 0, -2000));
-		waypoints.add(new Vector3f(7000, 0, -2500));
-		waypoints.add(new Vector3f(8000, 0, -2200));
-		waypoints.add(new Vector3f(9000, 0, -2000));
-		waypoints.add(new Vector3f(10000, 0, -1500));
-		waypoints.add(new Vector3f(10500, 0, -500));
-		waypoints.add(new Vector3f(10500, 0, -100));
-		waypoints.add(new Vector3f(10500, 0, 0));
-		
-		return waypoints;
-	}
-	
+
 	private static List<Vector3f> findPath(IHeightGenerator heightGenerator) {
 		long start = System.nanoTime();
 		
 		IProblem<Point2Df> searchProblem = new IProblem<Point2Df>() {
 			private Point2Df end = new Point2Df(20000f, -20000f);
 			private final float step = 500f;
-			private final int succCount = 8;
+//			private final int succCount = 8;
 			private final float tolerance = 5000f;
 			
 			@Override
@@ -355,7 +276,7 @@ public class DebugScene2 {
 				double deltaSlope = Vector3f.angle(normal1, normal2);
 				double deltaSlopeCost = deltaSlope * 1000.0;
 				
-				double slope = Vector3f.angle(Constants.Y_AXIS, normal2);
+				double slope = Vector3f.angle(Globals.Y_AXIS, normal2);
 				double slopeCost = slope * 10_000.0;
 				
 				totalCost += distanceCost;
@@ -382,20 +303,19 @@ public class DebugScene2 {
 		Node<Point2Df> goal = astar.search();
 		
 		double duration = (System.nanoTime() - start) * 1e-9;
-		System.out.println("Astar duration:" + duration);
+		LOGGER.log(Level.FINE, "Astar duration:" + duration);
 		
 		List<Vector3f> waypoints = new ArrayList<>();
 		
 		for(Point2Df point : goal.reconstructPath()) {
 			waypoints.add(new Vector3f(point.getX(), 0f, point.getZ()));
-			System.out.println(point);
+			LOGGER.log(Level.FINER, "A star point: " + point.toString());
 		}
 		
 		return waypoints;
 	}
 	
 	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
-		//ModelData data = OBJFileLoader.loadOBJ(objFile);
 		ModelData data = OBJFileLoader.loadOBJ(objFile, false, true);
 		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(),
 				data.getNormals(), data.getIndices());
@@ -403,10 +323,62 @@ public class DebugScene2 {
 	}
 	
 	private static TexturedModel loadNM(Loader loader, String modelFile, String textureFile, String normalMapFile) {
-		//ModelData data = OBJFileLoader.loadOBJ(modelFile);
 		ModelData data = OBJFileLoader.loadOBJ(modelFile, false, true);
 		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getTangents(), data.getIndices());
 		return new TexturedModel(model, new ModelTexture(loader.loadTexture(textureFile), loader.loadTexture(normalMapFile)));
 	}
+	
+//	private static List<Entity> oglUnitGrid(TexturedModel fern, IHeightGenerator heightGenerator) {
+//		List<Entity> meterElems = new ArrayList<>();
+//		final float zOffset = -5000;
+//		for(int z = 0; z < 50; z++) {
+//			for(int x = 0; x < 50; x++) {
+//				float height = heightGenerator.getHeight(x + 100, -z + zOffset);
+//				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z + zOffset), 0, 0, 0, 0.1f));
+//			}
+//		}
+//		return meterElems;
+//	}
+//
+//	private static List<Entity> terrainVerticesGrid(TexturedModel fern, IHeightGenerator heightGenerator, float width,
+//			float depth, float vertsPerMeter) {
+//		// per vertex
+//		List<Entity> gridElems = new ArrayList<>();
+//		int xVertices = (int) (width * vertsPerMeter);
+//		int zVertices = (int) (depth * vertsPerMeter);
+//		final float zOffset = -5000;
+//		for(int z = 0; z < 50; z++) {
+//			for(int x = 0; x < 50; x++) {
+//				float xcoord = x / (float)(xVertices - 1) * width;
+//				float zcoord = -z / (float)(zVertices - 1) * depth + zOffset;
+//				float height = heightGenerator.getHeight(xcoord, zcoord);
+//				gridElems.add(new Entity(fern, new Vector3f(xcoord, height, zcoord), 0, 0, 0, 0.5f));
+//			}
+//		}
+//		
+//		return gridElems;
+//	}
+//	
+//	private static List<Vector3f> createWaypoints() {
+//	List<Vector3f> waypoints = new ArrayList<>();
+//	
+//	waypoints.add(new Vector3f(0, 0, -2000));
+//	waypoints.add(new Vector3f(100, 0, -2000));
+//	waypoints.add(new Vector3f(500, 0, -2000));
+//	waypoints.add(new Vector3f(1000, 0, -2500));
+//	waypoints.add(new Vector3f(2000, 0, -3500));
+//	waypoints.add(new Vector3f(3000, 0, -3500));
+//	waypoints.add(new Vector3f(4000, 0, -2500));
+//	waypoints.add(new Vector3f(6000, 0, -2000));
+//	waypoints.add(new Vector3f(7000, 0, -2500));
+//	waypoints.add(new Vector3f(8000, 0, -2200));
+//	waypoints.add(new Vector3f(9000, 0, -2000));
+//	waypoints.add(new Vector3f(10000, 0, -1500));
+//	waypoints.add(new Vector3f(10500, 0, -500));
+//	waypoints.add(new Vector3f(10500, 0, -100));
+//	waypoints.add(new Vector3f(10500, 0, 0));
+//	
+//	return waypoints;
+//}
 	
 }
