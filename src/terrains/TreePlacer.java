@@ -88,7 +88,7 @@ public class TreePlacer {
 					
 					for(Point2D.Float location : locations) {
 						TreeType type = biomesMap.getTreeType(location.x, location.y);
-						float height = heightMap.getHeight(location.x, location.y);
+						float height = heightMap.getHeightApprox(location.x, location.y);
 						locationsPerType.get(type).add(new Vector3f(location.x, height, location.y));
 					}
 					
@@ -117,7 +117,7 @@ public class TreePlacer {
 		List<Point2D.Float> locations = sampler.sample();
 		for(Point2D.Float location : locations) {
 			TreeType type = biomesMap.getTreeType(location.x, location.y);
-			float height = heightMap.getHeight(location.x, location.y);
+			float height = heightMap.getHeightApprox(location.x, location.y);
 			locationsPerType.get(type).add(new Vector3f(location.x, height, location.y));
 		}
 		

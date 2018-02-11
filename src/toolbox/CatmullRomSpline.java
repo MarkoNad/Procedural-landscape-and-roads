@@ -102,6 +102,10 @@ public class CatmullRomSpline {
 		return splinePoints;
 	}
 	
+	public List<Vector3f> getCurvePointsCopy() {
+		return new ArrayList<>(splinePoints);
+	}
+	
 	public List<Float> getTrajectoryPointDistances() {
 		return trajectoryPointsDistances;
 	}

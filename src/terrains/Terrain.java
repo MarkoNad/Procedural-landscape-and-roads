@@ -107,7 +107,7 @@ public class Terrain {
 				vertices[vertexPointer * 3 + 1] = height;
 				vertices[vertexPointer * 3 + 2] = zcoord;
 
-				Vector3f normal = heightGenerator.getNormal(xcoord, zcoord);
+				Vector3f normal = heightGenerator.getNormalApprox(xcoord, zcoord);
 				normals[vertexPointer * 3] = normal.x;
 				normals[vertexPointer * 3 + 1] = normal.y;
 				normals[vertexPointer * 3 + 2] = normal.z;

@@ -44,14 +44,14 @@ public class BiomesMap implements ITextureMap {
 	}
 	
 	public TreeType getTreeType(float x, float z) {
-		float height = heightMap.getHeight(x, z);
+		float height = heightMap.getHeightApprox(x, z);
 		float modifiedHeight = height + noiseMap.getNoise(x, z);
 		if(modifiedHeight < 600) return TreeType.OAK;
 		return TreeType.PINE;
 	}
 	
 	public float getTreeDensity(float x, float z) {
-		float slope = Vector3f.angle(Y_AXIS, heightMap.getNormal(x, z));
+		float slope = Vector3f.angle(Y_AXIS, heightMap.getNormalApprox(x, z));
 		float moisture = moistureMap.getPrenormalizedNoise(x, z);
 		//float moisture = getMoisture(x, z);
 		return (float) (Math.cos(slope) * moisture);

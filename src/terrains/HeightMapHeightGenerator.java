@@ -85,4 +85,14 @@ public class HeightMapHeightGenerator implements IHeightGenerator {
 		return MAX_HEIGHT;
 	}
 
+	@Override
+	public float getHeightApprox(float x, float z) {
+		return getHeight(x, z);
+	}
+
+	@Override
+	public Vector3f getNormalApprox(float x, float z) {
+		return getNormal(x, z);
+	}
+
 }

@@ -18,5 +18,15 @@ public class UniformHeightGenerator implements IHeightGenerator {
 	public float getMaxHeight() {
 		return 0;
 	}
+	
+	@Override
+	public float getHeightApprox(float x, float z) {
+		return getHeight(x, z);
+	}
+
+	@Override
+	public Vector3f getNormalApprox(float x, float z) {
+		return getNormal(x, z);
+	}
 
 }
