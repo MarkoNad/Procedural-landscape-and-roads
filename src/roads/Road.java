@@ -1,6 +1,7 @@
 package roads;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.lwjgl.util.vector.Vector3f;
@@ -10,50 +11,114 @@ import renderEngine.Loader;
 import terrains.IHeightGenerator;
 import toolbox.CatmullRomSpline;
 import toolbox.Globals;
+import toolbox.Point2Df;
 
 public class Road {
-	
-	private static final float DEFAULT_SEGMENT_LEN = 50f; // in OpenGL units
-	private static final float DEFAULT_GROUND_OFFSET = 7f;
 	
 	private final float groundOffset; // distance of road from ground, to avoid jittering
 	private Loader loader;
 	private List<Vector3f> trajectory;
 	private IHeightGenerator heightMap;
 	private final float width;
-	private final float segmentLength;
 	private float textureLen;
 	private RawModel model;
-
-	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap, float width,
-			float textureLen, float segmentLen, float groundOffset) {
-		if(waypoints == null || waypoints.size() <= 1) {
+	private boolean heightCorrection;
+	
+	public Road(List<Point2Df> waypoints2D, Loader loader, float width, float textureLen,
+			float segmentLen, float groundOffset, IHeightGenerator heightMap, boolean heightCorrection) {
+		if(waypoints2D == null || waypoints2D.size() < 2) {
 			throw new IllegalArgumentException("At least two waypoints are required.");
 		}
-		if(heightMap == null) {
-			throw new IllegalArgumentException("Heightmap cannot be null.");
+		
+		if(heightCorrection && heightMap == null) {
+			throw new IllegalArgumentException("Height map was null - cannot perform height correction.");
 		}
 		
+		List<Vector3f> waypoints3D = assignHeightsToWaypoints(waypoints2D, heightMap);
+
 		this.loader = loader;
-		this.segmentLength = segmentLen;
-		this.heightMap = heightMap;
 		this.width = width;
 		this.textureLen = textureLen;
 		this.groundOffset = groundOffset;
+		this.heightMap = heightMap;
+		this.heightCorrection = heightCorrection;
 		
-		this.trajectory = generateTrajectory(waypoints);
+		this.trajectory = generateTrajectory(waypoints3D, segmentLen);
+		adhereTrajectoryToHeightMap(this.trajectory, heightMap);
 		model = generate();
 	}
 	
-	public Road(Loader loader, List<Vector3f> waypoints, IHeightGenerator heightMap,
-			float width, float textureLen) {
-		this(loader, waypoints, heightMap, width, textureLen, DEFAULT_SEGMENT_LEN,
-				DEFAULT_GROUND_OFFSET);
+	public Road(Loader loader, List<Vector3f> trajectory, float width, float textureLen,
+			float segmentLen, float groundOffset) {
+		if(trajectory == null || trajectory.isEmpty()) {
+			throw new IllegalArgumentException("Trajectory cannot be empty.");
+		}
+		
+		this.loader = loader;
+		this.width = width;
+		this.textureLen = textureLen;
+		this.groundOffset = groundOffset;
+		this.heightMap = null;
+		this.heightCorrection = false;
+		
+		this.trajectory = trajectory;
+		model = generate();
 	}
 	
-	private List<Vector3f> generateTrajectory(List<Vector3f> waypoints) {
+	public Road(Loader loader, List<Vector3f> waypoints, float width, float textureLen, float segmentLen,
+			float groundOffset, IHeightGenerator heightMap, boolean heightCorrection) {
+		if(waypoints == null || waypoints.size() < 2) {
+			throw new IllegalArgumentException("At least two waypoints are required.");
+		}
+		
+		if(heightCorrection && heightMap == null) {
+			throw new IllegalArgumentException("Height map was null - cannot perform height correction.");
+		}
+		
+		this.loader = loader;
+		this.width = width;
+		this.textureLen = textureLen;
+		this.groundOffset = groundOffset;
+		this.heightMap = heightMap;
+		this.heightCorrection = heightCorrection;
+		
+		this.trajectory = generateTrajectory(waypoints, segmentLen);
+		adhereTrajectoryToHeightMap(this.trajectory, heightMap);
+		model = generate();
+	}
+	
+	public List<Vector3f> getTrajectory() {
+		return Collections.unmodifiableList(trajectory);
+	}
+	
+	private List<Vector3f> assignHeightsToWaypoints(List<Point2Df> waypoints2D, IHeightGenerator heightMap) {
+		List<Vector3f> waypoints3D = new ArrayList<>();
+		
+		waypoints2D.forEach(p -> {
+			float height = heightMap.getHeight(p.getX(), p.getZ());
+			waypoints3D.add(new Vector3f(p.getX(), height, p.getZ()));
+		});
+		
+		return waypoints3D;
+	}
+	
+	public static List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength) {
 		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
-		return curve.getCurvePoints();
+		return curve.getCurvePointsCopy();
+	}
+	
+	public static List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength, 
+			IHeightGenerator heightMap) {
+		List<Vector3f> trajectory = generateTrajectory(waypoints, segmentLength);
+		adhereTrajectoryToHeightMap(trajectory, heightMap);
+		return trajectory;
+	}
+	
+	private static void adhereTrajectoryToHeightMap(List<Vector3f> trajectory, IHeightGenerator heightMap) {
+		trajectory.forEach(p -> {
+			float height = heightMap.getHeight(p.getX(), p.getZ());
+			p.setY(height);
+		});
 	}
 
 	public RawModel getModel() {
@@ -87,8 +152,8 @@ public class Road {
 			Vector3f prevDirection = Vector3f.sub(curr, prev, null).normalise(null);
 			Vector3f nextDirection = Vector3f.sub(next, curr, null).normalise(null);
 			
-			prevDirection.y = 0;
-			nextDirection.y = 0;
+//			prevDirection.y = 0;// TODO
+//			nextDirection.y = 0;
 			
 			// vector pointing to the right of the prev and next directions, used for centerline
 			Vector3f prevRight = (Vector3f) Vector3f.cross(prevDirection, Globals.Y_AXIS, null).normalise(null);
@@ -109,24 +174,28 @@ public class Road {
 			float rightx = curr.x + centerlineDir.x * offset;
 			float rightz = curr.z + centerlineDir.z * offset;
 			
-			float leftHeight = heightMap.getHeight(leftx, leftz);
-			float rightHeight = heightMap.getHeight(rightx, rightz);
-			float height = Math.max(leftHeight, rightHeight) + groundOffset;
-			float lefty = height;
-			float righty = height;
+			float y = curr.y;
+			
+			if(heightCorrection) {
+				float leftHeight = heightMap.getHeight(leftx, leftz);
+				float rightHeight = heightMap.getHeight(rightx, rightz);
+				y = Math.max(leftHeight, rightHeight);
+			}
+
+			y += groundOffset;
+			curr.setY(y);
 			
 			vertices[wpPointer * 3] = leftx;
-			vertices[wpPointer * 3 + 1] = lefty;
+			vertices[wpPointer * 3 + 1] = y;
 			vertices[wpPointer * 3 + 2] = leftz;
 			
 			vertices[(trajectory.size() + wpPointer) * 3] = rightx;
-			vertices[(trajectory.size() + wpPointer) * 3 + 1] = righty;
+			vertices[(trajectory.size() + wpPointer) * 3 + 1] = y;
 			vertices[(trajectory.size() + wpPointer) * 3 + 2] = rightz;
-			
-			curr.setY(height);
 		}
 		
-		// waypoints now have appropriate height (max(left vertex, right vertex))
+		// if ground offset was provided or height correction requested waypoints now have
+		// corrected height (max(left vertex, right vertex))
 		
 		setupEdgeNormals(trajectory, normals);
 		
@@ -155,7 +224,7 @@ public class Road {
 			normals[(trajectory.size() + wpPointer) * 3 + 2] = normal.z;
 		}
 		
-		List<Float> pointDistances = determineDistances();
+		List<Float> pointDistances = determineDistances(trajectory);
 		for(int wpPointer = 0; wpPointer < trajectory.size(); wpPointer++) {
 			float vcoord = pointDistances.get(wpPointer) / textureLen;
 			
@@ -166,12 +235,12 @@ public class Road {
 			textureCoords[(trajectory.size() + wpPointer) * 2 + 1] = vcoord;
 		}
 		
-		setupIndices(indices);
+		setupIndices(indices, trajectory);
 
 		return loader.loadToVAO(vertices, textureCoords, normals, indices);
 	}
 	
-	private List<Float> determineDistances() {
+	private List<Float> determineDistances(List<Vector3f> trajectory) {
 		List<Float> waypointDistances = new ArrayList<>();
 		waypointDistances.add(0f);
 		
@@ -190,74 +259,84 @@ public class Road {
 		return waypointDistances;
 	}
 	
-	private void setupEdgeVertices(List<Vector3f> waypoints, float[] vertices) {
+	private void setupEdgeVertices(List<Vector3f> trajectory, float[] vertices) {
 		// first waypoint vertices
-		Vector3f directionFirst = Vector3f.sub(waypoints.get(1), waypoints.get(0), null);
+		Vector3f directionFirst = Vector3f.sub(trajectory.get(1), trajectory.get(0), null);
 		Vector3f rightFirst = (Vector3f) Vector3f.cross(directionFirst, Globals.Y_AXIS, null).normalise(null).scale(0.5f * width);
-		Vector3f leftVFirst = Vector3f.add(rightFirst.negate(null), waypoints.get(0), null);
-		Vector3f rightVFirst = Vector3f.add(rightFirst, waypoints.get(0), null);
+		Vector3f leftVFirst = Vector3f.add(rightFirst.negate(null), trajectory.get(0), null);
+		Vector3f rightVFirst = Vector3f.add(rightFirst, trajectory.get(0), null);
 		
-		float leftHeightFirst = heightMap.getHeight(leftVFirst.x, leftVFirst.z);
-		float rightHeightFirst = heightMap.getHeight(rightVFirst.x, rightVFirst.z);
-		float heightFirst = Math.max(leftHeightFirst, rightHeightFirst) + groundOffset;
+		float heightFirst = trajectory.get(0).y;
+		
+		if(heightCorrection) {
+			float leftHeightFirst = heightMap.getHeight(leftVFirst.x, leftVFirst.z);
+			float rightHeightFirst = heightMap.getHeight(rightVFirst.x, rightVFirst.z);
+			heightFirst = Math.max(leftHeightFirst, rightHeightFirst);
+		}
+		
+		heightFirst += groundOffset;
+		trajectory.get(0).setY(heightFirst);
 		
 		vertices[0] = leftVFirst.x;
 		vertices[1] = heightFirst;
 		vertices[2] = leftVFirst.z;
-		vertices[0 + 3 * waypoints.size()] = rightVFirst.x;
-		vertices[1 + 3 * waypoints.size()] = heightFirst;
-		vertices[2 + 3 * waypoints.size()] = rightVFirst.z;
-		
-		waypoints.get(0).setY(heightFirst);
+		vertices[0 + 3 * trajectory.size()] = rightVFirst.x;
+		vertices[1 + 3 * trajectory.size()] = heightFirst;
+		vertices[2 + 3 * trajectory.size()] = rightVFirst.z;
 		
 		
 		// last waypoint vertices
-		Vector3f directionLast = Vector3f.sub(waypoints.get(waypoints.size()-1), waypoints.get(waypoints.size()-2), null);
+		Vector3f directionLast = Vector3f.sub(trajectory.get(trajectory.size()-1), trajectory.get(trajectory.size()-2), null);
 		Vector3f rightLast = (Vector3f) Vector3f.cross(directionLast, Globals.Y_AXIS, null).normalise(null).scale(0.5f * width);
-		Vector3f leftVLast = Vector3f.add(rightLast.negate(null), waypoints.get(waypoints.size()-1), null);
-		Vector3f rightVLast = Vector3f.add(rightLast, waypoints.get(waypoints.size()-1), null);
+		Vector3f leftVLast = Vector3f.add(rightLast.negate(null), trajectory.get(trajectory.size()-1), null);
+		Vector3f rightVLast = Vector3f.add(rightLast, trajectory.get(trajectory.size()-1), null);
 		
-		float leftHeightLast = heightMap.getHeight(leftVLast.x, leftVLast.z);
-		float rightHeightLast = heightMap.getHeight(rightVLast.x, rightVLast.z);
-		float heightLast = Math.max(leftHeightLast, rightHeightLast) + groundOffset;
+		float heightLast = trajectory.get(trajectory.size()-1).y;
 		
-		vertices[(waypoints.size() - 1) * 3] = leftVLast.x;
-		vertices[(waypoints.size() - 1) * 3 + 1] = heightLast;
-		vertices[(waypoints.size() - 1) * 3 + 2] = leftVLast.z;
-		vertices[(2 * waypoints.size() - 1) * 3] = rightVLast.x;
-		vertices[(2 * waypoints.size() - 1) * 3 + 1] = heightLast;
-		vertices[(2 * waypoints.size() - 1) * 3 + 2] = rightVLast.z;
+		if(heightCorrection) {
+			float leftHeightLast = heightMap.getHeight(leftVLast.x, leftVLast.z);
+			float rightHeightLast = heightMap.getHeight(rightVLast.x, rightVLast.z);
+			heightLast = Math.max(leftHeightLast, rightHeightLast);
+		}
 		
-		waypoints.get(waypoints.size() - 1).setY(heightLast);
+		heightLast += groundOffset;
+		trajectory.get(trajectory.size() - 1).setY(heightLast);
+		
+		vertices[(trajectory.size() - 1) * 3] = leftVLast.x;
+		vertices[(trajectory.size() - 1) * 3 + 1] = heightLast;
+		vertices[(trajectory.size() - 1) * 3 + 2] = leftVLast.z;
+		vertices[(2 * trajectory.size() - 1) * 3] = rightVLast.x;
+		vertices[(2 * trajectory.size() - 1) * 3 + 1] = heightLast;
+		vertices[(2 * trajectory.size() - 1) * 3 + 2] = rightVLast.z;
 	}
 	
-	private void setupEdgeNormals(List<Vector3f> waypoints, float[] normals) {
+	private void setupEdgeNormals(List<Vector3f> trajectory, float[] normals) {
 		// first waypoint normals
-		Vector3f directionFirst = Vector3f.sub(waypoints.get(1), waypoints.get(0), null);
+		Vector3f directionFirst = Vector3f.sub(trajectory.get(1), trajectory.get(0), null);
 		Vector3f rightFirst = (Vector3f) Vector3f.cross(directionFirst, Globals.Y_AXIS, null).normalise(null);
 		Vector3f normalFirst = (Vector3f) Vector3f.cross(rightFirst, directionFirst, null).normalise(null);
 		
 		normals[0] = normalFirst.x;
 		normals[1] = normalFirst.y;
 		normals[2] = normalFirst.z;
-		normals[3 * waypoints.size()] = normalFirst.x;
-		normals[3 * waypoints.size() + 1] = normalFirst.y;
-		normals[3 * waypoints.size() + 2] = normalFirst.z;
+		normals[3 * trajectory.size()] = normalFirst.x;
+		normals[3 * trajectory.size() + 1] = normalFirst.y;
+		normals[3 * trajectory.size() + 2] = normalFirst.z;
 		
 		// last waypoint normals
-		Vector3f directionLast = Vector3f.sub(waypoints.get(waypoints.size() - 1), waypoints.get(waypoints.size() - 2), null);
+		Vector3f directionLast = Vector3f.sub(trajectory.get(trajectory.size() - 1), trajectory.get(trajectory.size() - 2), null);
 		Vector3f rightLast = (Vector3f) Vector3f.cross(directionLast, Globals.Y_AXIS, null).normalise(null);
 		Vector3f normalLast = (Vector3f) Vector3f.cross(rightLast, directionLast, null).normalise(null);
 		
-		normals[(waypoints.size() - 1) * 3] = normalLast.x;
-		normals[(waypoints.size() - 1) * 3 + 1] = normalLast.y;
-		normals[(waypoints.size() - 1) * 3 + 2] = normalLast.z;
-		normals[(2 * waypoints.size() - 1) * 3] = normalLast.x;
-		normals[(2 * waypoints.size() - 1) * 3 + 1] = normalLast.y;
-		normals[(2 * waypoints.size() - 1) * 3 + 2] = normalLast.z;
+		normals[(trajectory.size() - 1) * 3] = normalLast.x;
+		normals[(trajectory.size() - 1) * 3 + 1] = normalLast.y;
+		normals[(trajectory.size() - 1) * 3 + 2] = normalLast.z;
+		normals[(2 * trajectory.size() - 1) * 3] = normalLast.x;
+		normals[(2 * trajectory.size() - 1) * 3 + 1] = normalLast.y;
+		normals[(2 * trajectory.size() - 1) * 3 + 2] = normalLast.z;
 	}
 	
-	private void setupIndices(int[] indices) {
+	private void setupIndices(int[] indices, List<Vector3f> trajectory) {
 		int pointer = 0;
 		for(int i = 0; i < trajectory.size() - 1; i++) {
 			int topLeft = i;

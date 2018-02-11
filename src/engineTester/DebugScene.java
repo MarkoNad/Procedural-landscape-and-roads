@@ -91,7 +91,7 @@ public class DebugScene {
 			for(int x = 0; x < 50; x++) {
 				float xcoord = x / (float)(xVertices - 1) * width;
 				float zcoord = -z / (float)(zVertices - 1) * depth;
-				float height = heightGenerator.getHeight(xcoord, zcoord);
+				float height = heightGenerator.getHeightApprox(xcoord, zcoord);
 				gridElems.add(new Entity(fern, new Vector3f(xcoord, height, zcoord), 0, 0, 0, 0.5f));
 			}
 		}
@@ -101,7 +101,7 @@ public class DebugScene {
 		final float zOffset = -5000;
 		for(int z = 0; z < 50; z++) {
 			for(int x = 0; x < 50; x++) {
-				float height = heightGenerator.getHeight(x + 100, -z + zOffset);
+				float height = heightGenerator.getHeightApprox(x + 100, -z + zOffset);
 				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z + zOffset), 0, 0, 0, 0.2f));
 			}
 		}
@@ -192,7 +192,7 @@ public class DebugScene {
 		Entity crateEntity = new Entity(crate, new Vector3f(-20.0f, 0.0f, 0.0f), 0, 0, 0, 0.05f);
 		Entity boulderEntity = new Entity(boulder, new Vector3f(-30.0f, 0.0f, 0.0f), 0, 0, 0, 1f);
 		
-		Entity barrelEntity2 = new Entity(barrel, new Vector3f(100.0f, heightGenerator.getHeight(100f, -5000f), -5000.0f), 0, 0, 0, 1f);
+		Entity barrelEntity2 = new Entity(barrel, new Vector3f(100.0f, heightGenerator.getHeightApprox(100f, -5000f), -5000.0f), 0, 0, 0, 1f);
 		
 		nmEntites.add(barrelEntity);
 		nmEntites.add(crateEntity);
@@ -272,6 +272,16 @@ public class DebugScene {
 			moisture *= factor;
 			moisture = (float) Math.pow(moisture * factor - factor, 2);
 			return moisture * amplitude;
+		}
+
+		@Override
+		public float getHeightApprox(float x, float z) {
+			return getHeight(x, z);
+		}
+
+		@Override
+		public Vector3f getNormalApprox(float x, float z) {
+			return getNormal(x, z);
 		}
 	};
 	

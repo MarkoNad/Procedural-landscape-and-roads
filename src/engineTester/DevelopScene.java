@@ -142,7 +142,7 @@ public class DevelopScene {
 			
 			renderer.processTerrain(terrain);
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeight(p.x, p.z), p.z), 0f, 0f, 0f, 2f)));
+			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeightApprox(p.x, p.z), p.z), 0f, 0f, 0f, 2f)));
 			
 			entities.forEach(e -> renderer.processEntity(e));
 			renderer.processEntity(road);
@@ -159,7 +159,7 @@ public class DevelopScene {
 	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator,
 			List<Vector3f> waypoints) {
 		//Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 50f);
-		Road road = new Road(loader, waypoints, heightGenerator, 10, 20, 5f, 0.1f);
+		Road road = new Road(loader, waypoints, 10, 20, 5f, 0.1f, heightGenerator, true);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
@@ -206,14 +206,14 @@ public class DevelopScene {
 			public double getTransitionCost(Point2Df p1, Point2Df p2) {
 				double totalCost = 0.0;
 
-				double y1 = heightGenerator.getHeight(p1.getX(), p1.getZ());
-				double y2 = heightGenerator.getHeight(p2.getX(), p2.getZ());
+				double y1 = heightGenerator.getHeightApprox(p1.getX(), p1.getZ());
+				double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
 				double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
 						Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
 				double distanceCost = distance;
 				
-				Vector3f normal1 = heightGenerator.getNormal(p1.getX(), p1.getZ());
-				Vector3f normal2 = heightGenerator.getNormal(p2.getX(), p2.getZ());
+				Vector3f normal1 = heightGenerator.getNormalApprox(p1.getX(), p1.getZ());
+				Vector3f normal2 = heightGenerator.getNormalApprox(p2.getX(), p2.getZ());
 				double deltaSlope = Vector3f.angle(normal1, normal2);
 				double deltaSlopeCost = deltaSlope * 1000.0;
 				

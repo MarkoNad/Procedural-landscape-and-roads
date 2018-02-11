@@ -97,7 +97,7 @@ public class FPSCamera extends Camera {
 			strafeLeft(xzDistance);
 		}
 		
-		position.y = heightMap.getHeight(position.x, position.z) + GROUND_OFFSET;
+		position.y = heightMap.getHeightApprox(position.x, position.z) + GROUND_OFFSET;
 	}
 	
 	private void moveForward(float xzDistance, float yDistance) {
