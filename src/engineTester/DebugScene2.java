@@ -108,7 +108,7 @@ public class DebugScene2 {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		//IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
-		SimplexHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
+		SimplexHeightGenerator heightGenerator = new SimplexHeightGenerator(1, 9000f, 0.0001f, 2f, 5, 0.4f, 40f, 0.2f, 5f);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
 		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
 			NoiseMap texVariationMap = new NoiseMap(450f, 0.0005f, 0);
@@ -117,11 +117,15 @@ public class DebugScene2 {
 		};
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		
+
+		
 		List<Vector3f> roadWaypoints = findPath(heightGenerator);
-		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, 5f, 0f, heightGenerator, true);// TODO
+		final float segmentLen = 5f;
+		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.1f, heightGenerator, true);
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
 		
-		heightGenerator.updateHeight(roadRawModel.getTrajectory(), x -> x <= 50f ? 1f : 1 - Math.min((x - 50f) / 1000f, 1f));
+		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, segmentLen, heightGenerator);
+		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 50f ? 1f : 1 - Math.min((x - 50f) / 100f, 1f));
 		
 		float width = 20000;
 		float depth = 20000;
@@ -315,7 +319,7 @@ public class DebugScene2 {
 		
 		for(Point2Df point : goal.reconstructPath()) {
 			float height = heightGenerator.getHeightApprox(point.getX(), point.getZ());;
-			waypoints.add(new Vector3f(point.getX(), height, point.getZ())); // TODO
+			waypoints.add(new Vector3f(point.getX(), height, point.getZ()));
 			LOGGER.log(Level.FINER, "A star point: " + point.toString());
 		}
 		
@@ -335,17 +339,17 @@ public class DebugScene2 {
 		return new TexturedModel(model, new ModelTexture(loader.loadTexture(textureFile), loader.loadTexture(normalMapFile)));
 	}
 	
-	private static List<Entity> oglUnitGrid(TexturedModel fern, IHeightGenerator heightGenerator) {
-		List<Entity> meterElems = new ArrayList<>();
-		final float zOffset = -5000;
-		for(int z = 0; z < 50; z++) {
-			for(int x = 0; x < 50; x++) {
-				float height = heightGenerator.getHeightApprox(x + 100, -z + zOffset);
-				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z + zOffset), 0, 0, 0, 0.1f));
-			}
-		}
-		return meterElems;
-	}
+//	private static List<Entity> oglUnitGrid(TexturedModel fern, IHeightGenerator heightGenerator) {
+//		List<Entity> meterElems = new ArrayList<>();
+//		final float zOffset = -5000;
+//		for(int z = 0; z < 50; z++) {
+//			for(int x = 0; x < 50; x++) {
+//				float height = heightGenerator.getHeightApprox(x + 100, -z + zOffset);
+//				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z + zOffset), 0, 0, 0, 0.1f));
+//			}
+//		}
+//		return meterElems;
+//	}
 
 	private static List<Entity> terrainVerticesGrid(TexturedModel fern, IHeightGenerator heightGenerator, float width,
 			float depth, float vertsPerMeter) {
