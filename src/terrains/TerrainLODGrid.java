@@ -165,8 +165,10 @@ public class TerrainLODGrid {
 	}
 
 	private Terrain generatePatch(float xUpperLeft, float zUpperLeft, float size, float vertsPerUnit) {
+//		return new Terrain(xUpperLeft, zUpperLeft, translation, size, size, vertsPerUnit,
+//				xTiles, zTiles, loader, texturePack, blendMap, heightMap, biomesMap);
 		return new Terrain(xUpperLeft, zUpperLeft, translation, size, size, vertsPerUnit,
-				xTiles, zTiles, loader, texturePack, blendMap, heightMap, biomesMap);
+				xTiles, zTiles, texturePack, blendMap, heightMap, biomesMap);
 	}
 	
 	public List<Terrain> proximityTerrains(Vector3f position, float tolerance) {
@@ -222,6 +224,10 @@ public class TerrainLODGrid {
 				if(terrainPatch == null) {
 					//LOGGER.warning("Attempted to reach a too far terrain patch.");
 					continue;
+				}
+				
+				if(terrainPatch.getModel() == null) {
+					terrainPatch.setModel(loader);
 				}
 				
 				terrainPatches.add(terrainPatch);

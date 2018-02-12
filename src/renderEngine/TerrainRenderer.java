@@ -39,7 +39,11 @@ public class TerrainRenderer {
 	}
 	
 	private void prepareTerrain(Terrain terrain) {
+		//RawModel rawModel = terrain.getModel();
 		RawModel rawModel = terrain.getModel();
+		if(rawModel == null) {
+			throw new IllegalArgumentException("Terrain raw model was null.");
+		}
 		
 		GL30.glBindVertexArray(rawModel.getVaoID());
 		

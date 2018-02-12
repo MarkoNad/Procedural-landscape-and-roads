@@ -30,7 +30,8 @@ public class Terrain {
 	private float zUpperLeft;
 	private Vector3f translation; // how much will be the terrain translated
 
-	private RawModel model;
+	private TerrainData terrainData;
+	private RawModel terrainModel;
 
 	private TerrainTexturePack texturePack;
 	private TerrainTexture blendMap;
@@ -38,16 +39,14 @@ public class Terrain {
 
 	private IHeightGenerator heightGenerator;
 
-	public Terrain(Loader loader, TerrainTexturePack texturePack, TerrainTexture blendMap,
-			ITextureMap textureMap) {
-		this(0f, -800f, new Vector3f(), 800f, 800f, 0.2f, 1f, 1f, loader, texturePack,
+	public Terrain(TerrainTexturePack texturePack, TerrainTexture blendMap, ITextureMap textureMap) {
+		this(0f, -800f, new Vector3f(), 800f, 800f, 0.2f, 1f, 1f, texturePack,
 				blendMap, new UniformHeightGenerator(), textureMap);
 	}
 
 	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth,
-			float vertsPerMeter, float xTiles, float zTiles, Loader loader,
-			TerrainTexturePack texturePack, TerrainTexture blendMap, IHeightGenerator heightGenerator,
-			ITextureMap textureMap) {
+			float vertsPerMeter, float xTiles, float zTiles, TerrainTexturePack texturePack,
+			TerrainTexture blendMap, IHeightGenerator heightGenerator, ITextureMap textureMap) {
 		if(textureMap.getNumberOfInfluences() != NUM_TEXTURES) {
 			throw new IllegalArgumentException("Terrain needs " + NUM_TEXTURES + " texture influences per "
 					+ "vertex, provided texture map has " + textureMap.getNumberOfInfluences());
@@ -64,15 +63,29 @@ public class Terrain {
 		this.blendMap = blendMap;
 		this.heightGenerator = heightGenerator;
 		this.textureMap = textureMap;
-		this.model = generateTerrain(loader);
+		this.terrainData = generateTerrainData();
+	}
+	
+	public RawModel getModel() {
+		return terrainModel;
+	}
+	
+	public void setModel(Loader loader) {
+		this.terrainModel = loader.loadToVAO(
+				terrainData.getVertices(),
+				terrainData.getTextureCoords(),
+				terrainData.getNormals(),
+				terrainData.getTangents(),
+				terrainData.getIndices(),
+				terrainData.getTextureInfluences());
 	}
 
 	public Vector3f getTranslation() {
 		return translation;
 	}
 
-	public RawModel getModel() {
-		return model;
+	public TerrainData getModelData() {
+		return terrainData;
 	}
 
 	public TerrainTexturePack getTexturePack() {
@@ -83,7 +96,7 @@ public class Terrain {
 		return blendMap;
 	}
 
-	private RawModel generateTerrain(Loader loader) {
+	private TerrainData generateTerrainData() {
 		int xVertices = (int) (width * vertsPerMeter);
 		int zVertices = (int) (depth * vertsPerMeter);
 		int count = xVertices * zVertices;
@@ -142,8 +155,8 @@ public class Terrain {
 		}
 
 		float[] tangents = calculateTangents(vertices, textureCoords, zVertices, xVertices);
-
-		return loader.loadToVAO(vertices, textureCoords, normals, tangents, indices, textureInfluences);
+		
+		return new TerrainData(vertices, textureCoords, normals, tangents, indices, textureInfluences);
 	}
 
 	private static float[] calculateTangents(float[] vertices, float[] textureCoords, int zVertices, int xVertices) {

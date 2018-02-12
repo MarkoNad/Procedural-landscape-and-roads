@@ -144,20 +144,21 @@ public class DebugScene3 {
 		float zTiles = depth / 5f;
 		float vertsPerMeter = 0.025f;
 		long startTime = System.nanoTime();
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+//		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
+//				zTiles, texturePack, blendMap, heightGenerator, biomesMap);
+//		terrain.setModel(loader);
 		double terrainDuration = (System.nanoTime() - startTime) / 1e9;
 		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
 		
 		float patchSize = 1000f;
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, 0f);
 		Point2Df domainUpperRightLimit = new Point2Df(5_000f, -5_000f);
-//		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, xTiles, zTiles,
-//				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
-//				Optional.of(Globals.getThreadPool()));
 		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, xTiles, zTiles,
 				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
-				Optional.empty());
+				Optional.of(Globals.getThreadPool()));
+//		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, xTiles, zTiles,
+//				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
+//				Optional.empty());
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(0f, 0f));
