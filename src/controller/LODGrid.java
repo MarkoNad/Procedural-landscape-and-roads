@@ -33,6 +33,8 @@ public class LODGrid {
 	private Map<TexturedModelComp, Float> scaleForModel;
 	private Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType;
 	
+	private int searchRange;
+	
 	public LODGrid(
 			float cellSize,
 			Map<TexturedModelComp, Float> scaleForModel,
@@ -43,6 +45,7 @@ public class LODGrid {
 		this.scaleForModel = scaleForModel;
 		this.lodLevelsForType = lodLevelsForType;
 		grid = new ConcurrentHashMap<>();
+		searchRange = searchRange();
 	}
 	
 	private void checkArgs(Map<TexturedModelComp, Float> scaleForModel,
@@ -136,7 +139,6 @@ public class LODGrid {
 	
 	public List<Entity> proximityEntities(Vector3f position) {
 		List<Entity> entities = new ArrayList<>();
-		int searchRange = searchRange();
 		
 		// traverse all cells, but discard those that are too far
 		for(Map.Entry<Point, Map<TreeType, List<Vector3f>>> cellEntry : grid.entrySet()) {

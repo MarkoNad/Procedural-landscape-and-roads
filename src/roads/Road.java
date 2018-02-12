@@ -152,7 +152,7 @@ public class Road {
 			Vector3f prevDirection = Vector3f.sub(curr, prev, null).normalise(null);
 			Vector3f nextDirection = Vector3f.sub(next, curr, null).normalise(null);
 			
-//			prevDirection.y = 0;// TODO
+//			prevDirection.y = 0; // TODO #issue1
 //			nextDirection.y = 0;
 			
 			// vector pointing to the right of the prev and next directions, used for centerline
