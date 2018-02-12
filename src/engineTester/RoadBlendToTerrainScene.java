@@ -130,7 +130,7 @@ public class RoadBlendToTerrainScene {
 		float vertsPerMeter = 0.025f;
 		long startTime = System.nanoTime();
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+				zTiles, texturePack, blendMap, heightGenerator, biomesMap, loader);
 		double terrainDuration = (System.nanoTime() - startTime) / 1e9;
 		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
 

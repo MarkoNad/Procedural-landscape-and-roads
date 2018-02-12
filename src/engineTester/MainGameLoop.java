@@ -78,7 +78,7 @@ public class MainGameLoop {
 		//Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, loader, texturePack, blendMap, heightGenerator);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 1), new Range(1, 2), new Range(2, 3));
 		BiomesMap biomesMap = new BiomesMap(new UniformHeightGenerator(), textureRanges);
-		Terrain terrain = new Terrain(loader, texturePack, blendMap, biomesMap);
+		Terrain terrain = new Terrain(texturePack, blendMap, biomesMap, loader);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

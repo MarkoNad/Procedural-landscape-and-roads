@@ -85,7 +85,7 @@ public class SimplexScene {
 		float depth = 4000;
 		float xTiles = width / 800f;
 		float zTiles = depth / 800f;
-		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, texturePack, blendMap, heightGenerator, biomesMap, loader);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

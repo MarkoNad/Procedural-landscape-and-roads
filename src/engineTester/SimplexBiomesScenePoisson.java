@@ -105,7 +105,7 @@ public class SimplexBiomesScenePoisson {
 		float zTiles = depth / 200f;
 		float vertsPerMeter = 0.025f;
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+				zTiles, texturePack, blendMap, heightGenerator, biomesMap, loader);
 		
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 130f, 650f, distribution, 1);

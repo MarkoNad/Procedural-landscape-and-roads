@@ -165,10 +165,10 @@ public class DebugScene3 {
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		ExecutorService pool = Globals.getThreadPool();
-		//BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
+		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
 
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		//grid.addToGrid(locationsPerType, pool);
+		grid.addToGrid(locationsPerType, pool);
 		
 
 

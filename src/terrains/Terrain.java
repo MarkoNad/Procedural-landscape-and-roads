@@ -2,6 +2,7 @@ package terrains;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
@@ -31,7 +32,7 @@ public class Terrain {
 	private Vector3f translation; // how much will be the terrain translated
 
 	private TerrainData terrainData;
-	private RawModel terrainModel;
+	private Optional<RawModel> terrainModel;
 
 	private TerrainTexturePack texturePack;
 	private TerrainTexture blendMap;
@@ -39,9 +40,10 @@ public class Terrain {
 
 	private IHeightGenerator heightGenerator;
 
-	public Terrain(TerrainTexturePack texturePack, TerrainTexture blendMap, ITextureMap textureMap) {
+	public Terrain(TerrainTexturePack texturePack, TerrainTexture blendMap, ITextureMap textureMap, 
+			Loader loader) {
 		this(0f, -800f, new Vector3f(), 800f, 800f, 0.2f, 1f, 1f, texturePack,
-				blendMap, new UniformHeightGenerator(), textureMap);
+				blendMap, new UniformHeightGenerator(), textureMap, loader);
 	}
 
 	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth,
@@ -66,18 +68,27 @@ public class Terrain {
 		this.terrainData = generateTerrainData();
 	}
 	
-	public RawModel getModel() {
+	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth,
+			float vertsPerMeter, float xTiles, float zTiles, TerrainTexturePack texturePack,
+			TerrainTexture blendMap, IHeightGenerator heightGenerator, ITextureMap textureMap, 
+			Loader loader) {
+		this(xUpperLeft, zUpperLeft, position, width, depth, vertsPerMeter, xTiles, zTiles, texturePack,
+				blendMap, heightGenerator, textureMap);
+		setModel(loader);
+	}
+	
+	public Optional<RawModel> getModel() {
 		return terrainModel;
 	}
 	
 	public void setModel(Loader loader) {
-		this.terrainModel = loader.loadToVAO(
+		this.terrainModel = Optional.of(loader.loadToVAO(
 				terrainData.getVertices(),
 				terrainData.getTextureCoords(),
 				terrainData.getNormals(),
 				terrainData.getTangents(),
 				terrainData.getIndices(),
-				terrainData.getTextureInfluences());
+				terrainData.getTextureInfluences()));
 	}
 
 	public Vector3f getTranslation() {

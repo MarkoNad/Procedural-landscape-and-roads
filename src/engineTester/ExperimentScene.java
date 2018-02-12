@@ -100,7 +100,7 @@ public class ExperimentScene {
 		float zTiles = depth / 200f;
 		float vertsPerMeter = 0.025f;
 		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+				zTiles, texturePack, blendMap, heightGenerator, biomesMap, loader);
 		
 		List<Vector3f> waypoints = new ArrayList<>();
 		waypoints.add(new Vector3f(0, 0, 0));
