@@ -89,20 +89,68 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		return (float) (0.5 * (simplexNoiseGenerator.eval(x, z) + 1.0f));
 	}
 	
+//	private float getInterpolatedHeight(float x, float z, List<Vector3f> trajectory,
+//			Function<Float, Float> influenceDistribution, float originalHeight) {
+//		float minDistSquared = -1;
+//		Vector3f nearestPoint = null;
+//		
+//		for(Vector3f p : trajectory) {
+//			float distSquared = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
+//			if(minDistSquared == -1 || distSquared < minDistSquared) {
+//				minDistSquared = distSquared;
+//				nearestPoint = p;
+//			}
+//		}
+//		
+//		float dist = (float) Math.sqrt(minDistSquared);
+//		
+//		// influence of update height; must be between 0 and 1
+//		float influence = influenceDistribution.apply(dist);
+//		if(influence < 0 || influence > 1) {
+//			LOGGER.severe("Invalid influence of additional height value: " + influence);
+//		}
+//		
+//		float trajectoryHeight = nearestPoint.y;
+//		
+//		float newHeight = influence * trajectoryHeight + (1 - influence) * originalHeight;
+//		return newHeight;
+//	}
+	
 	private float getInterpolatedHeight(float x, float z, List<Vector3f> trajectory,
 			Function<Float, Float> influenceDistribution, float originalHeight) {
 		float minDistSquared = -1;
+		float secondMinDistSquared = -1;
 		Vector3f nearestPoint = null;
+		Vector3f secondNearestPoint = null;
 		
 		for(Vector3f p : trajectory) {
 			float distSquared = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
-			if(minDistSquared == -1 || distSquared < minDistSquared) {
+			
+			if(minDistSquared == -1 && secondMinDistSquared == -1) {
+				minDistSquared = distSquared;
+				secondMinDistSquared = distSquared;
+				nearestPoint = p;
+				secondNearestPoint = p;
+				continue;
+			}
+			
+			if(distSquared < minDistSquared) {
+				secondMinDistSquared = minDistSquared;
+				secondNearestPoint = nearestPoint;
 				minDistSquared = distSquared;
 				nearestPoint = p;
+				continue;
+			}
+			
+			if(distSquared < secondMinDistSquared) {
+				secondMinDistSquared = distSquared;
+				secondNearestPoint = p;
+				continue;
 			}
 		}
 		
-		float dist = (float) Math.sqrt(minDistSquared);
+		float distanceFromTrajectorySquared = Math.min(minDistSquared, secondMinDistSquared);
+		float dist = (float) Math.sqrt(distanceFromTrajectorySquared);
 		
 		// influence of update height; must be between 0 and 1
 		float influence = influenceDistribution.apply(dist);
@@ -110,7 +158,8 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 			LOGGER.severe("Invalid influence of additional height value: " + influence);
 		}
 		
-		float trajectoryHeight = nearestPoint.y;
+		///float trajectoryHeight = nearestPoint.y;
+		float trajectoryHeight = Math.min(nearestPoint.y, secondNearestPoint.y);
 		
 		float newHeight = influence * trajectoryHeight + (1 - influence) * originalHeight;
 		return newHeight;

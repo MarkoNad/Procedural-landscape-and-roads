@@ -113,12 +113,12 @@ public class DevelopScene {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		float width = 20000;
 		float depth = 20000;
-		float xTiles = width / 5f;
-		float zTiles = depth / 5f;
+		float texWidth = 5f;
+		float texDepth = 5f;
 		float vertsPerMeter = 0.025f;
 		long startTime = System.nanoTime();
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, texWidth,
+				texDepth, texturePack, blendMap, heightGenerator, biomesMap, loader);
 		double terrainDuration = (System.nanoTime() - startTime) / 1e9;
 		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
 

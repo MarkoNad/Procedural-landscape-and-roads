@@ -2,8 +2,9 @@ MasterRenderer::prepare: switch clear and clearColor
 samplingDistance in SimplexHeightGenerator => perhaps set to distance of the neighboring vertex
 Vertex constructor - replace this(new ArrayList<>() with null)
 
-floor is x-z plane, but points are x-y. implement xz points
-
+not sure what to do with #issue1 in Roads:
+	prevDirection.y = 0;
+	nextDirection.y = 0;
 
 
 
