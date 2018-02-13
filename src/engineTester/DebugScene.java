@@ -77,11 +77,11 @@ public class DebugScene {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		float width = 20000;
 		float depth = 20000;
-		float xTiles = width / 100f * 0.5f;
-		float zTiles = depth / 100f * 0.5f;
+		float texWidth = 200f;
+		float texDepth = 200f;
 		float vertsPerMeter = 0.025f;
 		//Terrain terrain = new Terrain(0f, -8000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles, zTiles, texturePack, blendMap, heightGenerator, biomesMap, loader);
+		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, texWidth, texDepth, texturePack, blendMap, heightGenerator, biomesMap, loader);
 
 		// per vertex
 		List<Entity> gridElems = new ArrayList<>();
@@ -137,7 +137,7 @@ public class DebugScene {
 //				//return (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
 //			}
 //		};
-		Terrain noiseTerrain = new Terrain(0f, -20000, new Vector3f(), 20000, 20000, vertsPerMeter, xTiles, zTiles, texturePack, blendMap, noiseHGenerator, biomesMap, loader);
+		Terrain noiseTerrain = new Terrain(0f, -20000, new Vector3f(), 20000, 20000, vertsPerMeter, texWidth, texDepth, texturePack, blendMap, noiseHGenerator, biomesMap, loader);
 		
 		List<Entity> entities = new ArrayList<>();
 //		TreePlacer placer = new TreePlacer(noiseHGenerator, 0, 2000, -2000, 0, 50, 100, 70);

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +40,7 @@ import terrains.IHeightGenerator;
 import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
+import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
 import terrains.TreeType;
 import textures.ModelTexture;
@@ -100,6 +102,18 @@ public class DebugScene2 {
 		lodLevelsForType.put(TreeType.OAK, chestnutLods);
 		lodLevelsForType.put(TreeType.PINE, firLods);
 		
+		// terrain setup
+		NavigableMap<Float, Integer> distanceToLODLevel = new TreeMap<>();
+		distanceToLODLevel.put(2000f, 0);
+		distanceToLODLevel.put(5000f, 1);
+		distanceToLODLevel.put(20000f, 2);
+		
+		Map<Integer, Float> lodLevelToVertsPerUnit = new HashMap<>();
+		lodLevelToVertsPerUnit.put(0, 0.2f); // distance 5
+		lodLevelToVertsPerUnit.put(1, 0.025f); // distance 40
+		lodLevelToVertsPerUnit.put(2, 0.0125f);
+		
+		
 		TerrainTexture backgroundTexture = new TerrainTexture(loader.loadTexture("grassy"));
 		TerrainTexture rTexture = new TerrainTexture(loader.loadTexture("grassy"));
 		TerrainTexture gTexture = new TerrainTexture(loader.loadTexture("cliff3"));
@@ -107,7 +121,6 @@ public class DebugScene2 {
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
-		//IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
 		SimplexHeightGenerator heightGenerator = new SimplexHeightGenerator(1, 9000f, 0.0001f, 2f, 5, 0.4f, 40f, 0.2f, 5f);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
 		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
@@ -117,26 +130,41 @@ public class DebugScene2 {
 		};
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		
-
-		
 		List<Vector3f> roadWaypoints = findPath(heightGenerator);
-		final float segmentLen = 5f;
-		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.1f, heightGenerator, true);
+		//final float segmentLen = 5f;
+		final float segmentLen = 1f;
+		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
 		
-		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, segmentLen, heightGenerator);
-		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 50f ? 1f : 1 - Math.min((x - 50f) / 100f, 1f));
+		final float modifierSegementLen = 1f;
+		//List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, segmentLen, heightGenerator);
+		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
+		//heightGenerator.updateHeight(modifierTrajectory, x -> x <= 50f ? 1f : 1 - Math.min((x - 50f) / 100f, 1f));
+		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f));
 		
 		float width = 20000;
 		float depth = 20000;
-		float xTiles = width / 5f;
-		float zTiles = depth / 5f;
+//		float xTiles = width / 5f;
+//		float zTiles = depth / 5f;
+		float texWidth = 5f;
+		float texDepth = 5f;
 		float vertsPerMeter = 0.025f;
 		long startTime = System.nanoTime();
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, texturePack, blendMap, heightGenerator, biomesMap, loader);
+//		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
+//				zTiles, texturePack, blendMap, heightGenerator, biomesMap);
+//		terrain.setModel(loader);
 		double terrainDuration = (System.nanoTime() - startTime) / 1e9;
 		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
+		
+		float patchSize = 1000f;
+		Point2Df domainLowerLeftLimit = new Point2Df(5000f, -10000f);
+		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -15_000f);
+		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, texWidth, texDepth,
+				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
+				Optional.of(Globals.getThreadPool()));
+//		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, xTiles, zTiles,
+//				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
+//				Optional.empty());
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(0f, 0f));
@@ -154,7 +182,8 @@ public class DebugScene2 {
 		//roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeight(p.x, p.z), p.z), 0f, 0f, 0f, 10f)));
 		
 		//Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f);
-		Camera camera = new FloatingCamera(new Vector3f(100.0f, 0.0f, -5000.0f));
+		Camera camera = new FloatingCamera(new Vector3f(100.0f, 1000.0f, -5000.0f));
+		//Camera camera = new FloatingCamera(new Vector3f(0.0f, 0.0f, 0.0f));
 		
 		List<Entity> terrainGridElems = terrainVerticesGrid(fern, heightGenerator, width, depth, vertsPerMeter);
 		//List<Entity> oglGridElems = oglUnitGrid(fern, heightGenerator);
@@ -194,6 +223,8 @@ public class DebugScene2 {
 		nmEntites.add(barrelEntity2);
 		nmEntites.add(crateEntity2);
 		
+		final float terrainLODTolerance = 200f;
+		
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
@@ -203,8 +234,9 @@ public class DebugScene2 {
 			barrelEntity2.increaseRotation(0, 0.5f, 0);
 			crateEntity2.increaseRotation(0, 0.5f, 0);
 			
-			renderer.processTerrain(terrain);
+			//renderer.processTerrain(terrain);
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
+			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeightApprox(p.x, p.z), p.z), 0f, 0f, 0f, 2f)));
 			entities.addAll(terrainGridElems);
 			//entities.addAll(oglGridElems);
@@ -215,6 +247,7 @@ public class DebugScene2 {
 			
 			entities.forEach(e -> renderer.processEntity(e));
 			nmEntites.forEach(e -> renderer.processNMEntity(e));
+			terrains.forEach(t -> renderer.processTerrain(t));
 			renderer.processEntity(road);
 			renderer.render(light, camera);
 			

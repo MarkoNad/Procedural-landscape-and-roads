@@ -23,9 +23,9 @@ public class Terrain {
 	private final float depth;
 	private final float vertsPerMeter;
 
-	private final float xTiles; // how many times the texture will be repeated
+	private final float textureWidth; // how many times the texture will be repeated
 								// in x direction
-	private final float zTiles;
+	private final float textureDepth;
 
 	private float xUpperLeft; // true x coordinate of upper left corner
 	private float zUpperLeft;
@@ -40,14 +40,8 @@ public class Terrain {
 
 	private IHeightGenerator heightGenerator;
 
-	public Terrain(TerrainTexturePack texturePack, TerrainTexture blendMap, ITextureMap textureMap, 
-			Loader loader) {
-		this(0f, -800f, new Vector3f(), 800f, 800f, 0.2f, 1f, 1f, texturePack,
-				blendMap, new UniformHeightGenerator(), textureMap, loader);
-	}
-
 	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth,
-			float vertsPerMeter, float xTiles, float zTiles, TerrainTexturePack texturePack,
+			float vertsPerMeter, float textureWidth, float textureDepth, TerrainTexturePack texturePack,
 			TerrainTexture blendMap, IHeightGenerator heightGenerator, ITextureMap textureMap) {
 		if(textureMap.getNumberOfInfluences() != NUM_TEXTURES) {
 			throw new IllegalArgumentException("Terrain needs " + NUM_TEXTURES + " texture influences per "
@@ -59,8 +53,8 @@ public class Terrain {
 		this.width = width;
 		this.depth = depth;
 		this.vertsPerMeter = vertsPerMeter;
-		this.xTiles = xTiles;
-		this.zTiles = zTiles;
+		this.textureWidth = textureWidth;
+		this.textureDepth = textureDepth;
 		this.texturePack = texturePack;
 		this.blendMap = blendMap;
 		this.heightGenerator = heightGenerator;
@@ -69,10 +63,10 @@ public class Terrain {
 	}
 	
 	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth,
-			float vertsPerMeter, float xTiles, float zTiles, TerrainTexturePack texturePack,
+			float vertsPerMeter, float textureWidth, float textureDepth, TerrainTexturePack texturePack,
 			TerrainTexture blendMap, IHeightGenerator heightGenerator, ITextureMap textureMap, 
 			Loader loader) {
-		this(xUpperLeft, zUpperLeft, position, width, depth, vertsPerMeter, xTiles, zTiles, texturePack,
+		this(xUpperLeft, zUpperLeft, position, width, depth, vertsPerMeter, textureWidth, textureDepth, texturePack,
 				blendMap, heightGenerator, textureMap);
 		setModel(loader);
 	}
@@ -136,8 +130,8 @@ public class Terrain {
 				normals[vertexPointer * 3 + 1] = normal.y;
 				normals[vertexPointer * 3 + 2] = normal.z;
 
-				textureCoords[vertexPointer * 2] = (float) x / ((float) xVertices - 1) * xTiles;
-				textureCoords[vertexPointer * 2 + 1] = (float) z / ((float) zVertices - 1) * zTiles;
+				textureCoords[vertexPointer * 2] = xcoord / textureWidth;
+				textureCoords[vertexPointer * 2 + 1] = zcoord / textureDepth;
 
 				textureMap.textureInfluences(xcoord, height, zcoord, texStrengthsBuffer);
 				textureInfluences[vertexPointer * 3] = texStrengthsBuffer[0];

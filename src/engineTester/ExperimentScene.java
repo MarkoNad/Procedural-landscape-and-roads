@@ -96,11 +96,11 @@ public class ExperimentScene {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		float width = 20000;
 		float depth = 20000;
-		float xTiles = width / 200f;
-		float zTiles = depth / 200f;
+		float texWidth = 200f;
+		float texDepth = 200f;
 		float vertsPerMeter = 0.025f;
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, texturePack, blendMap, heightGenerator, biomesMap, loader);
+		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, texWidth,
+				texDepth, texturePack, blendMap, heightGenerator, biomesMap, loader);
 		
 		List<Vector3f> waypoints = new ArrayList<>();
 		waypoints.add(new Vector3f(0, 0, 0));
