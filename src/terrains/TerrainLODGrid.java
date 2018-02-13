@@ -98,31 +98,25 @@ public class TerrainLODGrid {
 	}
 	
 	private void generateTerrains() {
-		float totalWidth = domainUpperRightLimit.getX() - domainLowerLeftLimit.getX();
-		float totalDepth = domainLowerLeftLimit.getZ() - domainUpperRightLimit.getZ();
+		LOGGER.info("Generating terrain...");
 		
-		int xPatches = (int) (totalWidth / patchSize);
-		int zPatches = (int) (totalDepth / patchSize);
+		Point2Di start = index(domainLowerLeftLimit);
+		Point2Di end = index(domainUpperRightLimit);
 		
-		System.out.println("x patches: " + xPatches);
-		System.out.println("z patches: " + zPatches);
-		
-		if(xPatches == 0 || zPatches == 0) {
+		if(end.getX() - start.getX() < 0 || start.getZ() - end.getZ() < 0) {
 			LOGGER.warning("Number of terrains to generate is 0.");
 		}
 		
-		LOGGER.info("Generating terrain...");
-		
-		for(int row = 0; row < zPatches; row++) {
-			for(int col = 0; col < xPatches; col++) {
-				float xUpperLeft = col * patchSize;
-				float zUpperLeft = -(row + 1) * patchSize;
+		for(int z = start.getZ(); z >= end.getZ(); z--) {
+			for(int x = start.getX(); x <= end.getX(); x++) {
+				float xUpperLeft = x * patchSize;
+				float zUpperLeft = (z - 1) * patchSize;
 				
-				Point2Di gridPoint = new Point2Di(col, -row);
+				Point2Di gridPoint = new Point2Di(x, z);
 				
 				for(int level : distanceToLODLevel.values()) {
 					float vertsPerUnit = lodLevelToVertsPerUnit.get(level);
-					System.out.println("row: " + row + ", col: " + col + ", level: " + level + ", vpu: " + vertsPerUnit);
+					System.out.println("row: " + z + ", col: " + x + ", level: " + level + ", vpu: " + vertsPerUnit);
 					
 					Runnable generationTask = new Runnable() {
 						@Override
@@ -161,7 +155,61 @@ public class TerrainLODGrid {
 			}
 		}
 		
+//		for(int row = 0; row < zPatches; row++) {
+//			for(int col = 0; col < xPatches; col++) {
+//				float xUpperLeft = col * patchSize;
+//				float zUpperLeft = -(row + 1) * patchSize;
+//				
+//				Point2Di gridPoint = new Point2Di(col, -row);
+//				
+//				for(int level : distanceToLODLevel.values()) {
+//					float vertsPerUnit = lodLevelToVertsPerUnit.get(level);
+//					System.out.println("row: " + row + ", col: " + col + ", level: " + level + ", vpu: " + vertsPerUnit);
+//					
+//					Runnable generationTask = new Runnable() {
+//						@Override
+//						public void run() {
+//							System.out.println("A");
+//
+//							Terrain patch = generatePatch(xUpperLeft, zUpperLeft, patchSize, vertsPerUnit);
+//							System.out.println("B");
+//
+//							Map<Integer, Terrain> terrainsAtPoint = grid.get(gridPoint);
+//							System.out.println("C");
+//							
+//							if(terrainsAtPoint == null) {
+//								terrainsAtPoint = new ConcurrentHashMap<>();
+//								grid.put(gridPoint, terrainsAtPoint);
+//							}
+//							System.out.println("D");
+//							
+//							terrainsAtPoint.put(level, patch);
+//							System.out.println("E");
+//							
+//							setTerrainsAdded(true);
+//							System.out.println("F");
+//							//LOGGER.finer("Added patch at (" + gridPoint.getX() + ", " + gridPoint.getZ() + ").");
+//						}
+//					};
+//					
+//					LOGGER.finer(pool.isPresent() ? "Submitting patch for generation." : "Generating patch.");
+//					
+//					if(pool.isPresent()) {
+//						pool.get().submit(generationTask);
+//					} else {
+//						generationTask.run();
+//					}
+//				}
+//			}
+//		}
+		
 		LOGGER.info("Terrain generated / all patches submitted for generation.");
+	}
+	
+	private Point2Di index(Point2Df point) {
+		int x = (int) (point.getX() / patchSize);
+		int z = (int) (point.getZ() / patchSize);
+		return new Point2Di(x, z);
 	}
 
 	private Terrain generatePatch(float xUpperLeft, float zUpperLeft, float size, float vertsPerUnit) {
@@ -181,8 +229,6 @@ public class TerrainLODGrid {
 			lastRetrievalPosition = new Vector3f(position);
 			proximityTerrainsCache = calcProximityTerrains(position);
 		}
-		
-		System.out.println("grid size: " + grid.size());
 
 		return proximityTerrainsCache;
 	}

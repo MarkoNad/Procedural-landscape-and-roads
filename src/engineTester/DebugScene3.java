@@ -109,7 +109,8 @@ public class DebugScene3 {
 		//distanceToLODLevel.put(20000f, 2);
 		
 		Map<Integer, Float> lodLevelToVertsPerUnit = new HashMap<>();
-		lodLevelToVertsPerUnit.put(0, 0.025f);
+		//lodLevelToVertsPerUnit.put(0, 0.2f);
+		lodLevelToVertsPerUnit.put(0, 0.4f);
 		lodLevelToVertsPerUnit.put(1, 0.025f);
 		//lodLevelToVertsPerUnit.put(2, 0.0125f);
 		
@@ -131,12 +132,16 @@ public class DebugScene3 {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		
 		List<Vector3f> roadWaypoints = findPath(heightGenerator);
-		final float segmentLen = 5f;
-		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0f, heightGenerator, true);
+		//final float segmentLen = 5f;
+		final float segmentLen = 1f;
+		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.2f, heightGenerator, false);
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
 		
-		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, segmentLen, heightGenerator);
-		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 50f ? 1f : 1 - Math.min((x - 50f) / 100f, 1f));
+		final float modifierSegementLen = 1f;
+		//List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, segmentLen, heightGenerator);
+		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
+		//heightGenerator.updateHeight(modifierTrajectory, x -> x <= 50f ? 1f : 1 - Math.min((x - 50f) / 100f, 1f));
+		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f));
 		
 		float width = 20000;
 		float depth = 20000;
@@ -151,8 +156,8 @@ public class DebugScene3 {
 		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
 		
 		float patchSize = 1000f;
-		Point2Df domainLowerLeftLimit = new Point2Df(0f, 0f);
-		Point2Df domainUpperRightLimit = new Point2Df(5_000f, -5_000f);
+		Point2Df domainLowerLeftLimit = new Point2Df(5000f, -10000f);
+		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -15_000f);
 		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, xTiles, zTiles,
 				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
 				Optional.of(Globals.getThreadPool()));
@@ -165,10 +170,10 @@ public class DebugScene3 {
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		ExecutorService pool = Globals.getThreadPool();
-		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
+		//BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
 
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		grid.addToGrid(locationsPerType, pool);
+		//grid.addToGrid(locationsPerType, pool);
 		
 
 
