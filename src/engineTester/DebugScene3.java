@@ -106,13 +106,12 @@ public class DebugScene3 {
 		NavigableMap<Float, Integer> distanceToLODLevel = new TreeMap<>();
 		distanceToLODLevel.put(2000f, 0);
 		distanceToLODLevel.put(5000f, 1);
-		//distanceToLODLevel.put(20000f, 2);
+		distanceToLODLevel.put(20000f, 2);
 		
 		Map<Integer, Float> lodLevelToVertsPerUnit = new HashMap<>();
-		//lodLevelToVertsPerUnit.put(0, 0.2f);
-		lodLevelToVertsPerUnit.put(0, 0.4f);
-		lodLevelToVertsPerUnit.put(1, 0.025f);
-		//lodLevelToVertsPerUnit.put(2, 0.0125f);
+		lodLevelToVertsPerUnit.put(0, 0.2f); // distance 5
+		lodLevelToVertsPerUnit.put(1, 0.025f); // distance 40
+		lodLevelToVertsPerUnit.put(2, 0.0125f);
 		
 		
 		TerrainTexture backgroundTexture = new TerrainTexture(loader.loadTexture("grassy"));
@@ -134,7 +133,7 @@ public class DebugScene3 {
 		List<Vector3f> roadWaypoints = findPath(heightGenerator);
 		//final float segmentLen = 5f;
 		final float segmentLen = 1f;
-		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.2f, heightGenerator, false);
+		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
 		
 		final float modifierSegementLen = 1f;
@@ -170,10 +169,10 @@ public class DebugScene3 {
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		ExecutorService pool = Globals.getThreadPool();
-		//BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
+		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
 
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		//grid.addToGrid(locationsPerType, pool);
+		grid.addToGrid(locationsPerType, pool);
 		
 
 

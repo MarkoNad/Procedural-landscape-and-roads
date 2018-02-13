@@ -145,7 +145,6 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 			if(distSquared < secondMinDistSquared) {
 				secondMinDistSquared = distSquared;
 				secondNearestPoint = p;
-				System.out.println("here1"); // TODO
 				continue;
 			}
 		}
