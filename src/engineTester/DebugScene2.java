@@ -109,7 +109,8 @@ public class DebugScene2 {
 		distanceToLODLevel.put(20000f, 2);
 		
 		Map<Integer, Float> lodLevelToVertsPerUnit = new HashMap<>();
-		lodLevelToVertsPerUnit.put(0, 0.2f); // distance 5
+		//lodLevelToVertsPerUnit.put(0, 0.2f); // distance 5
+		lodLevelToVertsPerUnit.put(0, 0.15f); // distance 10
 		lodLevelToVertsPerUnit.put(1, 0.025f); // distance 40
 		lodLevelToVertsPerUnit.put(2, 0.0125f);
 		
@@ -142,13 +143,8 @@ public class DebugScene2 {
 		//heightGenerator.updateHeight(modifierTrajectory, x -> x <= 50f ? 1f : 1 - Math.min((x - 50f) / 100f, 1f));
 		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f));
 		
-		float width = 20000;
-		float depth = 20000;
-//		float xTiles = width / 5f;
-//		float zTiles = depth / 5f;
 		float texWidth = 5f;
 		float texDepth = 5f;
-		float vertsPerMeter = 0.025f;
 		long startTime = System.nanoTime();
 //		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
 //				zTiles, texturePack, blendMap, heightGenerator, biomesMap);
@@ -157,8 +153,10 @@ public class DebugScene2 {
 		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
 		
 		float patchSize = 1000f;
-		Point2Df domainLowerLeftLimit = new Point2Df(5000f, -10000f);
-		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -15_000f);
+//		Point2Df domainLowerLeftLimit = new Point2Df(0f, 0f);
+//		Point2Df domainUpperRightLimit = new Point2Df(20_000f, -20_000f);
+		Point2Df domainLowerLeftLimit = new Point2Df(0f, 0f);
+		Point2Df domainUpperRightLimit = new Point2Df(14_000f, -14_000f);
 		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, texWidth, texDepth,
 				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
 				Optional.of(Globals.getThreadPool()));
@@ -185,7 +183,7 @@ public class DebugScene2 {
 		Camera camera = new FloatingCamera(new Vector3f(100.0f, 1000.0f, -5000.0f));
 		//Camera camera = new FloatingCamera(new Vector3f(0.0f, 0.0f, 0.0f));
 		
-		List<Entity> terrainGridElems = terrainVerticesGrid(fern, heightGenerator, width, depth, vertsPerMeter);
+		//List<Entity> terrainGridElems = terrainVerticesGrid(fern, heightGenerator, width, depth, vertsPerMeter);
 		//List<Entity> oglGridElems = oglUnitGrid(fern, heightGenerator);
 		
 		List<Entity> nmEntites = new ArrayList<>();
@@ -238,7 +236,7 @@ public class DebugScene2 {
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
 			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeightApprox(p.x, p.z), p.z), 0f, 0f, 0f, 2f)));
-			entities.addAll(terrainGridElems);
+			//entities.addAll(terrainGridElems);
 			//entities.addAll(oglGridElems);
 			entities.add(chestnutEntityTrunk);
 			entities.add(chestnutEntityTop);
