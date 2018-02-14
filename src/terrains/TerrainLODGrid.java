@@ -1,11 +1,13 @@
 package terrains;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -102,10 +104,17 @@ public class TerrainLODGrid {
 	}
 	
 	private void generateTerrains() {
-		LOGGER.info("Generating terrain...");
+		LOGGER.info("Generating base terrain patches...");
+		
+//		Point2Di start = index(domainLowerLeftLimit);
+//		Point2Di end = index(domainUpperRightLimit);
 		
 		Point2Di start = index(domainLowerLeftLimit);
-		Point2Di end = index(domainUpperRightLimit);
+		
+		int xPatches = (int) Math.ceil((domainUpperRightLimit.getX() - domainLowerLeftLimit.getX()) / patchSize);
+		int zPatches = (int) Math.ceil((domainLowerLeftLimit.getZ() - domainUpperRightLimit.getZ()) / patchSize);
+		
+		Point2Di end = new Point2Di(start.getX() + xPatches - 1, start.getZ() - (zPatches - 1));
 		
 		if(end.getX() - start.getX() < 0 || start.getZ() - end.getZ() < 0) {
 			LOGGER.warning("Number of terrains to generate is 0.");
@@ -120,43 +129,50 @@ public class TerrainLODGrid {
 		for(int level : revSortedLevels) { // generate lower details first (lower LOD ID -> higher detail)
 			for(int z = start.getZ(); z >= end.getZ(); z--) {
 				for(int x = start.getX(); x <= end.getX(); x++) {
-					float xUpperLeft = x * patchSize;
-					float zUpperLeft = (z - 1) * patchSize;
-					
-					Point2Di gridPoint = new Point2Di(x, z);
-					
-					float vertsPerUnit = lodLevelToVertsPerUnit.get(level);
-					Runnable generationTask = new Runnable() {
-						@Override
-						public void run() {
-							Terrain patch = generatePatch(xUpperLeft, zUpperLeft, patchSize, vertsPerUnit);
-	
-							ConcurrentNavigableMap<Integer, Terrain> terrainsAtPoint = grid.get(gridPoint);
-	
-							if(terrainsAtPoint == null) {
-								terrainsAtPoint = new ConcurrentSkipListMap<>();
-								grid.put(gridPoint, terrainsAtPoint);
-							}
-	
-							terrainsAtPoint.put(level, patch);
-	
-							setTerrainsAdded(true);
-							LOGGER.finest("Added terrain patch at (" + gridPoint.getX() + ", " + gridPoint.getZ() + ").");
-						}
-					};
-					
-					LOGGER.finest(pool.isPresent() ? "Submitting patch for generation." : "Generating patch.");
-					
-					if(pool.isPresent()) {
-						pool.get().submit(generationTask);
-					} else {
-						generationTask.run();
-					}
+					submitPatchForGeneration(x, z, level);
 				}
 			}
 		}
 		
-		LOGGER.info(pool.isPresent() ? "All terrain patches submitted for generation." : "Terrain generated.");
+		LOGGER.info(pool.isPresent() ?
+				"All base terrain patches submitted for generation." :
+				"Base terrain patches generated.");
+	}
+	
+	private void submitPatchForGeneration(int x, int z, int level) {
+		float xUpperLeft = x * patchSize;
+		float zUpperLeft = (z - 1) * patchSize;
+		
+		Point2Di gridPoint = new Point2Di(x, z);
+		
+		float vertsPerUnit = lodLevelToVertsPerUnit.get(level);
+		Runnable generationTask = new Runnable() {
+			@Override
+			public void run() {
+				Terrain patch = generatePatch(xUpperLeft, zUpperLeft, patchSize, vertsPerUnit);
+
+				ConcurrentNavigableMap<Integer, Terrain> terrainsAtPoint = grid.get(gridPoint);
+
+				if(terrainsAtPoint == null) {
+					terrainsAtPoint = new ConcurrentSkipListMap<>();
+					grid.put(gridPoint, terrainsAtPoint);
+				}
+
+				terrainsAtPoint.put(level, patch);
+
+				setTerrainsAdded(true);
+				LOGGER.finest("Added terrain patch at (" + gridPoint.getX() + ", " +
+				gridPoint.getZ() + ") with LOD " + level + ".");
+			}
+		};
+		
+		LOGGER.finest(pool.isPresent() ? "Submitting patch for generation." : "Generating patch.");
+		
+		if(pool.isPresent()) {
+			pool.get().submit(generationTask);
+		} else {
+			generationTask.run();
+		}
 	}
 	
 	private Point2Di index(Point2Df point) {
@@ -168,6 +184,44 @@ public class TerrainLODGrid {
 	private Terrain generatePatch(float xUpperLeft, float zUpperLeft, float size, float vertsPerUnit) {
 		return new Terrain(xUpperLeft, zUpperLeft, translation, size, size, vertsPerUnit,
 				xTiles, zTiles, texturePack, blendMap, heightMap, biomesMap);
+	}
+	
+	public void addLODAtTrajectory(List<Vector3f> trajectory, int level, float drawDistance,
+			float vertsPerUnit) {
+		lodLevelToVertsPerUnit.put(level, vertsPerUnit);
+		distanceToLODLevel.put(drawDistance, level);
+		
+		Set<Point2Di> newLodPoints = cellsWithTrajectory(trajectory);
+		
+		LOGGER.info("Generating additional terrain patches...");
+		
+		for(Point2Di gridPoint : newLodPoints) {
+			submitPatchForGeneration(gridPoint.getX(), gridPoint.getZ(), level);
+		}
+		
+		LOGGER.info(pool.isPresent() ?
+				"All additional terrain patches submitted for generation." :
+				"Additional terrain patches generated.");
+	}
+	
+	private Set<Point2Di> cellsWithTrajectory(List<Vector3f> trajectory) {
+		Set<Point2Di> cells = new HashSet<>();
+		
+		Point2Di ll = index(domainLowerLeftLimit); // lower left grid point (cell)
+		Point2Di ur = index(domainUpperRightLimit); // upper right grid point (cell)
+		
+		for(Vector3f tp : trajectory) { // tp - trajectory point
+			Point2Di cell = index(new Point2Df(tp.x, tp.z));
+			
+			if(cell.getX() < ll.getX() || cell.getX() > ur.getX() ||
+					cell.getZ() > ll.getZ() || cell.getZ() < ur.getZ()) {
+				continue;
+			}
+			
+			cells.add(cell);
+		}
+		
+		return cells;
 	}
 	
 	public List<Terrain> proximityTerrains(Vector3f position, float tolerance) {
