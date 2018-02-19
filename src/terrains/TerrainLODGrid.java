@@ -106,9 +106,6 @@ public class TerrainLODGrid {
 	private void generateTerrains() {
 		LOGGER.info("Generating base terrain patches...");
 		
-//		Point2Di start = index(domainLowerLeftLimit);
-//		Point2Di end = index(domainUpperRightLimit);
-		
 		Point2Di start = index(domainLowerLeftLimit);
 		
 		int xPatches = (int) Math.ceil((domainUpperRightLimit.getX() - domainLowerLeftLimit.getX()) / patchSize);

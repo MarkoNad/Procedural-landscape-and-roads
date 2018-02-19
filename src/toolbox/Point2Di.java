@@ -2,8 +2,8 @@ package toolbox;
 
 public class Point2Di {
 		
-	private final int x;
-	private final int z;
+	private int x;
+	private int z;
 
 	public Point2Di(int x, int z) {
 		this.x = x;
@@ -14,8 +14,16 @@ public class Point2Di {
 		return x;
 	}
 	
+	public void setX(int x) {
+		this.x = x;
+	}
+	
 	public int getZ() {
 		return z;
+	}
+	
+	public void setZ(int z) {
+		this.z = z;
 	}
 	
 	public static float distance(Point2Di p1, Point2Di p2) {

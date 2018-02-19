@@ -1,5 +1,6 @@
 package terrains;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.logging.Logger;
 import org.lwjgl.util.vector.Vector3f;
 
 import toolbox.OpenSimplexNoise;
+import toolbox.Point2Di;
 
 public class SimplexHeightGenerator implements IHeightGenerator {
 	
@@ -35,8 +37,8 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	private final float heightVariation;
 	
 	private OpenSimplexNoise simplexNoiseGenerator;
-	
-	private Map<List<Vector3f>, Function<Float, Float>> trajectoryToInfluence;
+
+	private List<TrajectoryData> trajectories;
 	
 	public SimplexHeightGenerator(long seed) {
 		this(seed, DEFAULT_PREFERRED_HEIGHT, DEFAULT_BASE_FREQUENCY_MODIFIER,
@@ -60,11 +62,33 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		this.heightBias = heightBias;
 		this.heightVariation = heightVariation;
 		this.simplexNoiseGenerator = new OpenSimplexNoise(seed);
-		this.trajectoryToInfluence = new HashMap<>();
+		this.trajectories = new ArrayList<>();
+	}
+
+	@Override
+	public float getHeight(float x, float z) {
+		float finalHeight = getBaseHeight(x, z);
+
+		for(TrajectoryData trajectoryData : trajectories) {
+			finalHeight = getInterpolatedHeight(x, z, finalHeight, trajectoryData);
+		}
+		
+		return finalHeight;
 	}
 	
-	public void updateHeight(List<Vector3f> trajectory, Function<Float, Float> influenceDistribution) {
-		trajectoryToInfluence.put(trajectory, influenceDistribution);
+	@Override
+	public float getHeightApprox(float x, float z) {
+		return getBaseHeight(x, z);
+	}
+
+	@Override
+	public Vector3f getNormal(float x, float z) {
+		return getGenericNormal(x, z, this::getHeight);
+	}
+	
+	@Override
+	public Vector3f getNormalApprox(float x, float z) {
+		return getGenericNormal(x, z, this::getHeightApprox);
 	}
 	
 	private float getBaseHeight(float x, float z) {
@@ -89,109 +113,6 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		return (float) (0.5 * (simplexNoiseGenerator.eval(x, z) + 1.0f));
 	}
 	
-//	private float getInterpolatedHeight(float x, float z, List<Vector3f> trajectory,
-//			Function<Float, Float> influenceDistribution, float originalHeight) {
-//		float minDistSquared = -1;
-//		Vector3f nearestPoint = null;
-//		
-//		for(Vector3f p : trajectory) {
-//			float distSquared = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
-//			if(minDistSquared == -1 || distSquared < minDistSquared) {
-//				minDistSquared = distSquared;
-//				nearestPoint = p;
-//			}
-//		}
-//		
-//		float dist = (float) Math.sqrt(minDistSquared);
-//		
-//		// influence of update height; must be between 0 and 1
-//		float influence = influenceDistribution.apply(dist);
-//		if(influence < 0 || influence > 1) {
-//			LOGGER.severe("Invalid influence of additional height value: " + influence);
-//		}
-//		
-//		float trajectoryHeight = nearestPoint.y;
-//		
-//		float newHeight = influence * trajectoryHeight + (1 - influence) * originalHeight;
-//		return newHeight;
-//	}
-	
-	private float getInterpolatedHeight(float x, float z, List<Vector3f> trajectory,
-			Function<Float, Float> influenceDistribution, float originalHeight) {
-		float minDistSquared = -1;
-		float secondMinDistSquared = -1;
-		Vector3f nearestPoint = null;
-		Vector3f secondNearestPoint = null;
-		
-		for(Vector3f p : trajectory) {
-			float distSquared = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
-			
-			if(minDistSquared == -1 && secondMinDistSquared == -1) {
-				minDistSquared = distSquared;
-				secondMinDistSquared = distSquared;
-				nearestPoint = p;
-				secondNearestPoint = p;
-				continue;
-			}
-			
-			if(distSquared < minDistSquared) {
-				secondMinDistSquared = minDistSquared;
-				secondNearestPoint = nearestPoint;
-				minDistSquared = distSquared;
-				nearestPoint = p;
-				continue;
-			}
-			
-			if(distSquared < secondMinDistSquared) {
-				secondMinDistSquared = distSquared;
-				secondNearestPoint = p;
-				continue;
-			}
-		}
-		
-		float distanceFromTrajectorySquared = Math.min(minDistSquared, secondMinDistSquared);
-		float dist = (float) Math.sqrt(distanceFromTrajectorySquared);
-		
-		// influence of update height; must be between 0 and 1
-		float influence = influenceDistribution.apply(dist);
-		if(influence < 0 || influence > 1) {
-			LOGGER.severe("Invalid influence of additional height value: " + influence);
-		}
-		
-		///float trajectoryHeight = nearestPoint.y;
-		float trajectoryHeight = Math.min(nearestPoint.y, secondNearestPoint.y);
-		
-		float newHeight = influence * trajectoryHeight + (1 - influence) * originalHeight;
-		return newHeight;
-	}
-
-	@Override
-	public float getHeight(float x, float z) {
-		// expensive // TODO
-		float finalHeight = getBaseHeight(x, z);
-
-		for(Map.Entry<List<Vector3f>, Function<Float, Float>> modifier : trajectoryToInfluence.entrySet()) {
-			finalHeight = getInterpolatedHeight(x, z, modifier.getKey(), modifier.getValue(), finalHeight);
-		}
-		
-		return finalHeight;
-	}
-	
-	@Override
-	public float getHeightApprox(float x, float z) {
-		return getBaseHeight(x, z);
-	}
-
-	@Override
-	public Vector3f getNormal(float x, float z) {
-		return getGenericNormal(x, z, this::getHeight);
-	}
-	
-	@Override
-	public Vector3f getNormalApprox(float x, float z) {
-		return getGenericNormal(x, z, this::getHeightApprox);
-	}
-	
 	private Vector3f getGenericNormal(float x, float z, BiFunction<Float, Float, Float> heightGetter) {
 		float heightL = heightGetter.apply(x - samplingDistance, z);
 		float heightR = heightGetter.apply(x + samplingDistance, z);
@@ -208,6 +129,140 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	public float getMaxHeight() {
 		//return (float) (Math.pow(1.0f + heightBias, heightVariation) * preferredHeight);
 		return preferredHeight;
+	}
+	
+	private static class TrajectoryData {
+		private final List<Vector3f> trajectory;
+		private final Function<Float, Float> influenceDistribution;
+		private final Map<Point2Di, List<TrajectoryPoint>> grid;
+		private final float gridCellSize;
+		
+		public TrajectoryData(List<Vector3f> trajectory, Function<Float, Float> influenceDistribution,
+				float influenceDistance) {
+			if(trajectory == null || trajectory.isEmpty()) {
+				throw new IllegalArgumentException("Invalid trajectory definition.");
+			}
+			
+			this.trajectory = trajectory;
+			this.influenceDistribution = influenceDistribution;
+			this.gridCellSize = influenceDistance;
+			this.grid = new HashMap<>();
+			
+			populateGrid();
+		}
+		
+		private void populateGrid() {
+			for(int i = 0; i < trajectory.size(); i++) {
+				Vector3f curr = trajectory.get(i);
+				Vector3f prev = i == 0 ? null : trajectory.get(i - 1);
+				Vector3f next = i == trajectory.size() - 1 ? null : trajectory.get(i + 1);
+				TrajectoryPoint tp = new TrajectoryPoint(curr, prev, next);
+				
+				Point2Di cell = index(curr.x, curr.z);
+				
+				List<TrajectoryPoint> pointsInCell = grid.get(cell);
+				if(pointsInCell == null) {
+					pointsInCell = new ArrayList<>();
+					grid.put(cell, pointsInCell);
+				}
+
+				pointsInCell.add(tp);
+			}
+		}
+		
+		private Point2Di index(float x, float z) {
+			int gridX = (int) (x / gridCellSize);
+			int gridZ = (int) (z / gridCellSize);
+			return new Point2Di(gridX, gridZ);
+		}
+		
+	}
+	
+	private static class TrajectoryPoint {
+		private final Vector3f point;
+		private final Vector3f previous;
+		private final Vector3f next;
+		
+		public TrajectoryPoint(Vector3f point, Vector3f previous, Vector3f next) {
+			this.point = point;
+			this.previous = previous;
+			this.next = next;
+		}
+
+	}
+	
+	public void updateHeight(List<Vector3f> trajectory, Function<Float, Float> influenceDistribution, 
+			float influenceDistance) {
+		TrajectoryData data = new TrajectoryData(trajectory, influenceDistribution, influenceDistance);
+		trajectories.add(data);
+	}
+	
+	private float getInterpolatedHeight(float x, float z, float originalHeight,
+			TrajectoryData trajectoryData) {
+		int middleX = (int) (x / trajectoryData.gridCellSize);
+		int middleZ = (int) (z / trajectoryData.gridCellSize);
+		
+		float minDistSquared = -1;
+		TrajectoryPoint nearestTPoint = null;
+		
+		Point2Di indexBuf = new Point2Di(middleX, middleZ);
+		for(int gridZ = middleZ - 1; gridZ <= middleZ + 1; gridZ++) {
+			for(int gridX = middleX - 1; gridX <= middleX + 1; gridX++) {
+				indexBuf.setX(gridX);
+				indexBuf.setZ(gridZ);
+
+				List<TrajectoryPoint> pointsInCell = trajectoryData.grid.get(indexBuf);
+				
+				if(pointsInCell == null) continue;
+				
+				for(TrajectoryPoint tp : pointsInCell) {
+					Vector3f p = tp.point;
+					
+					float distSquared = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
+					
+					if(minDistSquared == -1 || distSquared < minDistSquared) {
+						minDistSquared = distSquared;
+						nearestTPoint = tp;
+					}
+				}
+			}
+		}
+		
+		if(nearestTPoint == null) return originalHeight;
+
+		Vector3f previousP = nearestTPoint.previous;
+		Vector3f nextP = nearestTPoint.next;
+		
+		float secondMinDistSquared = -1;
+		Vector3f secondNearestPoint = null;
+		
+		if(previousP != null) {
+			float distSquared = (previousP.x - x) * (previousP.x - x) + (previousP.z - z) * (previousP.z - z);
+			secondMinDistSquared = distSquared;
+			secondNearestPoint = previousP;
+		}
+		
+		if(nextP != null) {
+			float distSquared = (nextP.x - x) * (nextP.x - x) + (nextP.z - z) * (nextP.z - z);
+			if(secondMinDistSquared == -1 || distSquared < secondMinDistSquared) {
+				secondMinDistSquared = distSquared;
+				secondNearestPoint = nextP;
+			}
+		}
+		
+		float distanceFromTrajectorySquared = Math.min(minDistSquared, secondMinDistSquared);
+		float dist = (float) Math.sqrt(distanceFromTrajectorySquared);
+		
+		// influence of update height; must be between 0 and 1
+		float influence = trajectoryData.influenceDistribution.apply(dist);
+		if(influence < 0 || influence > 1) {
+			LOGGER.severe("Invalid influence of additional height value: " + influence);
+		}
+		
+		float trajectoryHeight = Math.min(nearestTPoint.point.y, secondNearestPoint.y);
+		
+		float newHeight = influence * trajectoryHeight + (1 - influence) * originalHeight;
+		return newHeight;
 	}
 
 }

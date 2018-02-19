@@ -137,7 +137,7 @@ public class RoadBlendToTerrain2 {
 		
 		final float modifierSegementLen = 1f;
 		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
-		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f));
+		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f);
 		
 		float texWidth = 5f;
 		float texDepth = 5f;
