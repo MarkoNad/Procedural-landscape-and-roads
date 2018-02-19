@@ -17,13 +17,12 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	
 	private static final Logger LOGGER = Logger.getLogger(SimplexHeightGenerator.class.getName());
 
+	private static final float DIFF = 1e-1f;
 	private static final float DEFAULT_PREFERRED_HEIGHT = 9000.0f;
-	private static final float DEFAULT_BASE_FREQUENCY_MODIFIER = 0.0001f; // 0.001
+	private static final float DEFAULT_BASE_FREQUENCY_MODIFIER = 0.0001f;
 	private static final float DEFAULT_FREQ_INCREASE_FACTOR = 2f;
 	private static final int DEFAULT_OCTAVES = 5;
-	private static final float DEFAULT_ROUGHNESS = 0.4f; // 0.4
-	//private static final float DEFAULT_SAMPLING_DISTANCE = 1.5f; // 2f // TODO
-	private static final float DEFAULT_SAMPLING_DISTANCE = 40f; // 2f
+	private static final float DEFAULT_ROUGHNESS = 0.4f;
 	private static final float DEFAULT_HEIGHT_BIAS = 0.2f;
 	private static final float DEFAULT_HEIGHT_VARIATION = 5f;
 	
@@ -32,7 +31,6 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	private final float freqIncreaseFactor;
 	private final int octaves;
 	private final float roughness;
-	private final float samplingDistance;
 	private final float heightBias; // larger values result with more mountains, must be positive or 0
 	private final float heightVariation;
 	
@@ -43,12 +41,12 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	public SimplexHeightGenerator(long seed) {
 		this(seed, DEFAULT_PREFERRED_HEIGHT, DEFAULT_BASE_FREQUENCY_MODIFIER,
 				DEFAULT_FREQ_INCREASE_FACTOR, DEFAULT_OCTAVES, DEFAULT_ROUGHNESS,
-				DEFAULT_SAMPLING_DISTANCE, DEFAULT_HEIGHT_BIAS, DEFAULT_HEIGHT_VARIATION);
+				DEFAULT_HEIGHT_BIAS, DEFAULT_HEIGHT_VARIATION);
 	}
 
 	public SimplexHeightGenerator(long seed, float maxHeight, float baseFrequencyModifier,
-			float freqIncreaseFactor, int octaves, float roughness, float samplingDistance, 
-			float heightBias, float heightVariation) {
+			float freqIncreaseFactor, int octaves, float roughness, float heightBias,
+			float heightVariation) {
 		if(heightBias < 0) {
 			throw new IllegalArgumentException("Height bias must be non-negative.");
 		}
@@ -58,7 +56,6 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		this.freqIncreaseFactor = freqIncreaseFactor;
 		this.octaves = octaves;
 		this.roughness = roughness;
-		this.samplingDistance = samplingDistance;
 		this.heightBias = heightBias;
 		this.heightVariation = heightVariation;
 		this.simplexNoiseGenerator = new OpenSimplexNoise(seed);
@@ -114,14 +111,18 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	}
 	
 	private Vector3f getGenericNormal(float x, float z, BiFunction<Float, Float, Float> heightGetter) {
-		float heightL = heightGetter.apply(x - samplingDistance, z);
-		float heightR = heightGetter.apply(x + samplingDistance, z);
-		float heightD = heightGetter.apply(x, z - samplingDistance);
-		float heightU = heightGetter.apply(x, z + samplingDistance);
+		float heightL = heightGetter.apply(x - DIFF, z);
+		float heightR = heightGetter.apply(x + DIFF, z);
+		float heightD = heightGetter.apply(x, z - DIFF);
+		float heightU = heightGetter.apply(x, z + DIFF);
 		
-		Vector3f normal = new Vector3f(heightL - heightR, 2 * samplingDistance, heightD - heightU);
+		Vector3f normal = new Vector3f(
+				(heightL - heightR) / (2f * DIFF),
+				1f,
+				(heightD - heightU) / (2f * DIFF));
+		
 		normal.normalise();
-		
+
 		return normal;
 	}
 	
