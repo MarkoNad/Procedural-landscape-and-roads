@@ -53,7 +53,7 @@ import toolbox.QueueProduct;
 import toolbox.Range;
 import toolbox.TriFunction;
 
-public class DebugScene2 {
+public class RoadBlendToTerrain2 {
 	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	
 	public static void main(String[] args) {
@@ -202,7 +202,6 @@ public class DebugScene2 {
 		
 		final float terrainLODTolerance = 200f;
 		
-		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			

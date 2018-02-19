@@ -121,7 +121,7 @@ public class RoadBlendToTerrainScene {
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
-		SimplexHeightGenerator heightGenerator = new SimplexHeightGenerator(1, 9000f, 0.0001f, 2f, 5, 0.4f, 40f, 0.2f, 5f);
+		SimplexHeightGenerator heightGenerator = new SimplexHeightGenerator(1, 9000f, 0.0001f, 2f, 5, 0.4f, 0.2f, 5f);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
 		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
 			NoiseMap texVariationMap = new NoiseMap(450f, 0.0005f, 0);
@@ -137,7 +137,7 @@ public class RoadBlendToTerrainScene {
 		
 		final float modifierSegementLen = 1f;
 		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
-		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f));
+		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f);
 		
 		float patchSize = 1000f;
 		float texWidth = 5f;
