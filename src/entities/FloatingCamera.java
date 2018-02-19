@@ -8,18 +8,40 @@ import renderEngine.DisplayManager;
 
 public class FloatingCamera extends Camera {
 	
-	private static float ACCELERATION = 300f;
-	private static float CRAWL_SPEED = 20f;
-	private static float BASE_SPEED = 100f;
-	private static float BASE_LARGE_SPEED = 1000f;
-	private static final float ROTATION_SPEED = 12.5f;
+	private static final float DEFAULT_ACCELERATION = 300f;
+	private static final float DEFAULT_CRAWL_SPEED = 20f;
+	private static final float DEFAULT_BASE_LOW_SPEED = 100f;
+	private static final float DEFAULT_BASE_HIGH_SPEED = 1000f;
+	private static final float DEFAULT_ROTATION_SPEED = 12.5f;
 	
-	private float movementSpeed = 20;
+	private final float acceleration;
+	private final float crawlSpeed;
+	private final float baseLowSpeed;
+	private final float baseHighSpeed;
+	private final float rotationSpeed;
+	
+	private float movementSpeed;
+	
+	public FloatingCamera(Vector3f position, float crawlSpeed, float baseLowSpeed,
+			float baseHighSpeed, float acceleration, float rotationSpeed) {
+		super(position);
+		this.baseLowSpeed = baseLowSpeed;
+		this.baseHighSpeed = baseHighSpeed;
+		this.crawlSpeed = crawlSpeed;
+		this.acceleration = acceleration;
+		this.rotationSpeed = rotationSpeed;
+		movementSpeed = baseLowSpeed;
+		Mouse.setGrabbed(true);
+	}
 	
 	public FloatingCamera(Vector3f position) {
-		super();
-		Mouse.setGrabbed(true);
-		this.position = position;
+		this(position,
+			DEFAULT_CRAWL_SPEED,
+			DEFAULT_BASE_LOW_SPEED,
+			DEFAULT_BASE_HIGH_SPEED,
+			DEFAULT_ACCELERATION,
+			DEFAULT_ROTATION_SPEED
+		);
 	}
 	
 	public FloatingCamera() {
@@ -32,22 +54,22 @@ public class FloatingCamera extends Camera {
 		move();
 	}
 	
-	private void rotate() {
-		pitch -= Mouse.getDY() * DisplayManager.getFrameTimeSeconds() * ROTATION_SPEED;
+	protected void rotate() {
+		pitch -= Mouse.getDY() * DisplayManager.getFrameTimeSeconds() * rotationSpeed;
 		if(pitch > 90) pitch = 90;
 		if(pitch < -90) pitch = -90;
 		
-		yaw += Mouse.getDX() * DisplayManager.getFrameTimeSeconds() * ROTATION_SPEED;
+		yaw += Mouse.getDX() * DisplayManager.getFrameTimeSeconds() * rotationSpeed;
 	}
 
-	private void move() {
+	protected void move() {
 		if(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
-			if(movementSpeed < BASE_LARGE_SPEED) movementSpeed = BASE_LARGE_SPEED;
-			movementSpeed += ACCELERATION * DisplayManager.getFrameTimeSeconds();
+			if(movementSpeed < baseHighSpeed) movementSpeed = baseHighSpeed;
+			movementSpeed += acceleration * DisplayManager.getFrameTimeSeconds();
 		} else if(Keyboard.isKeyDown(Keyboard.KEY_LCONTROL)) {
-			movementSpeed = CRAWL_SPEED;
+			movementSpeed = crawlSpeed;
 		} else {
-			movementSpeed = BASE_SPEED;
+			movementSpeed = baseLowSpeed;
 		}
 		
 		float distance = movementSpeed * DisplayManager.getFrameTimeSeconds();
@@ -76,7 +98,7 @@ public class FloatingCamera extends Camera {
 	private void moveForward(float xzDistance, float yDistance) {
 		position.x += xzDistance * Math.sin(Math.toRadians(yaw));
 		position.z -= xzDistance * Math.cos(Math.toRadians(yaw));
-		position.y += yDistance * Math.cos(Math.toRadians(pitch));
+		position.y += yDistance;
 	}
 	
 	private void moveBack(float xzDistance, float yDistance) {

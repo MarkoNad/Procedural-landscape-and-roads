@@ -102,11 +102,11 @@ public class RoadsScene {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		float width = 20000;
 		float depth = 20000;
-		float xTiles = width / 200f;
-		float zTiles = depth / 200f;
+		float texWidth = 200f;
+		float texDepth = 200f;
 		float vertsPerMeter = 0.025f;
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, texWidth,
+				texDepth, texturePack, blendMap, heightGenerator, biomesMap, loader);
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 130f, 650f, distribution, 1);
@@ -160,7 +160,7 @@ public class RoadsScene {
 		waypoints.add(new Vector3f(10500, 0, -100));
 		waypoints.add(new Vector3f(10500, 0, 0));
 		
-		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 100);
+		Road road = new Road(loader, waypoints, 250, 200, 50, 7f, heightGenerator, true);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);

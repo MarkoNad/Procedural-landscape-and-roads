@@ -9,6 +9,7 @@ import org.lwjgl.util.vector.Vector3f;
 
 import entities.Camera;
 import entities.Entity;
+import entities.FPSCamera;
 import entities.FloatingCamera;
 import entities.Light;
 import entities.Player;
@@ -37,7 +38,7 @@ public class DebugScene {
 		
 		Loader loader = new Loader();
 		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
-		Camera camera = new FloatingCamera(new Vector3f(0.0f, 100.0f, 0.0f));
+		//Camera camera = new FloatingCamera(new Vector3f(0.0f, 100.0f, 0.0f));
 		MasterRenderer renderer = new MasterRenderer();
 
 		ModelTexture dragonTexture = new ModelTexture(loader.loadTexture("stall"));
@@ -76,11 +77,11 @@ public class DebugScene {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		float width = 20000;
 		float depth = 20000;
-		float xTiles = width / 100f * 0.5f;
-		float zTiles = depth / 100f * 0.5f;
+		float texWidth = 200f;
+		float texDepth = 200f;
 		float vertsPerMeter = 0.025f;
 		//Terrain terrain = new Terrain(0f, -8000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator);
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, texWidth, texDepth, texturePack, blendMap, heightGenerator, biomesMap, loader);
 
 		// per vertex
 		List<Entity> gridElems = new ArrayList<>();
@@ -90,17 +91,18 @@ public class DebugScene {
 			for(int x = 0; x < 50; x++) {
 				float xcoord = x / (float)(xVertices - 1) * width;
 				float zcoord = -z / (float)(zVertices - 1) * depth;
-				float height = heightGenerator.getHeight(xcoord, zcoord);
+				float height = heightGenerator.getHeightApprox(xcoord, zcoord);
 				gridElems.add(new Entity(fern, new Vector3f(xcoord, height, zcoord), 0, 0, 0, 0.5f));
 			}
 		}
 		
 		// per meter
 		List<Entity> meterElems = new ArrayList<>();
+		final float zOffset = -5000;
 		for(int z = 0; z < 50; z++) {
 			for(int x = 0; x < 50; x++) {
-				float height = heightGenerator.getHeight(x + 100, -z);
-				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z), 0, 0, 0, 0.2f));
+				float height = heightGenerator.getHeightApprox(x + 100, -z + zOffset);
+				meterElems.add(new Entity(fern, new Vector3f(x + 100, height, -z + zOffset), 0, 0, 0, 0.2f));
 			}
 		}
 //		
@@ -135,7 +137,7 @@ public class DebugScene {
 //				//return (float) (noise.eval(x * freq, z * freq) + 1) * amplitude / 2;
 //			}
 //		};
-		Terrain noiseTerrain = new Terrain(0f, -20000, new Vector3f(), 20000, 20000, vertsPerMeter, xTiles, zTiles, loader, texturePack, blendMap, noiseHGenerator, biomesMap);
+		Terrain noiseTerrain = new Terrain(0f, -20000, new Vector3f(), 20000, 20000, vertsPerMeter, texWidth, texDepth, texturePack, blendMap, noiseHGenerator, biomesMap, loader);
 		
 		List<Entity> entities = new ArrayList<>();
 //		TreePlacer placer = new TreePlacer(noiseHGenerator, 0, 2000, -2000, 0, 50, 100, 70);
@@ -190,9 +192,15 @@ public class DebugScene {
 		Entity crateEntity = new Entity(crate, new Vector3f(-20.0f, 0.0f, 0.0f), 0, 0, 0, 0.05f);
 		Entity boulderEntity = new Entity(boulder, new Vector3f(-30.0f, 0.0f, 0.0f), 0, 0, 0, 1f);
 		
+		Entity barrelEntity2 = new Entity(barrel, new Vector3f(100.0f, heightGenerator.getHeightApprox(100f, -5000f), -5000.0f), 0, 0, 0, 1f);
+		
 		nmEntites.add(barrelEntity);
 		nmEntites.add(crateEntity);
 		nmEntites.add(boulderEntity);
+		
+		nmEntites.add(barrelEntity2);
+		
+		Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f, 1.8f);
 
 		while(!Display.isCloseRequested()) {
 			entity.increaseRotation(0, 0.5f, 0);
@@ -203,6 +211,7 @@ public class DebugScene {
 			barrelEntity.increaseRotation(0, 0.5f, 0);
 			crateEntity.increaseRotation(0, 0.5f, 0);
 			boulderEntity.increaseRotation(0, 0.5f, 0);
+			barrelEntity2.increaseRotation(0, 0.5f, 0);
 			nmEntites.forEach(e -> renderer.processNMEntity(e));
 			
 			renderer.processTerrain(terrain);
@@ -263,6 +272,16 @@ public class DebugScene {
 			moisture *= factor;
 			moisture = (float) Math.pow(moisture * factor - factor, 2);
 			return moisture * amplitude;
+		}
+
+		@Override
+		public float getHeightApprox(float x, float z) {
+			return getHeight(x, z);
+		}
+
+		@Override
+		public Vector3f getNormalApprox(float x, float z) {
+			return getNormal(x, z);
 		}
 	};
 	

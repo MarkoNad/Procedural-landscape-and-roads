@@ -3,6 +3,7 @@ package toolbox;
 import java.awt.geom.Point2D;
 import java.awt.geom.Point2D.Float;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 
 public abstract class Sampler {
 	
@@ -15,5 +16,7 @@ public abstract class Sampler {
 	}
 
 	public abstract List<Point2D.Float> sample();
+	public abstract void sample(int batchSize,
+			BlockingQueue<QueueProduct<List<Point2D.Float>>> batchQueue) throws InterruptedException;
 	
 }

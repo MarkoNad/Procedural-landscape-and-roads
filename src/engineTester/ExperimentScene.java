@@ -96,11 +96,11 @@ public class ExperimentScene {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		float width = 20000;
 		float depth = 20000;
-		float xTiles = width / 200f;
-		float zTiles = depth / 200f;
+		float texWidth = 200f;
+		float texDepth = 200f;
 		float vertsPerMeter = 0.025f;
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, texWidth,
+				texDepth, texturePack, blendMap, heightGenerator, biomesMap, loader);
 		
 		List<Vector3f> waypoints = new ArrayList<>();
 		waypoints.add(new Vector3f(0, 0, 0));
@@ -116,7 +116,7 @@ public class ExperimentScene {
 		waypoints.add(new Vector3f(500, 0, -1000));
 		waypoints.add(new Vector3f(0, 0, -1000));
 		waypoints.add(new Vector3f(-500, 0, -1500));
-		Road road = new Road(loader, waypoints, heightGenerator, 200, 200);
+		Road road = new Road(loader, waypoints, 250, 200, 50, 7, heightGenerator, true);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		
@@ -151,7 +151,7 @@ public class ExperimentScene {
 		waypoints2.add(new Vector3f(10500, 0, -500));
 		waypoints2.add(new Vector3f(10500, 0, -100));
 		waypoints2.add(new Vector3f(10500, 0, 0));
-		Road road2 = new Road(loader, waypoints2, heightGenerator, 250, 200, 100);
+		Road road2 = new Road(loader, waypoints2, 250, 200, 100, 7f, heightGenerator, true);
 		TexturedModel roadTM2 = new TexturedModel(road2.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM2.getTexture().setHasTransparency(true);
 		Entity road2Entity = new Entity(roadTM2, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
@@ -202,7 +202,15 @@ public class ExperimentScene {
 			entities.add(new Entity(chestnutTreetop, new Vector3f(1500, 0f, 0f), 0f, 0f, 0f, 15f));
 			entities.add(new Entity(chestnutTrunk, new Vector3f(1500, 0f, 0f), 0f, 0f, 0f, 15f));
 			
-			//entities.add(new Entity(barrel, new Vector3f(0.0f, 0.0f, 0.0f), 0, 0, 0, 10f));
+			entities.add(new Entity(barrel, new Vector3f(0.0f, 0.0f, 0.0f), 0, 0, 0, 10f));
+			
+			//entities.add(new Entity(chestnutTreetop, new Vector3f(0, 0f, 500f), 0f, 0f, 0f, 1f));
+			//entities.add(new Entity(chestnutTrunk, new Vector3f(0, 0f, 500f), 0f, 0f, 0f, 1f));
+			//entities.add(new Entity(chestnutLOD1, new Vector3f(40, 0f, 500f), 0f, 0f, 0f, 20f));
+			entities.add(new Entity(firTreetop, new Vector3f(-200, 0f, 500f), 0f, 0f, 0f, 15f));
+			entities.add(new Entity(firTrunk, new Vector3f(-200, 0f, 500f), 0f, 0f, 0f, 15f));
+			entities.add(new Entity(firLOD1, new Vector3f(-150, 0f, 500f), 0f, 0f, 0f, 35f));
+			
 			
 			for(Vector3f bpoint : curve.getCurvePoints()) {
 				entities.add(new Entity(chestnutTreetop, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));

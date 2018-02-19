@@ -1,6 +1,7 @@
 package renderEngine;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
@@ -32,16 +33,20 @@ public class TerrainRenderer {
 			prepareTerrain(terrain);
 			loadModelMatrix(terrain);
 			
-			GL11.glDrawElements(GL11.GL_TRIANGLES, terrain.getModel().getVertexCount(), GL11.GL_UNSIGNED_INT, 0);
+			GL11.glDrawElements(GL11.GL_TRIANGLES, terrain.getModel().get().getVertexCount(), GL11.GL_UNSIGNED_INT, 0);
 			
 			unbindTexturedModel();
 		}
 	}
 	
 	private void prepareTerrain(Terrain terrain) {
-		RawModel rawModel = terrain.getModel();
+		//RawModel rawModel = terrain.getModel();
+		Optional<RawModel> rawModel = terrain.getModel();
+		if(!rawModel.isPresent()) {
+			throw new IllegalArgumentException("Terrain raw model was not set.");
+		}
 		
-		GL30.glBindVertexArray(rawModel.getVaoID());
+		GL30.glBindVertexArray(rawModel.get().getVaoID());
 		
 		GL20.glEnableVertexAttribArray(0);
 		GL20.glEnableVertexAttribArray(1);

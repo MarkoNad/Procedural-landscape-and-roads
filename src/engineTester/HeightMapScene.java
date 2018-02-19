@@ -74,7 +74,7 @@ public class HeightMapScene {
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		//Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, heightGenerator, heightGenerator.getXPoints(), heightGenerator.getYPoints());
-		Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, 1f, 1f, loader, texturePack, blendMap, heightGenerator, biomesMap);
+		Terrain terrain = new Terrain(0f, -800f, new Vector3f(), 800f, 800f, 0.15f, 800f, 800f, texturePack, blendMap, heightGenerator, biomesMap, loader);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();

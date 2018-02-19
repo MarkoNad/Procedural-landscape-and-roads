@@ -2,11 +2,20 @@ MasterRenderer::prepare: switch clear and clearColor
 samplingDistance in SimplexHeightGenerator => perhaps set to distance of the neighboring vertex
 Vertex constructor - replace this(new ArrayList<>() with null)
 
-floor is x-z plane, but points are x-y. implement xz points
-
+not sure what to do with #issue1 in Roads:
+	prevDirection.y = 0;
+	nextDirection.y = 0;
 
 
 
 
 
 vert and frag shaders -> unique variable names (they collide)
+
+TODO
+- hardkodirano 600 u BiomesMap::getTreeType
+- probabilities for pines and oaks
+- exception if not all models in lod grid have defined scales in constructor
+- Road::generateTrajectory replace default segment length with given one
+- fix infinite cells (don't traverse all of them)
+- max height

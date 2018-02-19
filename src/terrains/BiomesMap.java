@@ -6,13 +6,13 @@ import java.util.function.Function;
 
 import org.lwjgl.util.vector.Vector3f;
 
+import toolbox.Globals;
 import toolbox.Range;
 import toolbox.TriFunction;
 import toolbox.WeightedFunctions;
 
 public class BiomesMap implements ITextureMap {
 	
-	private static final Vector3f Y_AXIS = new Vector3f(0f, 1f, 0f);
 	private static final float EPS = 1e-6f;
 	private static final float DEFAULT_INTERPOLATION_INTERVAL = 0f;
 	
@@ -44,14 +44,14 @@ public class BiomesMap implements ITextureMap {
 	}
 	
 	public TreeType getTreeType(float x, float z) {
-		float height = heightMap.getHeight(x, z);
+		float height = heightMap.getHeightApprox(x, z);
 		float modifiedHeight = height + noiseMap.getNoise(x, z);
 		if(modifiedHeight < 600) return TreeType.OAK;
 		return TreeType.PINE;
 	}
 	
 	public float getTreeDensity(float x, float z) {
-		float slope = Vector3f.angle(Y_AXIS, heightMap.getNormal(x, z));
+		float slope = Vector3f.angle(Globals.Y_AXIS, heightMap.getNormalApprox(x, z));
 		float moisture = moistureMap.getPrenormalizedNoise(x, z);
 		//float moisture = getMoisture(x, z);
 		return (float) (Math.cos(slope) * moisture);

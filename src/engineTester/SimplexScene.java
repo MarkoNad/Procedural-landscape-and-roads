@@ -83,9 +83,9 @@ public class SimplexScene {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		float width = 4000;
 		float depth = 4000;
-		float xTiles = width / 800f;
-		float zTiles = depth / 800f;
-		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, xTiles, zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+		float texWidth = 800f;
+		float texDepth = 800f;
+		Terrain terrain = new Terrain(0f, -4000f, new Vector3f(), width, depth, 0.15f, texWidth, texDepth, texturePack, blendMap, heightGenerator, biomesMap, loader);
 		
 		List<Entity> entities = new ArrayList<>();
 		Random rand = new Random();
@@ -93,17 +93,17 @@ public class SimplexScene {
 		for(int i = 0; i < 500; i++) {
 			float x = rand.nextFloat() * width;
 			float z = -rand.nextFloat() * depth;
-			float y = heightGenerator.getHeight(x, z);
+			float y = heightGenerator.getHeightApprox(x, z);
 			entities.add(new Entity(tree, new Vector3f(x, y, z), 0, 0, 0, 7));
 			
 			x = rand.nextFloat() * width;
 			z = -rand.nextFloat() * depth;
-			y = heightGenerator.getHeight(x, z);
+			y = heightGenerator.getHeightApprox(x, z);
 			entities.add(new Entity(grass, new Vector3f(x, y, z), 0, 0, 0, 2.0f));
 			
 			x = rand.nextFloat() * width;
 			z = -rand.nextFloat() * depth;
-			y = heightGenerator.getHeight(x, z);
+			y = heightGenerator.getHeightApprox(x, z);
 			entities.add(new Entity(fern, new Vector3f(x, y, z), 0, 0, 0, 1));
 		}
 		float meter = 7f;

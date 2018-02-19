@@ -1,5 +1,6 @@
 package engineTester;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -7,7 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -26,6 +31,9 @@ import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import roads.Road;
+import search.AStar;
+import search.IProblem;
+import search.Node;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.NoiseMap;
@@ -36,18 +44,21 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.Globals;
+import toolbox.Point2Df;
 import toolbox.PoissonDiskSampler;
+import toolbox.QueueProduct;
 import toolbox.Range;
 import toolbox.TriFunction;
 
 public class DevelopScene {
+	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
 		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
-		Camera camera = new FloatingCamera(new Vector3f(0.0f, 2000.0f, 0.0f));
 		MasterRenderer renderer = new MasterRenderer();
 
 		TexturedModel firLOD1 = load("fir_lod1", "fir_lod1", loader);
@@ -68,18 +79,18 @@ public class DevelopScene {
 		TexturedModelComp firLOD0Comp = new TexturedModelComp(firTrunk, firTreetop);
 
 		Map<TexturedModelComp, Float> scaleForModel = new HashMap<>();
-		scaleForModel.put(firLOD0Comp, 60.0f);
-		scaleForModel.put(firLOD1Comp, 140.0f);
+		scaleForModel.put(firLOD0Comp, 10.0f);
+		scaleForModel.put(firLOD1Comp, 10.0f);
 		scaleForModel.put(chestnutLOD0Comp, 15.0f);
-		scaleForModel.put(chestnutLOD1Comp, 190.0f);
+		scaleForModel.put(chestnutLOD1Comp, 15.0f);
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
-		chestnutLods.put(4000f, chestnutLOD0Comp);
-		chestnutLods.put(20000f, chestnutLOD1Comp);
+		chestnutLods.put(200f, chestnutLOD0Comp);
+		chestnutLods.put(2000f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
-		firLods.put(4000f, firLOD0Comp);
-		firLods.put(20000f, firLOD1Comp);
+		firLods.put(200f, firLOD0Comp);
+		firLods.put(2000f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
 		lodLevelsForType.put(TreeType.OAK, chestnutLods);
@@ -102,27 +113,37 @@ public class DevelopScene {
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		float width = 20000;
 		float depth = 20000;
-		float xTiles = width / 200f;
-		float zTiles = depth / 200f;
+		float texWidth = 5f;
+		float texDepth = 5f;
 		float vertsPerMeter = 0.025f;
-		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, xTiles,
-				zTiles, loader, texturePack, blendMap, heightGenerator, biomesMap);
+		long startTime = System.nanoTime();
+		Terrain terrain = new Terrain(0f, -depth, new Vector3f(), width, depth, vertsPerMeter, texWidth,
+				texDepth, texturePack, blendMap, heightGenerator, biomesMap, loader);
+		double terrainDuration = (System.nanoTime() - startTime) / 1e9;
+		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
-		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 130f, 650f, distribution, 1);
+		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 20000, -20000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(0f, 0f));
+		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
-		Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
-		
+		ExecutorService pool = Globals.getThreadPool();
+		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
+
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		grid.addToGrid(locationsPerType);
+		grid.addToGrid(locationsPerType, pool);
 		
-		Entity road = setupRoad(loader, heightGenerator);
+		List<Vector3f> roadWaypoints = findPath(heightGenerator);
+		Entity road = setupRoad(loader, heightGenerator, roadWaypoints);
+
+		Camera camera = new FloatingCamera(new Vector3f(100.0f, 0.0f, -5000.0f));
 
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
 			renderer.processTerrain(terrain);
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
+			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeightApprox(p.x, p.z), p.z), 0f, 0f, 0f, 2f)));
+			
 			entities.forEach(e -> renderer.processEntity(e));
 			renderer.processEntity(road);
 			renderer.render(light, camera);
@@ -135,35 +156,111 @@ public class DevelopScene {
 		DisplayManager.closeDisplay();
 	}
 	
-	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
-		ModelData data = OBJFileLoader.loadOBJ(objFile);
-		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(), data.getNormals(), data.getIndices());
-		return new TexturedModel(model, new ModelTexture(loader.loadTexture(pngFile)));
-	}
-	
-	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator) {
-		List<Vector3f> waypoints = new ArrayList<>();
-		
-		waypoints.add(new Vector3f(0, 0, -2000));
-		waypoints.add(new Vector3f(100, 0, -2000));
-		waypoints.add(new Vector3f(500, 0, -2000));
-		waypoints.add(new Vector3f(1000, 0, -2500));
-		waypoints.add(new Vector3f(2000, 0, -3500));
-		waypoints.add(new Vector3f(3000, 0, -3500));
-		waypoints.add(new Vector3f(4000, 0, -2500));
-		waypoints.add(new Vector3f(6000, 0, -2000));
-		waypoints.add(new Vector3f(7000, 0, -2500));
-		waypoints.add(new Vector3f(8000, 0, -2200));
-		waypoints.add(new Vector3f(9000, 0, -2000));
-		waypoints.add(new Vector3f(10000, 0, -1500));
-		waypoints.add(new Vector3f(10500, 0, -500));
-		waypoints.add(new Vector3f(10500, 0, -100));
-		waypoints.add(new Vector3f(10500, 0, 0));
-		
-		Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 100);
+	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator,
+			List<Vector3f> waypoints) {
+		//Road road = new Road(loader, waypoints, heightGenerator, 250, 200, 50f);
+		Road road = new Road(loader, waypoints, 10, 20, 5f, 0.1f, heightGenerator, true);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
+	}
+	
+	private static List<Vector3f> findPath(IHeightGenerator heightGenerator) {
+		long start = System.nanoTime();
+		
+		IProblem<Point2Df> searchProblem = new IProblem<Point2Df>() {
+			private Point2Df end = new Point2Df(20000f, -20000f);
+			private final float step = 500f;
+//			private final int succCount = 8;
+			private final float tolerance = 5000f;
+			
+			@Override
+			public Iterable<Point2Df> getSuccessors(Point2Df state) {
+//				List<Point2Df> successors = new ArrayList<>();
+//				
+//				for(int i = 0; i < succCount; i++) {
+//					double angle = 2.0 * Math.PI * i / succCount;
+//					System.out.println(angle);
+//					
+//					float deltaX = (float) (step * Math.cos(angle));
+//					float deltaZ = (float) (step * Math.sin(angle));
+//					
+//					successors.add(new Point2Df(state.getX() + deltaX, state.getZ() + deltaZ));
+//				}
+//				
+//				return successors;
+				
+				return Arrays.asList(
+					new Point2Df(state.getX(), state.getZ() - step),
+					new Point2Df(state.getX() + step, state.getZ() - step),
+					new Point2Df(state.getX() + step, state.getZ()),
+					new Point2Df(state.getX() + step, state.getZ() + step),
+					new Point2Df(state.getX(), state.getZ() + step),
+					new Point2Df(state.getX() - step, state.getZ() + step),
+					new Point2Df(state.getX() - step, state.getZ()),
+					new Point2Df(state.getX() - step, state.getZ() - step)
+				);
+			}
+	
+			@Override
+			public double getTransitionCost(Point2Df p1, Point2Df p2) {
+				double totalCost = 0.0;
+
+				double y1 = heightGenerator.getHeightApprox(p1.getX(), p1.getZ());
+				double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
+				double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
+						Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
+				double distanceCost = distance;
+				
+				Vector3f normal1 = heightGenerator.getNormalApprox(p1.getX(), p1.getZ());
+				Vector3f normal2 = heightGenerator.getNormalApprox(p2.getX(), p2.getZ());
+				double deltaSlope = Vector3f.angle(normal1, normal2);
+				double deltaSlopeCost = deltaSlope * 1000.0;
+				
+				double slope = Vector3f.angle(Globals.Y_AXIS, normal2);
+				double slopeCost = slope * 10_000.0;
+				
+				totalCost += distanceCost;
+				totalCost += deltaSlopeCost;
+				totalCost += slopeCost;
+				
+				return totalCost; 
+			}
+	
+			@Override
+			public boolean isGoal(Point2Df point) {
+				//return state.equals(end);
+				return Point2Df.distance(point, end) <= tolerance;
+			}
+	
+			@Override
+			public Point2Df getInitialState() {
+				return new Point2Df(0, 0);
+			}
+			
+		};
+		
+		AStar<Point2Df> astar = new AStar<>(searchProblem, s -> 0.0);
+		Node<Point2Df> goal = astar.search();
+		
+		double duration = (System.nanoTime() - start) * 1e-9;
+		LOGGER.log(Level.FINE, "Astar duration:" + duration);
+		
+		List<Vector3f> waypoints = new ArrayList<>();
+		
+		for(Point2Df point : goal.reconstructPath()) {
+			waypoints.add(new Vector3f(point.getX(), 0f, point.getZ()));
+			LOGGER.log(Level.FINER, "A star point: " + point.toString());
+		}
+		
+		return waypoints;
+	}
+	
+	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
+		ModelData data = OBJFileLoader.loadOBJ(objFile, false, true);
+		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(),
+				data.getNormals(), data.getIndices());
+		return new TexturedModel(model, new ModelTexture(loader.loadTexture(pngFile)));
 	}
 	
 }
