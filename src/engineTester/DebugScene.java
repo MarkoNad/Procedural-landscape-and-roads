@@ -200,7 +200,7 @@ public class DebugScene {
 		
 		nmEntites.add(barrelEntity2);
 		
-		Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator);
+		Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f, 1.8f);
 
 		while(!Display.isCloseRequested()) {
 			entity.increaseRotation(0, 0.5f, 0);
