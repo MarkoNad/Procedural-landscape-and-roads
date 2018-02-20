@@ -31,10 +31,8 @@ import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
+import roads.Pathfinder;
 import roads.Road;
-import search.AStar;
-import search.IProblem;
-import search.Node;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.NoiseMap;
@@ -242,79 +240,12 @@ public class DebugScene2 {
 	}
 
 	private static List<Vector3f> findPath(IHeightGenerator heightGenerator) {
-		long start = System.nanoTime();
+		Point2Df start = new Point2Df(0f, 0f);
+		Point2Df goal = new Point2Df(14000f, -14000f);
+		float cellSize = 500f;
 		
-		IProblem<Point2Df> searchProblem = new IProblem<Point2Df>() {
-			private Point2Df end = new Point2Df(14000f, -14000f);
-			private final float step = 500f;
-			private final float tolerance = 1000f;
-			
-			@Override
-			public Iterable<Point2Df> getSuccessors(Point2Df state) {
-				return Arrays.asList(
-					new Point2Df(state.getX(), state.getZ() - step),
-					new Point2Df(state.getX() + step, state.getZ() - step),
-					new Point2Df(state.getX() + step, state.getZ()),
-					new Point2Df(state.getX() + step, state.getZ() + step),
-					new Point2Df(state.getX(), state.getZ() + step),
-					new Point2Df(state.getX() - step, state.getZ() + step),
-					new Point2Df(state.getX() - step, state.getZ()),
-					new Point2Df(state.getX() - step, state.getZ() - step)
-				);
-			}
-	
-			@Override
-			public double getTransitionCost(Point2Df p1, Point2Df p2) {
-				double totalCost = 0.0;
-
-				double y1 = heightGenerator.getHeightApprox(p1.getX(), p1.getZ());
-				double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
-				double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
-						Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
-				double distanceCost = distance;
-				
-				Vector3f normal1 = heightGenerator.getNormalApprox(p1.getX(), p1.getZ());
-				Vector3f normal2 = heightGenerator.getNormalApprox(p2.getX(), p2.getZ());
-				double deltaSlope = Vector3f.angle(normal1, normal2);
-				double deltaSlopeCost = deltaSlope * 1000.0;
-				
-				double slope = Vector3f.angle(Globals.Y_AXIS, normal2);
-				double slopeCost = slope * 10_000.0;
-				
-				totalCost += distanceCost;
-				totalCost += deltaSlopeCost;
-				totalCost += slopeCost;
-				
-				return totalCost; 
-			}
-	
-			@Override
-			public boolean isGoal(Point2Df point) {
-				return Point2Df.distance(point, end) <= tolerance;
-			}
-	
-			@Override
-			public Point2Df getInitialState() {
-				return new Point2Df(0, 0);
-			}
-			
-		};
-		
-		AStar<Point2Df> astar = new AStar<>(searchProblem, s -> 0.0);
-		Node<Point2Df> goal = astar.search();
-		
-		double duration = (System.nanoTime() - start) * 1e-9;
-		LOGGER.log(Level.FINE, "Astar duration:" + duration);
-		
-		List<Vector3f> waypoints = new ArrayList<>();
-		
-		for(Point2Df point : goal.reconstructPath()) {
-			float height = heightGenerator.getHeightApprox(point.getX(), point.getZ());;
-			waypoints.add(new Vector3f(point.getX(), height, point.getZ()));
-			LOGGER.log(Level.FINER, "A star point: " + point.toString());
-		}
-		
-		return waypoints;
+		Pathfinder pathfinder = new Pathfinder(start, goal, heightGenerator, cellSize);
+		return pathfinder.findPath();
 	}
 	
 	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
