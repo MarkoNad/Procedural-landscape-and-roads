@@ -21,6 +21,23 @@ public class Point2Df {
 	public static float distance(Point2Df p1, Point2Df p2) {
 		return (float) Math.hypot(p1.x - p2.x, p1.z - p2.z);
 	}
+	
+	public static Point2Df sub(Point2Df p1, Point2Df p2) {
+		return new Point2Df(p1.x - p2.x, p1.z - p2.z);
+	}
+	
+	public static boolean near(Point2Df p1, Point2Df p2, float range) {
+		return Point2Df.distance(p1, p2) <= range;
+	}
+	
+	public static Point2Df normalize(Point2Df p) {
+		double length = Math.hypot(p.x, p.z);
+		
+		float newX = (float) (p.x / length);
+		float newZ = (float) (p.z / length);
+		
+		return new Point2Df(newX, newZ);
+	}
 
 	@Override
 	public int hashCode() {

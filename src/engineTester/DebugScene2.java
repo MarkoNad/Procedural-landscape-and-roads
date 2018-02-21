@@ -156,17 +156,14 @@ public class DebugScene2 {
 				Optional.of(Globals.getThreadPool()));
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
-//		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 14000, -14000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(0f, 0f));
 		PoissonDiskSampler sampler = new PoissonDiskSampler(0, -5000, 10000, -22000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(0f, -5000f));
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		ExecutorService pool = Globals.getThreadPool();
-		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
-//		Map<TreeType, List<Vector3f>> locationsPerType = placer.computeLocations();
-//		System.out.println(locationsPerType.size());
+		//BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
 
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		grid.addToGrid(locationsPerType, pool);
+		//grid.addToGrid(locationsPerType, pool);
 
 		//Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f);
 		Camera camera = new FloatingCamera(new Vector3f(10000.0f, 1000.0f, -5000.0f));
