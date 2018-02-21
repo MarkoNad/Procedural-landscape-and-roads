@@ -25,10 +25,18 @@ public class Pathfinder {
 	private final PathfindingProblem searchProblem;
 	private final IHeuristics<Point2Di> heuristics;
 	
-	public Pathfinder(Point2Df start, Point2Df goal, IHeightGenerator heightGenerator, 
+	public Pathfinder(Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
+			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
 			float cellSize) {
+//		start = new Point2Df(9500f, -5000f); // TODO
+//		goal = new Point2Df(10000f, -22000f); // TODO
+//		cellSize = 200f; // TODO
+//		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f); // TODO
+//		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f); // TODO
+		
 		this.heightGenerator = heightGenerator;
-		searchProblem = setupProblem(start, goal, heightGenerator, cellSize);
+		searchProblem = setupProblem(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
+				heightGenerator, cellSize);
 		heuristics = setupHeuristics();
 	}
 
@@ -58,22 +66,30 @@ public class Pathfinder {
 	}
 	
 	private PathfindingProblem setupProblem(Point2Df start, Point2Df goal,
+			Point2Df domainLowerLeftLimit, Point2Df domainUpperRightLimit,
 			IHeightGenerator heightGenerator, float cellSize) {
-		return new PathfindingProblem(start, goal, heightGenerator, cellSize);
+		return new PathfindingProblem(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
+				heightGenerator, cellSize);
 	}
 	
 	private static class PathfindingProblem implements IProblem<Point2Di> {
 		
 		private final Point2Df origin;
 		private final Point2Di goal;
+		private final Point2Df domainLowerLeftLimit;
+		private final Point2Df domainUpperRightLimit;
 		private final IHeightGenerator heightGenerator;
 
 		private final float cellSize;
 		private final int step = 1;
+		private final int tunnelStep = 20;
 
-		public PathfindingProblem(Point2Df origin, Point2Df goal, IHeightGenerator heightGenerator, 
+		public PathfindingProblem(Point2Df origin, Point2Df goal, Point2Df domainLowerLeftLimit, 
+				Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator,
 				float cellSize) {
 			this.origin = origin;
+			this.domainLowerLeftLimit = domainLowerLeftLimit;
+			this.domainUpperRightLimit = domainUpperRightLimit;
 			this.heightGenerator = heightGenerator;
 			this.cellSize = cellSize;
 			this.goal = realToGrid(goal);
@@ -111,12 +127,61 @@ public class Pathfinder {
 					new Point2Di(state.getX(), state.getZ() + step),
 					new Point2Di(state.getX() - step, state.getZ() + step),
 					new Point2Di(state.getX() - step, state.getZ()),
-					new Point2Di(state.getX() - step, state.getZ() - step)
+					new Point2Di(state.getX() - step, state.getZ() - step)//,
+//					
+//					new Point2Di(state.getX(), state.getZ() - tunnelStep),
+//					new Point2Di(state.getX() + tunnelStep, state.getZ() - tunnelStep),
+//					new Point2Di(state.getX() + tunnelStep, state.getZ()),
+//					new Point2Di(state.getX() + tunnelStep, state.getZ() + tunnelStep),
+//					new Point2Di(state.getX(), state.getZ() + tunnelStep),
+//					new Point2Di(state.getX() - tunnelStep, state.getZ() + tunnelStep),
+//					new Point2Di(state.getX() - tunnelStep, state.getZ()),
+//					new Point2Di(state.getX() - tunnelStep, state.getZ() - tunnelStep)
 				);
 		}
 
 		@Override
 		public double getTransitionCost(Point2Di first, Point2Di second) {
+			return roadCost(first, second);
+//			if(Point2Di.l1Distance(first, second) >= tunnelStep) {
+//				return tunnelCost(first, second);
+//			} else {
+//				return roadCost(first, second);
+//			}
+		}
+		
+		private double roadCost(Point2Di first, Point2Di second) {
+			Point2Df p1 = gridToReal(first);
+			Point2Df p2 = gridToReal(second);
+			
+			if(p2.getX() < domainLowerLeftLimit.getX() ||
+					p2.getX() > domainUpperRightLimit.getX() ||
+					p2.getZ() > domainLowerLeftLimit.getZ() || 
+					p2.getZ() < domainUpperRightLimit.getZ()) {
+				return Double.POSITIVE_INFINITY;
+			}
+			
+			double totalCost = 0.0;
+
+			double y1 = heightGenerator.getHeightApprox(p1.getX(), p1.getZ());
+			double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
+			double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
+					Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
+			double distanceCost = distance;
+			
+			double slope = Math.abs(y2 - y1) / distance;
+			double slopeCost = Math.pow(slope, 2.0) * 10000f;
+			
+			System.out.println(String.format("slope:   %.2f, slope cost:    %.2f", slope, slopeCost));
+			System.out.println(String.format("distance:%.2f, distance cost: %.2f", distance, distanceCost));
+			
+			totalCost += distanceCost;
+			totalCost += slopeCost;
+			
+			return totalCost;
+		}
+		
+		private double tunnelCost(Point2Di first, Point2Di second) {
 			Point2Df p1 = gridToReal(first);
 			Point2Df p2 = gridToReal(second);
 			
@@ -126,7 +191,7 @@ public class Pathfinder {
 			double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
 			double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
 					Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
-			double distanceCost = distance;
+			double distanceCost = distance * 100;
 			
 			Vector3f normal1 = heightGenerator.getNormalApprox(p1.getX(), p1.getZ());
 			Vector3f normal2 = heightGenerator.getNormalApprox(p2.getX(), p2.getZ());

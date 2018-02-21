@@ -68,6 +68,15 @@ public class PoissonDiskSampler extends Sampler {
 		this.cellSize = (float) (maxInnerRadius / Math.sqrt(2));
 		this.gridWidth = (int) (dimensions.x / cellSize) + 1;
 		this.gridHeight = (int) (dimensions.y / cellSize) + 1;
+		
+		if(startingPoint != null) {
+			if(startingPoint.x < x0 ||
+					startingPoint.x > x1 ||
+					-startingPoint.y < z0 ||
+					-startingPoint.y > z1) {
+				throw new IllegalArgumentException("Starting point is out of domain.");
+			}
+		}
 		this.startingPoint = startingPoint != null ? startingPoint : randomPoint(p0, dimensions);
 	}
 
@@ -195,21 +204,6 @@ public class PoissonDiskSampler extends Sampler {
 
 		return found;
 	}
-
-//	private void addFirstPoint(List<Point2D.Float>[][] grid, List<Point2D.Float> activeList, List<Point2D.Float> pointList) {
-//		float d = random.nextFloat();
-//		float xr = p0.x + dimensions.x * d;
-//
-//		d = random.nextFloat();
-//		float yr = p0.y + dimensions.y * d;
-//
-//		Point2D.Float p = new Point2D.Float(xr, yr);
-//		Point index = pointFloatToInt(p, p0, cellSize);
-//
-//		grid[index.x][index.y].add(p);
-//		activeList.add(p);
-//		pointList.add(p);
-//	}
 	
 	private void addFirstPoint(Point2D.Float point, List<Point2D.Float>[][] grid,
 			List<Point2D.Float> activeList, List<Point2D.Float> pointList) {
