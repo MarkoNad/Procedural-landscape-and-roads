@@ -136,13 +136,13 @@ public class DebugScene2 {
 		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator);
 		final float segmentLen = 1f;
 		List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
-		Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
-		//Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
+		//Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
+		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false); // TODO test this
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
 		
 		final float modifierSegementLen = 1f;
 		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
-		//heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f); // TODO otkomentirati
+		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f);
 		
 		float texWidth = 5f;
 		float texDepth = 5f;
@@ -256,7 +256,7 @@ public class DebugScene2 {
 		float cellSize = 200f; // TODO
 		
 		pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
-				heightGenerator, cellSize);
+				heightGenerator, cellSize, false);
 		return pathfinder.findWaypoints();
 	}
 	

@@ -254,7 +254,7 @@ public class PathfinderScene {
 		float cellSize = 200f; // TODO
 		
 		Pathfinder pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
-				heightGenerator, cellSize);
+				heightGenerator, cellSize, false);
 		return pathfinder.findWaypoints();
 	}
 	

@@ -30,10 +30,10 @@ public class Pathfinder {
 	
 	public Pathfinder(Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
-			float cellSize) {
+			float cellSize, boolean allowTunnels) {
 		this.heightGenerator = heightGenerator;
 		searchProblem = setupProblem(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
-				heightGenerator, cellSize);
+				heightGenerator, cellSize, allowTunnels);
 		heuristics = setupHeuristics();
 	}
 	
@@ -186,7 +186,6 @@ public class Pathfinder {
 				float higherY = firstEndpointY < secondEndpointY ? secondEndpointY : firstEndpointY;
 				
 				Point2Df lowerTunnelEndpoint = firstEndpointY < secondEndpointY ? firstTunnelEndpoint : secondTunnelEndpoint;
-				Point2Df higherTunnelEndpoint = firstEndpointY < secondEndpointY ? secondTunnelEndpoint : firstTunnelEndpoint;
 				
 				float deltaX = Math.abs(secondTunnelEndpoint.getX() - firstTunnelEndpoint.getX());
 				float deltaZ = Math.abs(secondTunnelEndpoint.getZ() - firstTunnelEndpoint.getZ());
@@ -273,16 +272,13 @@ public class Pathfinder {
 			float patchSize = dist / (float)additionalPatches;
 			Point2Df direction = Point2Df.normalize(Point2Df.sub(next, curr));
 			
-			System.out.println("cell size: " + problem.getCellSize());
-			System.out.println("additional patches: " + additionalPatches);
-			System.out.println("patch size: " + patchSize);
-			System.out.println("direction x: " + direction.getX());
-			System.out.println("direction z: " + direction.getZ());
-			
-//			for(int j = 0; j < additionalPatches - 1; j++) {
+//			System.out.println("cell size: " + problem.getCellSize());
+//			System.out.println("additional patches: " + additionalPatches);
+//			System.out.println("patch size: " + patchSize);
+//			System.out.println("direction x: " + direction.getX());
+//			System.out.println("direction z: " + direction.getZ());
+
 			for(int j = 0; j < additionalPatches; j++) {
-//				float x = curr.getX() + direction.getX() * patchSize * (j + 1);
-//				float z = curr.getZ() + direction.getZ() * patchSize * (j + 1);// TODO
 				float x = curr.getX() + direction.getX() * patchSize * j;
 				float z = curr.getZ() + direction.getZ() * patchSize * j;
 				
@@ -309,9 +305,9 @@ public class Pathfinder {
 	
 	private PathfindingProblem setupProblem(Point2Df start, Point2Df goal,
 			Point2Df domainLowerLeftLimit, Point2Df domainUpperRightLimit,
-			IHeightGenerator heightGenerator, float cellSize) {
+			IHeightGenerator heightGenerator, float cellSize, boolean allowTunnels) {
 		return new PathfindingProblem(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
-				heightGenerator, cellSize);
+				heightGenerator, cellSize, allowTunnels);
 	}
 	
 	private static class PathfindingProblem implements IProblem<Point2Di> {
@@ -323,6 +319,7 @@ public class Pathfinder {
 		private final Point2Df domainLowerLeftLimit;
 		private final Point2Df domainUpperRightLimit;
 		private final IHeightGenerator heightGenerator;
+		private final boolean allowTunnels;
 
 		private final float cellSize;
 		private final float tunnelInnerRadius = 4500f;
@@ -331,12 +328,13 @@ public class Pathfinder {
 
 		public PathfindingProblem(Point2Df origin, Point2Df goal, Point2Df domainLowerLeftLimit, 
 				Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator,
-				float cellSize) {
+				float cellSize, boolean allowTunnels) {
 			this.origin = origin;
 			this.domainLowerLeftLimit = domainLowerLeftLimit;
 			this.domainUpperRightLimit = domainUpperRightLimit;
 			this.heightGenerator = heightGenerator;
 			this.cellSize = cellSize;
+			this.allowTunnels = allowTunnels;
 			this.goal = realToGrid(goal);
 		}
 		
@@ -368,10 +366,14 @@ public class Pathfinder {
 
 		@Override
 		public Iterable<Point2Di> getSuccessors(Point2Di p) {
+			// TODO disallow double tunnels
 			List<Point2Di> candidates = generateRoadCandidates(p);
-			List<Point2Di> tunnelCandidates = generateTunnelCandidates(p, tunnelInnerRadius, tunnelOuterRadius);
 			
-			candidates.addAll(tunnelCandidates);
+			if(allowTunnels) {
+				List<Point2Di> tunnelCandidates = generateTunnelCandidates(p, tunnelInnerRadius, tunnelOuterRadius);
+				candidates.addAll(tunnelCandidates);
+			}
+			
 			return candidates;
 		}
 		
@@ -490,41 +492,6 @@ public class Pathfinder {
 			return totalCost;
 		}
 		
-//		private boolean goesThroughMountain(Point2Df p1, Point2Df p2, float y1, float y2,
-//				float samplingDist, IHeightGenerator heightMap) {
-//			Point2Df direction = Point2Df.sub(p2, p1);
-//			direction = Point2Df.normalize(direction);
-//			
-//			final float eps = 1e-3f;
-//			
-//			float dist = Point2Df.distance(p1, p2);
-//			float d = dist / samplingDist;
-//			int samples = (int)d;
-//			if(d - (int)d < eps) samples--;
-//			
-//			if(samples <= 0) {
-//				LOGGER.severe("Number of tunnel samples is invalid: " + samples);
-//				return false;
-//			}
-//			
-//			final float lowerY = y1 < y2 ? y1 : y2;
-//			final float higherY = y1 < y2 ? y2 : y1;
-//			final float deltaX = Math.abs(p2.getX() - p1.getX()); // TODO this can be 0, add deltaY check
-//
-//			for(int i = 0; i < samples; i++) {
-//				float x = p1.getX() + direction.getX() * samplingDist * (i + 1);
-//				float z = p1.getZ() + direction.getZ() * samplingDist * (i + 1);
-//
-//				float sampleHeight = heightMap.getHeightApprox(x, z);
-//				//float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x) / deltaX);
-//				float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x - p1.getX()) / deltaX); // TODO ovo je ispravno valjda, ne nužno p1
-//				
-//				if(sampleHeight <= minAllowedHeight) return false;
-//			}
-//			
-//			return true;
-//		}
-		
 		private boolean goesThroughMountain(Point2Df p1, Point2Df p2, float y1, float y2,
 				float samplingDist, IHeightGenerator heightMap) {
 			Point2Df direction = Point2Df.sub(p2, p1);
@@ -546,7 +513,6 @@ public class Pathfinder {
 			final float higherY = y1 < y2 ? y2 : y1;
 			
 			final Point2Df lowerP = y1 < y2 ? p1 : p2;
-			final Point2Df higherP = y1 < y2 ? p2 : p1;
 			
 			final float deltaX = Math.abs(p2.getX() - p1.getX());
 			final float deltaZ = Math.abs(p2.getZ() - p1.getZ());
@@ -566,9 +532,7 @@ public class Pathfinder {
 					LOGGER.severe("Tried to check if two same points are going through mountain.");
 					return false;
 				}
-				
-				//float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x) / deltaX);
-				//float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x - p1.getX()) / deltaX); // TODO ovo je ispravno valjda, ne nužno p1
+
 				float minAllowedHeight = lowerY + (higherY - lowerY) * fraction;
 				
 				if(sampleHeight <= minAllowedHeight) return false;
