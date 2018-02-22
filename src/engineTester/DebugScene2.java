@@ -54,6 +54,8 @@ import toolbox.TriFunction;
 public class DebugScene2 {
 	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	
+	private static Pathfinder pathfinder; // remove
+	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
 		
@@ -133,6 +135,8 @@ public class DebugScene2 {
 		
 		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator);
 		final float segmentLen = 1f;
+		//List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
+		//Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
 		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
 		
@@ -217,7 +221,8 @@ public class DebugScene2 {
 
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
 			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
-			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeightApprox(p.x, p.z), p.z), 0f, 0f, 0f, 20f)));
+			//roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeightApprox(p.x, p.z), p.z), 0f, 0f, 0f, 20f)));
+			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, p.y, p.z), 0f, 0f, 0f, 20f)));
 			entities.add(chestnutEntityTrunk);
 			entities.add(chestnutEntityTop);
 			entities.add(cubeEntity);
@@ -250,7 +255,7 @@ public class DebugScene2 {
 		Point2Df goal = new Point2Df(10000f, -22000f); // TODO
 		float cellSize = 200f; // TODO
 		
-		Pathfinder pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
+		pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
 				heightGenerator, cellSize);
 		return pathfinder.findWaypoints();
 	}

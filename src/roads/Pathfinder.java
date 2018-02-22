@@ -44,6 +44,35 @@ public class Pathfinder {
 		
 		return waypointsCache;
 	}
+
+//	private List<Vector3f> generateWaypoints() {
+//		long start = System.nanoTime();
+//		
+//		AStar<Point2Di> astar = new AStar<>(searchProblem, heuristics);
+//		Node<Point2Di> goal = astar.search();
+//		
+//		double duration = (System.nanoTime() - start) * 1e-9;
+//		LOGGER.log(Level.FINE, "Astar duration:" + duration);
+//		
+//		List<Vector3f> waypoints = new ArrayList<>();
+//		
+//		List<Point2Di> gridPath = goal.reconstructPath();
+//		List<PathPoint> path = postProcessPath(gridPath, searchProblem);
+//		
+//		// path to waypoints
+//		
+//		for(PathPoint pathPoint : path) {
+//			Point2Df point = pathPoint.location;
+//			float height = heightGenerator.getHeightApprox(point.getX(), point.getZ());
+//			waypoints.add(new Vector3f(point.getX(), height, point.getZ()));
+//
+//			LOGGER.finer("A star point: " + point.toString() +
+//					(pathPoint.isInTunnel ? " TUNNEL" : "") +
+//					(pathPoint.isTunnelEndpoint ? " ENDPOINT" : ""));
+//		}
+//		
+//		return waypoints;
+//	}
 	
 	private List<Vector3f> generateWaypoints() {
 		long start = System.nanoTime();
@@ -54,49 +83,153 @@ public class Pathfinder {
 		double duration = (System.nanoTime() - start) * 1e-9;
 		LOGGER.log(Level.FINE, "Astar duration:" + duration);
 		
-		List<Vector3f> waypoints = new ArrayList<>();
-		
 		List<Point2Di> gridPath = goal.reconstructPath();
 		List<PathPoint> path = postProcessPath(gridPath, searchProblem);
-		
-		for(PathPoint pathPoint : path) {
-			Point2Df point = pathPoint.location;
-			float height = heightGenerator.getHeightApprox(point.getX(), point.getZ());;
-			waypoints.add(new Vector3f(point.getX(), height, point.getZ()));
-
-			LOGGER.finer("A star point: " + point.toString() +
-					(pathPoint.isInTunnel ? " TUNNEL" : "") +
-					(pathPoint.isTunnelEndpoint ? " ENDPOINT" : ""));
-		}
+		List<Vector3f> waypoints = setWaypointHeights(path, heightGenerator);
 		
 		return waypoints;
 	}
 	
 	public List<Vector3f> findTrajectory(float segmentLength) {
-		if(waypointsCache == null) {
-			waypointsCache = generateWaypoints();
-		}
-		
 		if(trajectoryCache == null) {
-			trajectoryCache = generateTrajectory(waypointsCache, segmentLength, heightGenerator);
+			trajectoryCache = generateTrajectory(segmentLength);
 		}
 		
 		return trajectoryCache;
 	}
 	
-	private List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength,
-			IHeightGenerator heightMap) {
+	private List<Vector3f> generateTrajectory(float segmentLength) {
+		List<Vector3f> waypoints = findWaypoints();
+		
 		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
 		List<Vector3f> trajectory = curve.getCurvePointsCopy();
 		
-		trajectory.forEach(p -> {
-			float height = heightMap.getHeight(p.getX(), p.getZ());
-			p.setY(height);
-		});
-		
-		// TODO korekcija za tunel
-		
 		return trajectory;
+	}
+	
+	private List<Vector3f> setWaypointHeights(List<PathPoint> pathPoints, IHeightGenerator heightMap) {
+		List<Vector3f> waypoints = new ArrayList<>();
+		
+		Point2Df firstTunnelEndpoint = null;
+		float firstEndpointY = -1;
+		Point2Df secondTunnelEndpoint = null;
+		float secondEndpointY = -1;
+		
+		for(int i = 0; i < pathPoints.size(); i++) {
+			PathPoint pp = pathPoints.get(i);
+			Point2Df p = pp.location;
+			
+			// tunnel started, define both end points
+			if(pp.isTunnelEndpoint && firstTunnelEndpoint == null) {
+				firstTunnelEndpoint = p;
+				firstEndpointY = heightGenerator.getHeightApprox(p.getX(), p.getZ());
+				
+				secondTunnelEndpoint = findNextTunnelEndpoint(i, pathPoints);
+				secondEndpointY = heightGenerator.getHeightApprox(secondTunnelEndpoint.getX(), secondTunnelEndpoint.getZ());
+				
+				System.out.println("first: " + firstTunnelEndpoint);
+				System.out.println("second: " + secondTunnelEndpoint);
+				
+				Vector3f newWaypoint = new Vector3f(p.getX(), firstEndpointY, p.getZ());
+				waypoints.add(newWaypoint);
+				
+				LOGGER.finer("A star point: " + p.toString() + firstEndpointY + " TUNNEL ENDPOINT");
+				continue;
+			}
+			
+			// tunnel ended, erase endpoint information
+			if(pp.isTunnelEndpoint && firstTunnelEndpoint != null) {
+				firstTunnelEndpoint = null;
+				firstEndpointY = -1;
+
+				float height = heightGenerator.getHeightApprox(p.getX(), p.getZ());
+				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
+				waypoints.add(newWaypoint);
+				
+				// this endpoint is possibly also start for another tunnel
+				if(i + 1 < pathPoints.size() && pathPoints.get(i + 1).isInTunnel) {
+					LOGGER.finer("A star point: " + p.toString() + height + " TUNNEL DOUBLE ENDPOINT");
+					
+					firstTunnelEndpoint = p;
+					firstEndpointY = height;
+					secondTunnelEndpoint = findNextTunnelEndpoint(i, pathPoints);
+					secondEndpointY = heightGenerator.getHeightApprox(secondTunnelEndpoint.getX(), secondTunnelEndpoint.getZ());
+				} else {
+					LOGGER.finer("A star point: " + p.toString() + height + " TUNNEL ENDPOINT");
+				}
+				
+				System.out.println("double first: " + firstTunnelEndpoint);
+				System.out.println("double second: " + secondTunnelEndpoint);
+				
+				continue;
+			}
+			
+			// point outside tunnel
+			if(firstTunnelEndpoint == null) {
+				float height = heightGenerator.getHeightApprox(p.getX(), p.getZ());
+				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
+				waypoints.add(newWaypoint);
+				
+				LOGGER.finer("A star point: " + p.toString() + height);
+				if(pp.isInTunnel) {
+					LOGGER.severe("Point should not be in tunnel.");
+				}
+				
+				continue;
+			}
+			
+			// point in tunnel
+			if(firstTunnelEndpoint != null) {
+				float lowerY = firstEndpointY < secondEndpointY ? firstEndpointY : secondEndpointY;
+				float higherY = firstEndpointY < secondEndpointY ? secondEndpointY : firstEndpointY;
+				
+				Point2Df lowerTunnelEndpoint = firstEndpointY < secondEndpointY ? firstTunnelEndpoint : secondTunnelEndpoint;
+				Point2Df higherTunnelEndpoint = firstEndpointY < secondEndpointY ? secondTunnelEndpoint : firstTunnelEndpoint;
+				
+				float deltaX = Math.abs(secondTunnelEndpoint.getX() - firstTunnelEndpoint.getX());
+				float deltaZ = Math.abs(secondTunnelEndpoint.getZ() - firstTunnelEndpoint.getZ());
+				
+				float fraction;
+				if(Math.abs(deltaX) > 1e-6) {
+					fraction = Math.abs(p.getX() - lowerTunnelEndpoint.getX()) / deltaX;
+				} else if(Math.abs(deltaZ) > 1e-6) {
+					fraction = Math.abs(p.getZ() - lowerTunnelEndpoint.getZ()) / deltaZ;
+				} else {
+					throw new IllegalStateException("Tunnel start and end endpoints are the same.");
+				}
+				
+				System.out.println(deltaX);
+				float height = lowerY + (higherY - lowerY) * fraction;
+
+				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
+				waypoints.add(newWaypoint);
+				
+				LOGGER.finer("A star point: " + p.toString() + height + " TUNNEL");
+				if(!pp.isInTunnel) {
+					LOGGER.severe("Point should be in tunnel.");
+				}
+				
+				continue;
+			}
+		}
+
+		return waypoints;
+	}
+	
+	private Point2Df findNextTunnelEndpoint(int i, List<PathPoint> pathPoints) {
+		if(i + 1 >= pathPoints.size()) {
+			throw new IllegalStateException("Tunnel start endpoint without matching end endpoint found.");
+		}
+		
+		for(int j = i + 1; j < pathPoints.size(); j++) {
+			PathPoint pp2 = pathPoints.get(j);
+			if(!pp2.isInTunnel) LOGGER.severe("Waypoint between tunnel endpoints not in tunnel.");
+			if(pp2.isTunnelEndpoint) {
+				return pp2.location;
+			}
+		}
+		
+		throw new IllegalStateException("No endpoint after requested one found.");
 	}
 	
 	private static class PathPoint {
@@ -158,43 +291,6 @@ public class Pathfinder {
 		return processed;
 	}
 
-//	private List<Point2Df> postProcessPath(List<Point2Di> gridPoints, PathfindingProblem problem) {
-//		LOGGER.fine("Post processing A star path. Initial num of points: " + gridPoints.size());
-//		
-//		List<Point2Df> processed = new ArrayList<>();
-//		
-//		for(int i = 0; i < gridPoints.size() - 1; i++) {
-//			Point2Df curr = problem.gridToReal(gridPoints.get(i));
-//			Point2Df next = problem.gridToReal(gridPoints.get(i + 1));
-//			
-//			float dist = Point2Df.distance(curr, next);
-//			
-//			if(dist <= 2 * problem.getCellSize()) {
-//				processed.add(curr);
-//				continue;
-//			}
-//			
-//			int additionalPatches = (int) (dist / problem.getCellSize());
-//			float patchSize = dist / (float)additionalPatches;
-//			
-//			Point2Df direction = Point2Df.normalize(Point2Df.sub(next, curr));
-//			
-//			for(int j = 0; j < additionalPatches - 1; j++) {
-//				float x = curr.getX() + direction.getX() * patchSize * (j + 1);
-//				float z = curr.getZ() + direction.getZ() * patchSize * (j + 1);
-//				
-//				Point2Df newPoint = new Point2Df(x, z);
-//				processed.add(newPoint);
-//			}
-//		}
-//		
-//		processed.add(problem.gridToReal(gridPoints.get(gridPoints.size() - 1)));
-//		
-//		LOGGER.fine("Post processing A star path finised. Num of points: " + processed.size());
-//		
-//		return processed;
-//	}
-
 	private IHeuristics<Point2Di> setupHeuristics() {
 		return s -> 0.0;
 	}
@@ -207,6 +303,8 @@ public class Pathfinder {
 	}
 	
 	private static class PathfindingProblem implements IProblem<Point2Di> {
+		
+		private static final float samplingDist = 50f;
 		
 		private final Point2Df origin;
 		private final Point2Di goal;
@@ -335,8 +433,8 @@ public class Pathfinder {
 			double slope = Math.abs(y2 - y1) / distance;
 			double slopeCost = Math.pow(slope, 2.0) * 10000f;
 			
-			System.out.println(String.format("slope:   %.2f, slope cost:    %.2f", slope, slopeCost));
-			System.out.println(String.format("distance:%.2f, distance cost: %.2f", distance, distanceCost));
+//			System.out.println(String.format("slope:   %.2f, slope cost:    %.2f", slope, slopeCost));
+//			System.out.println(String.format("distance:%.2f, distance cost: %.2f", distance, distanceCost));
 			
 			totalCost += distanceCost;
 			totalCost += slopeCost;
@@ -360,7 +458,7 @@ public class Pathfinder {
 			double y1 = heightGenerator.getHeightApprox(p1.getX(), p1.getZ());
 			double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
 			
-			if(!goesThroughMountain(p1, p2, (float)y1, (float)y2, 500f, heightGenerator)) {
+			if(!goesThroughMountain(p1, p2, (float)y1, (float)y2, samplingDist, heightGenerator)) {
 				return Double.POSITIVE_INFINITY;
 			}
 			
@@ -371,8 +469,8 @@ public class Pathfinder {
 			double slope = Math.abs(y2 - y1) / distance;
 			double slopeCost = Math.pow(slope, 2.0) * 10000f;
 			
-			System.out.println(String.format("TUNNEL slope:   %.2f, slope cost:    %.2f", slope, slopeCost));
-			System.out.println(String.format("TUNNEL distance:%.2f, distance cost: %.2f", distance, distanceCost));
+//			System.out.println(String.format("TUNNEL slope:   %.2f, slope cost:    %.2f", slope, slopeCost));
+//			System.out.println(String.format("TUNNEL distance:%.2f, distance cost: %.2f", distance, distanceCost));
 			
 			totalCost += distanceCost;
 			totalCost += slopeCost;
@@ -399,14 +497,15 @@ public class Pathfinder {
 			
 			final float lowerY = y1 < y2 ? y1 : y2;
 			final float higherY = y1 < y2 ? y2 : y1;
-			final float deltaX = Math.abs(p2.getX() - p1.getX());
+			final float deltaX = Math.abs(p2.getX() - p1.getX()); // TODO this can be 0, add deltaY check
 
 			for(int i = 0; i < samples; i++) {
 				float x = p1.getX() + direction.getX() * samplingDist * (i + 1);
 				float z = p1.getZ() + direction.getZ() * samplingDist * (i + 1);
 
 				float sampleHeight = heightMap.getHeightApprox(x, z);
-				float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x) / deltaX);
+				//float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x) / deltaX);
+				float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x - p1.getX()) / deltaX); // TODO ovo je ispravno valjda, ne nužno p1
 				
 				if(sampleHeight <= minAllowedHeight) return false;
 			}
