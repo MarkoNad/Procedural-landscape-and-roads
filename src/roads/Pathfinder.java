@@ -13,6 +13,7 @@ import search.IHeuristics;
 import search.IProblem;
 import search.Node;
 import terrains.IHeightGenerator;
+import toolbox.CatmullRomSpline;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
 
@@ -24,22 +25,27 @@ public class Pathfinder {
 	private final PathfindingProblem searchProblem;
 	private final IHeuristics<Point2Di> heuristics;
 	
+	List<Vector3f> waypointsCache = null;
+	List<Vector3f> trajectoryCache = null;
+	
 	public Pathfinder(Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
 			float cellSize) {
-		start = new Point2Df(9500f, -5000f); // TODO
-		goal = new Point2Df(10000f, -22000f); // TODO
-		cellSize = 200f; // TODO
-		domainLowerLeftLimit = new Point2Df(0f, -5000f); // TODO
-		domainUpperRightLimit = new Point2Df(10_000f, -22_000f); // TODO
-		
 		this.heightGenerator = heightGenerator;
 		searchProblem = setupProblem(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
 				heightGenerator, cellSize);
 		heuristics = setupHeuristics();
 	}
-
-	public List<Vector3f> findPath() {
+	
+	public List<Vector3f> findWaypoints() {
+		if(waypointsCache == null) {
+			waypointsCache = generateWaypoints();
+		}
+		
+		return waypointsCache;
+	}
+	
+	private List<Vector3f> generateWaypoints() {
 		long start = System.nanoTime();
 		
 		AStar<Point2Di> astar = new AStar<>(searchProblem, heuristics);
@@ -50,23 +56,144 @@ public class Pathfinder {
 		
 		List<Vector3f> waypoints = new ArrayList<>();
 		
-		Point2Di previous = null;
-		for(Point2Di gridPoint : goal.reconstructPath()) {
-			Point2Df point = searchProblem.gridToReal(gridPoint);
+		List<Point2Di> gridPath = goal.reconstructPath();
+		List<PathPoint> path = postProcessPath(gridPath, searchProblem);
+		
+		for(PathPoint pathPoint : path) {
+			Point2Df point = pathPoint.location;
 			float height = heightGenerator.getHeightApprox(point.getX(), point.getZ());;
 			waypoints.add(new Vector3f(point.getX(), height, point.getZ()));
-			
-			if(previous != null && Point2Di.l1Distance(gridPoint, previous) > 2) { // TODO hardcoded 2
-				LOGGER.log(Level.FINER, "A star TUNNEL point: " + point.toString());
-			} else {
-				LOGGER.log(Level.FINER, "A star point: " + point.toString());
-			}
-			
-			previous = gridPoint;
+
+			LOGGER.finer("A star point: " + point.toString() +
+					(pathPoint.isInTunnel ? " TUNNEL" : "") +
+					(pathPoint.isTunnelEndpoint ? " ENDPOINT" : ""));
 		}
 		
 		return waypoints;
 	}
+	
+	public List<Vector3f> findTrajectory(float segmentLength) {
+		if(waypointsCache == null) {
+			waypointsCache = generateWaypoints();
+		}
+		
+		if(trajectoryCache == null) {
+			trajectoryCache = generateTrajectory(waypointsCache, segmentLength, heightGenerator);
+		}
+		
+		return trajectoryCache;
+	}
+	
+	private List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength,
+			IHeightGenerator heightMap) {
+		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
+		List<Vector3f> trajectory = curve.getCurvePointsCopy();
+		
+		trajectory.forEach(p -> {
+			float height = heightMap.getHeight(p.getX(), p.getZ());
+			p.setY(height);
+		});
+		
+		// TODO korekcija za tunel
+		
+		return trajectory;
+	}
+	
+	private static class PathPoint {
+		private Point2Df location;
+		private boolean isTunnelEndpoint;
+		private boolean isInTunnel;
+		
+		public PathPoint(Point2Df location, boolean isTunnelEndpoint, boolean isInTunnel) {
+			this.location = location;
+			this.isTunnelEndpoint = isTunnelEndpoint;
+			this.isInTunnel = isInTunnel;
+		}
+
+	}
+	
+	private List<PathPoint> postProcessPath(List<Point2Di> gridPoints, PathfindingProblem problem) {
+		LOGGER.fine("Post processing A star path. Initial num of points: " + gridPoints.size());
+		
+		List<PathPoint> processed = new ArrayList<>();
+		
+		boolean nextPointIsTunnelEndpoint = false;
+		
+		for(int i = 0; i < gridPoints.size() - 1; i++) {
+			Point2Df curr = problem.gridToReal(gridPoints.get(i));
+			Point2Df next = problem.gridToReal(gridPoints.get(i + 1));
+			
+			float dist = Point2Df.distance(curr, next);
+			
+			if(dist <= 2 * problem.getCellSize()) {
+				PathPoint currTP = new PathPoint(curr, nextPointIsTunnelEndpoint, nextPointIsTunnelEndpoint);
+				processed.add(currTP);
+				nextPointIsTunnelEndpoint = false;
+				continue;
+			}
+			
+			int additionalPatches = (int) (dist / problem.getCellSize());
+			float patchSize = dist / (float)additionalPatches;
+			
+			Point2Df direction = Point2Df.normalize(Point2Df.sub(next, curr));
+			
+			for(int j = 0; j < additionalPatches - 1; j++) {
+				float x = curr.getX() + direction.getX() * patchSize * (j + 1);
+				float z = curr.getZ() + direction.getZ() * patchSize * (j + 1);
+				
+				Point2Df newPoint = new Point2Df(x, z);
+				PathPoint newTP = new PathPoint(newPoint, j == 0, true);
+				processed.add(newTP);
+			}
+			
+			nextPointIsTunnelEndpoint = true;
+		}
+		
+		Point2Df lastPoint = problem.gridToReal(gridPoints.get(gridPoints.size() - 1));
+		PathPoint lastTP = new PathPoint(lastPoint, nextPointIsTunnelEndpoint, nextPointIsTunnelEndpoint);
+		processed.add(lastTP);
+		
+		LOGGER.fine("Post processing A star path finised. Num of points: " + processed.size());
+		
+		return processed;
+	}
+
+//	private List<Point2Df> postProcessPath(List<Point2Di> gridPoints, PathfindingProblem problem) {
+//		LOGGER.fine("Post processing A star path. Initial num of points: " + gridPoints.size());
+//		
+//		List<Point2Df> processed = new ArrayList<>();
+//		
+//		for(int i = 0; i < gridPoints.size() - 1; i++) {
+//			Point2Df curr = problem.gridToReal(gridPoints.get(i));
+//			Point2Df next = problem.gridToReal(gridPoints.get(i + 1));
+//			
+//			float dist = Point2Df.distance(curr, next);
+//			
+//			if(dist <= 2 * problem.getCellSize()) {
+//				processed.add(curr);
+//				continue;
+//			}
+//			
+//			int additionalPatches = (int) (dist / problem.getCellSize());
+//			float patchSize = dist / (float)additionalPatches;
+//			
+//			Point2Df direction = Point2Df.normalize(Point2Df.sub(next, curr));
+//			
+//			for(int j = 0; j < additionalPatches - 1; j++) {
+//				float x = curr.getX() + direction.getX() * patchSize * (j + 1);
+//				float z = curr.getZ() + direction.getZ() * patchSize * (j + 1);
+//				
+//				Point2Df newPoint = new Point2Df(x, z);
+//				processed.add(newPoint);
+//			}
+//		}
+//		
+//		processed.add(problem.gridToReal(gridPoints.get(gridPoints.size() - 1)));
+//		
+//		LOGGER.fine("Post processing A star path finised. Num of points: " + processed.size());
+//		
+//		return processed;
+//	}
 
 	private IHeuristics<Point2Di> setupHeuristics() {
 		return s -> 0.0;
@@ -91,7 +218,6 @@ public class Pathfinder {
 		private final float tunnelInnerRadius = 4500f;
 		private final float tunnelOuterRadius = 6000f;
 		private final int step = 1;
-		//private final int tunnelStep = 25;
 
 		public PathfindingProblem(Point2Df origin, Point2Df goal, Point2Df domainLowerLeftLimit, 
 				Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator,
@@ -102,6 +228,10 @@ public class Pathfinder {
 			this.heightGenerator = heightGenerator;
 			this.cellSize = cellSize;
 			this.goal = realToGrid(goal);
+		}
+		
+		public float getCellSize() {
+			return cellSize;
 		}
 		
 		public Point2Df gridToReal(Point2Di gridPoint) {
@@ -133,26 +263,6 @@ public class Pathfinder {
 			
 			candidates.addAll(tunnelCandidates);
 			return candidates;
-			
-//			return Arrays.asList(
-//					new Point2Di(state.getX(), state.getZ() - step),
-//					new Point2Di(state.getX() + step, state.getZ() - step),
-//					new Point2Di(state.getX() + step, state.getZ()),
-//					new Point2Di(state.getX() + step, state.getZ() + step),
-//					new Point2Di(state.getX(), state.getZ() + step),
-//					new Point2Di(state.getX() - step, state.getZ() + step),
-//					new Point2Di(state.getX() - step, state.getZ()),
-//					new Point2Di(state.getX() - step, state.getZ() - step),
-//					
-//					new Point2Di(state.getX(), state.getZ() - tunnelStep),
-//					new Point2Di(state.getX() + tunnelStep, state.getZ() - tunnelStep),
-//					new Point2Di(state.getX() + tunnelStep, state.getZ()),
-//					new Point2Di(state.getX() + tunnelStep, state.getZ() + tunnelStep),
-//					new Point2Di(state.getX(), state.getZ() + tunnelStep),
-//					new Point2Di(state.getX() - tunnelStep, state.getZ() + tunnelStep),
-//					new Point2Di(state.getX() - tunnelStep, state.getZ()),
-//					new Point2Di(state.getX() - tunnelStep, state.getZ() - tunnelStep)
-//				);
 		}
 		
 		private List<Point2Di> generateRoadCandidates(Point2Di p) {
@@ -196,8 +306,7 @@ public class Pathfinder {
 
 		@Override
 		public double getTransitionCost(Point2Di first, Point2Di second) {
-			//return roadCost(first, second);
-			if(Point2Di.l1Distance(first, second) > 2) { // TODO road step instead 2
+			if(Point2Di.l1Distance(first, second) > 2 * step) {
 				return tunnelCost(first, second);
 			} else {
 				return roadCost(first, second);
@@ -304,33 +413,7 @@ public class Pathfinder {
 			
 			return true;
 		}
-		
-//		private boolean goesThroughMountain(Point2Df p1, Point2Df p2, float y1, float y2, float samplingDist, 
-//				IHeightGenerator heightMap) {
-//			Point2Df direction = Point2Df.sub(p2, p1);
-//			
-//			float dist = Point2Df.distance(p1, p2);
-//			int samples = (int)(dist / samplingDist);
-//			
-//			final float eps = 1e-3f;
-//			
-//			for(int i = 0; i < samples; i++) {
-//				float x = p1.getX() + direction.getX() * (i + 1);
-//				float z = p1.getZ() + direction.getZ() * (i + 1);
-//				
-//				if(i == samples - 1 && Point2Df.near(new Point2Df(x, z), p2, eps)) {
-//					continue;
-//				}
-//				
-//				float sampleHeight = heightMap.getHeightApprox(x, z);
-//				
-//				float lowerY = y1 < y2 ? y1 : y2;
-//				float higherY = y1 < y2 ? y2 : y1;
-//
-//				float minAllowedHeight = lowerY + (higherY - lowerY) * ((i + 1) / (float)(samples + 1));
-//			}
-//		}
-		
+
 	}
 
 }

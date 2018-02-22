@@ -252,7 +252,7 @@ public class DebugScene2 {
 		
 		Pathfinder pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
 				heightGenerator, cellSize);
-		return pathfinder.findPath();
+		return pathfinder.findWaypoints();
 	}
 	
 	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
