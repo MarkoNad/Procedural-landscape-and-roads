@@ -135,14 +135,14 @@ public class DebugScene2 {
 		
 		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator);
 		final float segmentLen = 1f;
-		//List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
-		//Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
-		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
+		List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
+		Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
+		//Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
 		
 		final float modifierSegementLen = 1f;
 		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
-		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f);
+		//heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f); // TODO otkomentirati
 		
 		float texWidth = 5f;
 		float texDepth = 5f;

@@ -104,6 +104,8 @@ public class Pathfinder {
 		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
 		List<Vector3f> trajectory = curve.getCurvePointsCopy();
 		
+		// TODO međutočke postaviti pomoću heightmapa
+		
 		return trajectory;
 	}
 	
@@ -258,6 +260,8 @@ public class Pathfinder {
 			
 			float dist = Point2Df.distance(curr, next);
 			
+			System.out.println("dist: " + dist);
+			
 			if(dist <= 2 * problem.getCellSize()) {
 				PathPoint currTP = new PathPoint(curr, nextPointIsTunnelEndpoint, nextPointIsTunnelEndpoint);
 				processed.add(currTP);
@@ -267,12 +271,20 @@ public class Pathfinder {
 			
 			int additionalPatches = (int) (dist / problem.getCellSize());
 			float patchSize = dist / (float)additionalPatches;
-			
 			Point2Df direction = Point2Df.normalize(Point2Df.sub(next, curr));
 			
-			for(int j = 0; j < additionalPatches - 1; j++) {
-				float x = curr.getX() + direction.getX() * patchSize * (j + 1);
-				float z = curr.getZ() + direction.getZ() * patchSize * (j + 1);
+			System.out.println("cell size: " + problem.getCellSize());
+			System.out.println("additional patches: " + additionalPatches);
+			System.out.println("patch size: " + patchSize);
+			System.out.println("direction x: " + direction.getX());
+			System.out.println("direction z: " + direction.getZ());
+			
+//			for(int j = 0; j < additionalPatches - 1; j++) {
+			for(int j = 0; j < additionalPatches; j++) {
+//				float x = curr.getX() + direction.getX() * patchSize * (j + 1);
+//				float z = curr.getZ() + direction.getZ() * patchSize * (j + 1);// TODO
+				float x = curr.getX() + direction.getX() * patchSize * j;
+				float z = curr.getZ() + direction.getZ() * patchSize * j;
 				
 				Point2Df newPoint = new Point2Df(x, z);
 				PathPoint newTP = new PathPoint(newPoint, j == 0, true);
@@ -478,6 +490,41 @@ public class Pathfinder {
 			return totalCost;
 		}
 		
+//		private boolean goesThroughMountain(Point2Df p1, Point2Df p2, float y1, float y2,
+//				float samplingDist, IHeightGenerator heightMap) {
+//			Point2Df direction = Point2Df.sub(p2, p1);
+//			direction = Point2Df.normalize(direction);
+//			
+//			final float eps = 1e-3f;
+//			
+//			float dist = Point2Df.distance(p1, p2);
+//			float d = dist / samplingDist;
+//			int samples = (int)d;
+//			if(d - (int)d < eps) samples--;
+//			
+//			if(samples <= 0) {
+//				LOGGER.severe("Number of tunnel samples is invalid: " + samples);
+//				return false;
+//			}
+//			
+//			final float lowerY = y1 < y2 ? y1 : y2;
+//			final float higherY = y1 < y2 ? y2 : y1;
+//			final float deltaX = Math.abs(p2.getX() - p1.getX()); // TODO this can be 0, add deltaY check
+//
+//			for(int i = 0; i < samples; i++) {
+//				float x = p1.getX() + direction.getX() * samplingDist * (i + 1);
+//				float z = p1.getZ() + direction.getZ() * samplingDist * (i + 1);
+//
+//				float sampleHeight = heightMap.getHeightApprox(x, z);
+//				//float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x) / deltaX);
+//				float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x - p1.getX()) / deltaX); // TODO ovo je ispravno valjda, ne nužno p1
+//				
+//				if(sampleHeight <= minAllowedHeight) return false;
+//			}
+//			
+//			return true;
+//		}
+		
 		private boolean goesThroughMountain(Point2Df p1, Point2Df p2, float y1, float y2,
 				float samplingDist, IHeightGenerator heightMap) {
 			Point2Df direction = Point2Df.sub(p2, p1);
@@ -497,15 +544,32 @@ public class Pathfinder {
 			
 			final float lowerY = y1 < y2 ? y1 : y2;
 			final float higherY = y1 < y2 ? y2 : y1;
-			final float deltaX = Math.abs(p2.getX() - p1.getX()); // TODO this can be 0, add deltaY check
+			
+			final Point2Df lowerP = y1 < y2 ? p1 : p2;
+			final Point2Df higherP = y1 < y2 ? p2 : p1;
+			
+			final float deltaX = Math.abs(p2.getX() - p1.getX());
+			final float deltaZ = Math.abs(p2.getZ() - p1.getZ());
 
 			for(int i = 0; i < samples; i++) {
 				float x = p1.getX() + direction.getX() * samplingDist * (i + 1);
 				float z = p1.getZ() + direction.getZ() * samplingDist * (i + 1);
 
 				float sampleHeight = heightMap.getHeightApprox(x, z);
+				
+				float fraction;
+				if(Math.abs(deltaX) > 1e-6) {
+					fraction = Math.abs(x - lowerP.getX()) / deltaX;
+				} else if(Math.abs(deltaZ) > 1e-6) {
+					fraction = Math.abs(z - lowerP.getZ()) / deltaZ;
+				} else {
+					LOGGER.severe("Tried to check if two same points are going through mountain.");
+					return false;
+				}
+				
 				//float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x) / deltaX);
-				float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x - p1.getX()) / deltaX); // TODO ovo je ispravno valjda, ne nužno p1
+				//float minAllowedHeight = lowerY + (higherY - lowerY) * (Math.abs(x - p1.getX()) / deltaX); // TODO ovo je ispravno valjda, ne nužno p1
+				float minAllowedHeight = lowerY + (higherY - lowerY) * fraction;
 				
 				if(sampleHeight <= minAllowedHeight) return false;
 			}
