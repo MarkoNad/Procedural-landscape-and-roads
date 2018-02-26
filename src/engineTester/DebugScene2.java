@@ -12,6 +12,7 @@ import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -133,16 +134,22 @@ public class DebugScene2 {
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
 		
-		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator);
+		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 50f);
 		final float segmentLen = 1f;
 		List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
-		//Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
-		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false); // TODO test this
+		Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
+		//Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false); // TODO test this
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
 		
-		final float modifierSegementLen = 1f;
-		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
-		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f);
+//		final float modifierSegementLen = 1f;
+//		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
+//		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f);
+		
+		Function<Float, Float> influenceFn = x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f);
+		for(List<Vector3f> modifier : pathfinder.findModifierTrajectories(0f)) {
+			System.out.println("modifier: " + modifier);
+			heightGenerator.updateHeight(modifier, influenceFn, 15f);
+		}
 		
 		float texWidth = 5f;
 		float texDepth = 5f;
@@ -250,13 +257,14 @@ public class DebugScene2 {
 	}
 
 	private static List<Vector3f> findPath(Point2Df domainLowerLeftLimit,
-			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator) {
+			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
+			boolean allowTunnels, float minimalTunnelDepth) {
 		Point2Df start = new Point2Df(9500f, -5000f); // TODO
 		Point2Df goal = new Point2Df(10000f, -22000f); // TODO
 		float cellSize = 200f; // TODO
 		
 		pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
-				heightGenerator, cellSize, false);
+				heightGenerator, cellSize, allowTunnels, minimalTunnelDepth);
 		return pathfinder.findWaypoints();
 	}
 	

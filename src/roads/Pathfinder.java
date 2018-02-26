@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.lwjgl.util.vector.Vector3f;
 
@@ -25,16 +26,20 @@ public class Pathfinder {
 	private final PathfindingProblem searchProblem;
 	private final IHeuristics<Point2Di> heuristics;
 	
-	List<Vector3f> waypointsCache = null;
+	private final float minimalTunnelDepth;
+	private TrajectoryPostprocessor trajectoryPostprocessor;
+	
+	List<PathPoint3D> waypointsCache = null;
 	List<Vector3f> trajectoryCache = null;
 	
 	public Pathfinder(Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
-			float cellSize, boolean allowTunnels) {
+			float cellSize, boolean allowTunnels, float minimalTunnelDepth) {
 		this.heightGenerator = heightGenerator;
+		this.minimalTunnelDepth = minimalTunnelDepth;
 		searchProblem = setupProblem(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
 				heightGenerator, cellSize, allowTunnels);
-		heuristics = setupHeuristics();
+		heuristics = setupHeuristics(goal);
 	}
 	
 	public List<Vector3f> findWaypoints() {
@@ -42,39 +47,10 @@ public class Pathfinder {
 			waypointsCache = generateWaypoints();
 		}
 		
-		return waypointsCache;
+		return waypointsCache.stream().map(pp -> pp.getLocation()).collect(Collectors.toList());
 	}
-
-//	private List<Vector3f> generateWaypoints() {
-//		long start = System.nanoTime();
-//		
-//		AStar<Point2Di> astar = new AStar<>(searchProblem, heuristics);
-//		Node<Point2Di> goal = astar.search();
-//		
-//		double duration = (System.nanoTime() - start) * 1e-9;
-//		LOGGER.log(Level.FINE, "Astar duration:" + duration);
-//		
-//		List<Vector3f> waypoints = new ArrayList<>();
-//		
-//		List<Point2Di> gridPath = goal.reconstructPath();
-//		List<PathPoint> path = postProcessPath(gridPath, searchProblem);
-//		
-//		// path to waypoints
-//		
-//		for(PathPoint pathPoint : path) {
-//			Point2Df point = pathPoint.location;
-//			float height = heightGenerator.getHeightApprox(point.getX(), point.getZ());
-//			waypoints.add(new Vector3f(point.getX(), height, point.getZ()));
-//
-//			LOGGER.finer("A star point: " + point.toString() +
-//					(pathPoint.isInTunnel ? " TUNNEL" : "") +
-//					(pathPoint.isTunnelEndpoint ? " ENDPOINT" : ""));
-//		}
-//		
-//		return waypoints;
-//	}
 	
-	private List<Vector3f> generateWaypoints() {
+	private List<PathPoint3D> generateWaypoints() {
 		long start = System.nanoTime();
 		
 		AStar<Point2Di> astar = new AStar<>(searchProblem, heuristics);
@@ -85,7 +61,7 @@ public class Pathfinder {
 		
 		List<Point2Di> gridPath = goal.reconstructPath();
 		List<PathPoint> path = postProcessPath(gridPath, searchProblem);
-		List<Vector3f> waypoints = setWaypointHeights(path, heightGenerator);
+		List<PathPoint3D> waypoints = setWaypointHeights(path, heightGenerator);
 		
 		return waypoints;
 	}
@@ -104,13 +80,28 @@ public class Pathfinder {
 		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
 		List<Vector3f> trajectory = curve.getCurvePointsCopy();
 		
-		// TODO međutočke postaviti pomoću heightmapa
+		trajectoryPostprocessor = new TrajectoryPostprocessor(trajectory, waypointsCache,
+				heightGenerator, minimalTunnelDepth);
 		
-		return trajectory;
+		return trajectoryPostprocessor.getCorrectedTrajectory();
 	}
 	
-	private List<Vector3f> setWaypointHeights(List<PathPoint> pathPoints, IHeightGenerator heightMap) {
-		List<Vector3f> waypoints = new ArrayList<>();
+	public List<List<Vector3f>> findModifierTrajectories(float offset) {
+		List<List<Vector3f>> shiftedModifiers = new ArrayList<>();
+		
+		for(List<Vector3f> originalModifier : trajectoryPostprocessor.getModifierTrajectories()) {
+			List<Vector3f> shiftedModifier = originalModifier
+					.stream()
+					.map(tp -> new Vector3f(tp.x, tp.y + offset, tp.z))
+					.collect(Collectors.toList());
+			shiftedModifiers.add(shiftedModifier);
+		}
+		
+		return shiftedModifiers;
+	}
+	
+	private List<PathPoint3D> setWaypointHeights(List<PathPoint> pathPoints, IHeightGenerator heightMap) {
+		List<PathPoint3D> waypoints = new ArrayList<>();
 		
 		Point2Df firstTunnelEndpoint = null;
 		float firstEndpointY = -1;
@@ -132,8 +123,10 @@ public class Pathfinder {
 				System.out.println("first: " + firstTunnelEndpoint);
 				System.out.println("second: " + secondTunnelEndpoint);
 				
-				Vector3f newWaypoint = new Vector3f(p.getX(), firstEndpointY, p.getZ());
-				waypoints.add(newWaypoint);
+//				Vector3f newWaypoint = new Vector3f(p.getX(), firstEndpointY, p.getZ());
+//				waypoints.add(newWaypoint);
+				Vector3f newWaypointLoc = new Vector3f(p.getX(), firstEndpointY, p.getZ());
+				waypoints.add(new PathPoint3D(newWaypointLoc, true, true));
 				
 				LOGGER.finer("A star point: " + p.toString() + firstEndpointY + " TUNNEL ENDPOINT");
 				continue;
@@ -145,8 +138,10 @@ public class Pathfinder {
 				firstEndpointY = -1;
 
 				float height = heightGenerator.getHeightApprox(p.getX(), p.getZ());
-				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
-				waypoints.add(newWaypoint);
+//				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
+//				waypoints.add(newWaypoint);
+				Vector3f newWaypointLoc = new Vector3f(p.getX(), height, p.getZ());
+				waypoints.add(new PathPoint3D(newWaypointLoc, true, true));
 				
 				// this endpoint is possibly also start for another tunnel
 				if(i + 1 < pathPoints.size() && pathPoints.get(i + 1).isInTunnel) {
@@ -169,8 +164,10 @@ public class Pathfinder {
 			// point outside tunnel
 			if(firstTunnelEndpoint == null) {
 				float height = heightGenerator.getHeightApprox(p.getX(), p.getZ());
-				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
-				waypoints.add(newWaypoint);
+//				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
+//				waypoints.add(newWaypoint);
+				Vector3f newWaypointLoc = new Vector3f(p.getX(), height, p.getZ());
+				waypoints.add(new PathPoint3D(newWaypointLoc, false, false));
 				
 				LOGGER.finer("A star point: " + p.toString() + height);
 				if(pp.isInTunnel) {
@@ -202,8 +199,10 @@ public class Pathfinder {
 				System.out.println(deltaX);
 				float height = lowerY + (higherY - lowerY) * fraction;
 
-				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
-				waypoints.add(newWaypoint);
+//				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
+//				waypoints.add(newWaypoint);
+				Vector3f newWaypointLoc = new Vector3f(p.getX(), height, p.getZ());
+				waypoints.add(new PathPoint3D(newWaypointLoc, false, true));
 				
 				LOGGER.finer("A star point: " + p.toString() + height + " TUNNEL");
 				if(!pp.isInTunnel) {
@@ -259,7 +258,7 @@ public class Pathfinder {
 			
 			float dist = Point2Df.distance(curr, next);
 			
-			System.out.println("dist: " + dist);
+//			System.out.println("dist: " + dist);
 			
 			if(dist <= 2 * problem.getCellSize()) {
 				PathPoint currTP = new PathPoint(curr, nextPointIsTunnelEndpoint, nextPointIsTunnelEndpoint);
@@ -299,8 +298,24 @@ public class Pathfinder {
 		return processed;
 	}
 
-	private IHeuristics<Point2Di> setupHeuristics() {
-		return s -> 0.0;
+	private IHeuristics<Point2Di> setupHeuristics(Point2Df goal) {
+		double goalY = heightGenerator.getHeightApprox(goal.getX(), goal.getZ());
+		
+		return new IHeuristics<Point2Di>() {
+			@Override
+			public double getEstimatedCost(Point2Di state) {
+				Point2Df point = searchProblem.gridToReal(state);
+				
+				double pointY = heightGenerator.getHeightApprox(point.getX(), point.getZ());
+				
+				double distance = Math.sqrt(
+						Math.pow(point.getX() - goal.getX(), 2.0) + 
+						Math.pow(pointY - goalY, 2.0) +
+						Math.pow(point.getZ() - goal.getZ(), 2.0));
+				
+				return distance;
+			}
+		};
 	}
 	
 	private PathfindingProblem setupProblem(Point2Df start, Point2Df goal,
@@ -440,6 +455,7 @@ public class Pathfinder {
 
 			double y1 = heightGenerator.getHeightApprox(p1.getX(), p1.getZ());
 			double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
+			
 			double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
 					Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
 			double distanceCost = distance;
