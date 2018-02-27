@@ -69,7 +69,8 @@ public class TrajectoryPostprocessor {
 				
 				while(!samePoint(itp, next, EPS)) {
 					float surfaceHeight = heightMap.getHeight(itp.x, itp.z);
-					float depth = surfaceHeight - curr.getLocation().y;
+					//float depth = surfaceHeight - curr.getLocation().y;
+					float depth = surfaceHeight - itp.y;
 					
 					trajectory.add(itp);
 					
@@ -79,7 +80,7 @@ public class TrajectoryPostprocessor {
 						
 						if(depth > minimalTunnelDepth) {
 							entranceExcavationDone = true;
-							LOGGER.finer("Excavation done.");
+							LOGGER.finer("Entrance excavation done.");
 
 							modifierTrajectories.add(newModifier);
 							LOGGER.finer("Added modifier.");
@@ -104,6 +105,7 @@ public class TrajectoryPostprocessor {
 					
 					// excavate exit
 					newModifier.add(itp);
+					LOGGER.finer("Excavating exit.");
 					
 					itp = initialTrajectory.get(++ti);
 				}

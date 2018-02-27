@@ -122,9 +122,7 @@ public class Pathfinder {
 				
 				System.out.println("first: " + firstTunnelEndpoint);
 				System.out.println("second: " + secondTunnelEndpoint);
-				
-//				Vector3f newWaypoint = new Vector3f(p.getX(), firstEndpointY, p.getZ());
-//				waypoints.add(newWaypoint);
+
 				Vector3f newWaypointLoc = new Vector3f(p.getX(), firstEndpointY, p.getZ());
 				waypoints.add(new PathPoint3D(newWaypointLoc, true, true));
 				
@@ -138,8 +136,6 @@ public class Pathfinder {
 				firstEndpointY = -1;
 
 				float height = heightGenerator.getHeightApprox(p.getX(), p.getZ());
-//				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
-//				waypoints.add(newWaypoint);
 				Vector3f newWaypointLoc = new Vector3f(p.getX(), height, p.getZ());
 				waypoints.add(new PathPoint3D(newWaypointLoc, true, true));
 				
@@ -164,8 +160,6 @@ public class Pathfinder {
 			// point outside tunnel
 			if(firstTunnelEndpoint == null) {
 				float height = heightGenerator.getHeightApprox(p.getX(), p.getZ());
-//				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
-//				waypoints.add(newWaypoint);
 				Vector3f newWaypointLoc = new Vector3f(p.getX(), height, p.getZ());
 				waypoints.add(new PathPoint3D(newWaypointLoc, false, false));
 				
@@ -199,8 +193,6 @@ public class Pathfinder {
 				System.out.println(deltaX);
 				float height = lowerY + (higherY - lowerY) * fraction;
 
-//				Vector3f newWaypoint = new Vector3f(p.getX(), height, p.getZ());
-//				waypoints.add(newWaypoint);
 				Vector3f newWaypointLoc = new Vector3f(p.getX(), height, p.getZ());
 				waypoints.add(new PathPoint3D(newWaypointLoc, false, true));
 				
