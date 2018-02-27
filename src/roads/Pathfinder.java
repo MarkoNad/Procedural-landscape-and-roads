@@ -42,6 +42,10 @@ public class Pathfinder {
 		heuristics = setupHeuristics(goal);
 	}
 	
+	public List<EndpointData> findTunnelEndpoints() {
+		return trajectoryPostprocessor.getTunnelEndpoints();
+	}
+	
 	public List<Vector3f> findWaypoints() {
 		if(waypointsCache == null) {
 			waypointsCache = generateWaypoints();

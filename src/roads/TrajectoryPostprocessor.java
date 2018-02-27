@@ -13,13 +13,15 @@ public class TrajectoryPostprocessor {
 	private static final Logger LOGGER = Logger.getLogger(TrajectoryPostprocessor.class.getName());
 	private static final double EPS = 1e-6;
 	
-	private List<List<Vector3f>> modifierTrajectories = new ArrayList<>();
-	private List<Vector3f> trajectory = new ArrayList<>();
+	private List<List<Vector3f>> modifierTrajectories;
+	private List<Vector3f> trajectory;
+	private List<EndpointData> endpoints;
 	
 	public TrajectoryPostprocessor(List<Vector3f> initialTrajectory, List<PathPoint3D> pathPoints, 
 			IHeightGenerator heightMap, float minimalTunnelDepth) {
 		modifierTrajectories = new ArrayList<>();
 		trajectory = new ArrayList<>();
+		endpoints = new ArrayList<>();
 		
 		process(initialTrajectory, pathPoints, heightMap, minimalTunnelDepth);
 	}
@@ -30,6 +32,10 @@ public class TrajectoryPostprocessor {
 	
 	public List<List<Vector3f>> getModifierTrajectories() {
 		return modifierTrajectories;
+	}
+	
+	public List<EndpointData> getTunnelEndpoints() {
+		return endpoints;
 	}
 	
 	private void process(List<Vector3f> initialTrajectory, List<PathPoint3D> pathPoints, 
@@ -48,7 +54,7 @@ public class TrajectoryPostprocessor {
 			if(curr.equals(next)) {
 				if(curr.isTunnelEndpoint()) LOGGER.severe("Tunnel endpoint at end of trajectory.");
 				
-				Vector3f itp = initialTrajectory.get(ti);
+				Vector3f itp = initialTrajectory.get(ti); // initial-trajectory point
 				
 				float surfaceHeight = heightMap.getHeight(itp.x, itp.z);
 				Vector3f correctedTP = new Vector3f(itp.x, surfaceHeight, itp.z);
@@ -85,6 +91,9 @@ public class TrajectoryPostprocessor {
 							LOGGER.finer("Added modifier.");
 							
 							newModifier = new ArrayList<>();
+							
+							Vector3f entranceDirection = determineDirection(initialTrajectory, ti, true);
+							endpoints.add(new EndpointData(itp, entranceDirection));
 						}
 
 						itp = initialTrajectory.get(++ti);
@@ -96,6 +105,9 @@ public class TrajectoryPostprocessor {
 						if(depth < minimalTunnelDepth) {
 							tunnelBodyDone = true;
 							LOGGER.fine("Tunnel body done.");
+							
+							Vector3f exitDirection = determineDirection(initialTrajectory, ti, false);
+							endpoints.add(new EndpointData(itp, exitDirection));
 						}
 
 						itp = initialTrajectory.get(++ti);
@@ -113,7 +125,7 @@ public class TrajectoryPostprocessor {
 			}
 			
 			// process road segment
-			Vector3f itp = initialTrajectory.get(ti); // initial-trajectory point
+			Vector3f itp = initialTrajectory.get(ti);
 			
 			while(!samePoint(itp, next, EPS)) {
 				float height = heightMap.getHeight(itp.x, itp.z);
@@ -129,6 +141,32 @@ public class TrajectoryPostprocessor {
 		}
 	}
 	
+	private Vector3f determineDirection(List<Vector3f> trajectory, int trajectoryIndex, boolean isEntrance) {
+		Vector3f enpointLoc = trajectory.get(trajectoryIndex);
+		Vector3f direction = null;
+		
+		if(isEntrance) {
+			if(trajectoryIndex - 1 > 0) {
+				Vector3f previous = trajectory.get(trajectoryIndex - 1);
+				direction = Vector3f.sub(previous, enpointLoc, null);
+			} else {
+				Vector3f next = trajectory.get(trajectoryIndex + 1);
+				direction = Vector3f.sub(enpointLoc, next, null);
+			}
+		} else {
+			if(trajectoryIndex + 1 < trajectory.size()) {
+				Vector3f next = trajectory.get(trajectoryIndex + 1);
+				direction = Vector3f.sub(next, enpointLoc, null);
+			} else {
+				Vector3f previous = trajectory.get(trajectoryIndex - 1);
+				direction = Vector3f.sub(enpointLoc, previous, null);
+			}
+		}
+		
+		direction.normalise();
+		return direction;
+	}
+
 	private int nextEndpointOrEndIndex(int searchStart, List<PathPoint3D> pathPoints) {
 		for(int i = searchStart; i < pathPoints.size(); i++) {
 			PathPoint3D point = pathPoints.get(i);

@@ -15,6 +15,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -215,6 +216,12 @@ public class DebugScene2 {
 		final float terrainLODTolerance = 200f;
 		
 		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
+		
+		List<Entity> tunnelEndpoints = pathfinder.findTunnelEndpoints()
+				.stream()
+				.map(te -> new Entity(chestnutTrunk, te.getLocation(), 0f, 0f, 0f, 40f))
+				.collect(Collectors.toList());
+		
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
@@ -232,6 +239,8 @@ public class DebugScene2 {
 			entities.add(chestnutEntityTop);
 			entities.add(cubeEntity);
 			entities.add(cubeEntity2);
+			
+			tunnelEndpoints.forEach(te -> renderer.processEntity(te));
 			
 			entities.forEach(e -> renderer.processEntity(e));
 			nmEntites.forEach(e -> renderer.processNMEntity(e));
