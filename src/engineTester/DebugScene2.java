@@ -137,17 +137,15 @@ public class DebugScene2 {
 		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 50f);
 		final float segmentLen = 1f;
 		List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
-		Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
-		//Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false); // TODO test this
+		//Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
+		Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.0f);
+		//Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
 		
-//		final float modifierSegementLen = 1f;
-//		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
-//		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f);
-		
-		Function<Float, Float> influenceFn = x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f);
-		for(List<Vector3f> modifier : pathfinder.findModifierTrajectories(0f)) {
-			System.out.println("modifier: " + modifier);
+		//Function<Float, Float> influenceFn = x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f);
+		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
+		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
+		for(List<Vector3f> modifier : pathfinder.findModifierTrajectories(-0.05f)) {
 			heightGenerator.updateHeight(modifier, influenceFn, 15f);
 		}
 		

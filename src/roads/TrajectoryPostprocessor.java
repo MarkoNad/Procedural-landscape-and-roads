@@ -69,7 +69,6 @@ public class TrajectoryPostprocessor {
 				
 				while(!samePoint(itp, next, EPS)) {
 					float surfaceHeight = heightMap.getHeight(itp.x, itp.z);
-					//float depth = surfaceHeight - curr.getLocation().y;
 					float depth = surfaceHeight - itp.y;
 					
 					trajectory.add(itp);
@@ -105,11 +104,11 @@ public class TrajectoryPostprocessor {
 					
 					// excavate exit
 					newModifier.add(itp);
-					LOGGER.finer("Excavating exit.");
 					
 					itp = initialTrajectory.get(++ti);
 				}
 				
+				LOGGER.finer("Tunnel completed.");
 				continue;
 			}
 			
