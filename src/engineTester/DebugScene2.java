@@ -35,6 +35,7 @@ import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import roads.Pathfinder;
 import roads.Road;
+import roads.TunnelManager;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.NoiseMap;
@@ -138,10 +139,10 @@ public class DebugScene2 {
 		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 50f);
 		final float segmentLen = 1f;
 		List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
-		//Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
-		Road roadRawModel = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.0f);
-		//Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
-		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
+		//Road road = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.02f);
+		Road road = new Road(loader, roadTrajectory, 10, 20, segmentLen, 0.0f);
+		//Road road = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
+		Entity roadEntity = setupRoad(loader, heightGenerator, roadWaypoints, road);
 		
 		//Function<Float, Float> influenceFn = x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f);
 		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
@@ -216,11 +217,15 @@ public class DebugScene2 {
 		final float terrainLODTolerance = 200f;
 		
 		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
-		
-		List<Entity> tunnelEndpoints = pathfinder.findTunnelEndpoints()
+
+		List<Entity> tunnelEndpoints = pathfinder.findTunnelsData()
 				.stream()
-				.map(te -> new Entity(chestnutTrunk, te.getLocation(), 0f, 0f, 0f, 40f))
+				.flatMap(td -> Arrays.asList(td.getFirstEndpointLocation(), td.getSecondEndpointLocation()).stream())
+				.map(te -> new Entity(chestnutTrunk, te, 0f, 0f, 0f, 40f))
 				.collect(Collectors.toList());
+		
+		TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData(), 1, 0.2f, 50f, 50f, "cliff3", "cliff3", loader);
+		List<Entity> tunnelPartEntities = tunnelManager.getAllTunnelEntities();
 		
 		while(!Display.isCloseRequested()) {
 			camera.update();
@@ -241,11 +246,12 @@ public class DebugScene2 {
 			entities.add(cubeEntity2);
 			
 			tunnelEndpoints.forEach(te -> renderer.processEntity(te));
+			tunnelPartEntities.forEach(e -> renderer.processEntity(e));
 			
 			entities.forEach(e -> renderer.processEntity(e));
 			nmEntites.forEach(e -> renderer.processNMEntity(e));
 			terrains.forEach(t -> renderer.processTerrain(t));
-			renderer.processEntity(road);
+			renderer.processEntity(roadEntity);
 			renderer.render(light, camera);
 			
 			DisplayManager.updateDisplay();

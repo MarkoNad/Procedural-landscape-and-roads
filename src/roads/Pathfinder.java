@@ -42,8 +42,8 @@ public class Pathfinder {
 		heuristics = setupHeuristics(goal);
 	}
 	
-	public List<EndpointData> findTunnelEndpoints() {
-		return trajectoryPostprocessor.getTunnelEndpoints();
+	public List<TunnelData> findTunnelsData() {
+		return trajectoryPostprocessor.getTunnelsData();
 	}
 	
 	public List<Vector3f> findWaypoints() {

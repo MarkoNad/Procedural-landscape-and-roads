@@ -53,6 +53,10 @@ public class Tunnel {
 	public ModelData getInnerRing() {
 		return innerRing;
 	}
+	
+	public ModelData getOuterRing() {
+		return outerRing;
+	}
 
 	private ModelData generateRing(List<Vector3f> leftTrajectory, List<Vector3f> rightTrajectory,
 			int subdivisions, float radius, float textureDepth, boolean generateInnerSide) {

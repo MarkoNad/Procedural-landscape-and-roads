@@ -15,13 +15,13 @@ public class TrajectoryPostprocessor {
 	
 	private List<List<Vector3f>> modifierTrajectories;
 	private List<Vector3f> trajectory;
-	private List<EndpointData> endpoints;
+	private List<TunnelData> tunnelData;
 	
 	public TrajectoryPostprocessor(List<Vector3f> initialTrajectory, List<PathPoint3D> pathPoints, 
 			IHeightGenerator heightMap, float minimalTunnelDepth) {
 		modifierTrajectories = new ArrayList<>();
 		trajectory = new ArrayList<>();
-		endpoints = new ArrayList<>();
+		tunnelData = new ArrayList<>();
 		
 		process(initialTrajectory, pathPoints, heightMap, minimalTunnelDepth);
 	}
@@ -34,8 +34,8 @@ public class TrajectoryPostprocessor {
 		return modifierTrajectories;
 	}
 	
-	public List<EndpointData> getTunnelEndpoints() {
-		return endpoints;
+	public List<TunnelData> getTunnelsData() {
+		return tunnelData;
 	}
 	
 	private void process(List<Vector3f> initialTrajectory, List<PathPoint3D> pathPoints, 
@@ -73,6 +73,9 @@ public class TrajectoryPostprocessor {
 				boolean entranceExcavationDone = false;
 				boolean tunnelBodyDone = false;
 				
+				TunnelData tunnelDatum = new TunnelData();
+				tunnelData.add(tunnelDatum);
+				
 				while(!samePoint(itp, next, EPS)) {
 					float surfaceHeight = heightMap.getHeight(itp.x, itp.z);
 					float depth = surfaceHeight - itp.y;
@@ -91,9 +94,11 @@ public class TrajectoryPostprocessor {
 							LOGGER.finer("Added modifier.");
 							
 							newModifier = new ArrayList<>();
-							
+
 							Vector3f entranceDirection = determineDirection(initialTrajectory, ti, true);
-							endpoints.add(new EndpointData(itp, entranceDirection));
+
+							tunnelDatum.setFirstEndpointLocation(itp);
+							tunnelDatum.setFirstEndpointOrientation(entranceDirection);
 						}
 
 						itp = initialTrajectory.get(++ti);
@@ -107,7 +112,9 @@ public class TrajectoryPostprocessor {
 							LOGGER.fine("Tunnel body done.");
 							
 							Vector3f exitDirection = determineDirection(initialTrajectory, ti, false);
-							endpoints.add(new EndpointData(itp, exitDirection));
+
+							tunnelDatum.setSecondEndpointLocation(itp);
+							tunnelDatum.setSecondEndpointOrientation(exitDirection);
 						}
 
 						itp = initialTrajectory.get(++ti);
