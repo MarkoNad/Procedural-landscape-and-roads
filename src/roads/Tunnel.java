@@ -11,9 +11,12 @@ public class Tunnel {
 	
 	private final ModelData innerRing;
 	private final ModelData outerRing;
+	private final ModelData entranceFace;
+	private final ModelData exitFace;
 	
 	public Tunnel(List<Vector3f> leftTrajectory, List<Vector3f> rightTrajectory, int subdivisions, 
-			float wallThickness, float tunnelInnerTextureDepth, float tunnelOuterTextureDepth) {
+			float wallThickness, float tunnelInnerTextureDepth, float tunnelOuterTextureDepth, 
+			float faceTextureWidth, float faceTextureHeight) {
 		if(leftTrajectory == null ||
 				rightTrajectory == null ||
 				leftTrajectory.size() < 2 ||
@@ -32,12 +35,14 @@ public class Tunnel {
 		}
 		
 		float roadWidth = Vector3f.sub(rightTrajectory.get(0), leftTrajectory.get(0), null).length();
+		float innerRadius = roadWidth / 2f;
+		float outerRadius = innerRadius + wallThickness;
 		
 		innerRing = generateRing(
 				leftTrajectory,
 				rightTrajectory,
 				subdivisions,
-				roadWidth,
+				innerRadius,
 				tunnelInnerTextureDepth,
 				true);
 		
@@ -45,11 +50,31 @@ public class Tunnel {
 				leftTrajectory,
 				rightTrajectory,
 				subdivisions,
-				roadWidth + wallThickness,
+				outerRadius,
 				tunnelOuterTextureDepth,
+				false);
+		
+		entranceFace = generateFace(
+				leftTrajectory,
+				rightTrajectory,
+				subdivisions,
+				innerRadius,
+				outerRadius,
+				faceTextureWidth,
+				faceTextureHeight,
 				true);
+		
+		exitFace = generateFace(
+				leftTrajectory,
+				rightTrajectory,
+				subdivisions,
+				innerRadius,
+				outerRadius,
+				faceTextureWidth,
+				faceTextureHeight,
+				false);
 	}
-	
+
 	public ModelData getInnerRing() {
 		return innerRing;
 	}
@@ -57,6 +82,18 @@ public class Tunnel {
 	public ModelData getOuterRing() {
 		return outerRing;
 	}
+	
+	public ModelData getEntranceFace() {
+		return entranceFace;
+	}
+	
+	public ModelData getExitFace() {
+		return exitFace;
+	}
+	
+	/////////////////////////////////////////
+	// Tunnel body generation
+	/////////////////////////////////////////
 
 	private ModelData generateRing(List<Vector3f> leftTrajectory, List<Vector3f> rightTrajectory,
 			int subdivisions, float radius, float textureDepth, boolean generateInnerSide) {
@@ -71,11 +108,8 @@ public class Tunnel {
 		
 		float[] normals = generateRingNormals(
 				leftTrajectory,
-				rightTrajectory,
 				subdivisions,
-				radius,
-				vertCount,
-				generateInnerSide);
+				vertCount);
 		
 		float[] textureCoords = generateRingTextureCoordinates(
 				leftTrajectory,
@@ -125,15 +159,13 @@ public class Tunnel {
 		return vertices;
 	}
 	
-	private float[] generateRingNormals(List<Vector3f> leftTrajectory, List<Vector3f> rightTrajectory,
-			int subdivisions, float radius, int vertCount, boolean generateInnerSide) {
+	private float[] generateRingNormals(List<Vector3f> leftTrajectory, int subdivisions, int vertCount) {
 		float[] normals = new float[vertCount * 3];
 
 		for(int subdiv = 0; subdiv < subdivisions + 2; subdiv++) {
 			for(int vPointer = 0; vPointer < leftTrajectory.size(); vPointer++) {
 				int startIdx = (subdiv * leftTrajectory.size() + vPointer) * 3;
-				
-				// TODO calculate normals
+
 				normals[startIdx] = 0f;
 				normals[startIdx + 1] = 1f;
 				normals[startIdx + 2] = 0f;
@@ -143,8 +175,6 @@ public class Tunnel {
 		return normals;
 	}
 
-
-	
 	private float[] generateRingTextureCoordinates(List<Vector3f> leftTrajectory,
 			List<Vector3f> rightTrajectory, int subdivisions, float radius, int vertCount, 
 			float textureDepth) {
@@ -194,7 +224,6 @@ public class Tunnel {
 		return pointDistances;
 	}
 	
-
 	private int[] generateRingIndices(List<Vector3f> leftTrajectory, int subdivisions, boolean cw) {
 		int[] indices = new int[6 * (subdivisions + 1) * (leftTrajectory.size() - 1)];
 		
@@ -222,6 +251,156 @@ public class Tunnel {
 					indices[indicesPointer++] = bottomLeft;
 					indices[indicesPointer++] = bottomRight;
 				}
+			}
+		}
+		
+		return indices;
+	}
+	
+	/////////////////////////////////////////
+	// Tunnel face generation
+	/////////////////////////////////////////
+	
+	private ModelData generateFace(List<Vector3f> leftTrajectory, List<Vector3f> rightTrajectory,
+			int subdivisions, float innerRadius, float outerRadius, float faceTextureWidth,
+			float faceTextureHeight, boolean isEntrance) {
+		final int vertCount = (subdivisions + 2) * 2;
+		
+		float[] vertices = generateFaceVertices(
+				vertCount,
+				leftTrajectory,
+				rightTrajectory,
+				subdivisions,
+				innerRadius,
+				outerRadius,
+				isEntrance);
+		
+		float[] normals = generateFaceNormals(
+				vertCount,
+				subdivisions);
+		
+		float[] textureCoords = generateFaceTextureCoordinates(
+				subdivisions,
+				innerRadius,
+				outerRadius,
+				vertCount,
+				faceTextureWidth,
+				faceTextureHeight);
+
+		int[] indices = generateFaceIndices(subdivisions, isEntrance);
+		
+		return new ModelData(vertices, textureCoords, normals, null, indices, -1f);
+	}
+
+	private float[] generateFaceVertices(int vertCount, List<Vector3f> leftTrajectory,
+			List<Vector3f> rightTrajectory, int subdivisions, float innerRadius, float outerRadius,
+			boolean isEntrance) {
+		float[] vertices = new float[vertCount * 3];
+		
+		double subdivAngle = Math.PI / (double)(subdivisions + 1);
+		
+		int trajectoryPointIndex = isEntrance ? 0 : leftTrajectory.size() - 1;
+		Vector3f left = leftTrajectory.get(trajectoryPointIndex);
+		Vector3f right = rightTrajectory.get(trajectoryPointIndex);
+		Vector3f center = (Vector3f) Vector3f.add(left, right, null).scale(0.5f);
+		Vector3f rightVector = Vector3f.sub(right, center, null).normalise(null);
+		
+		// outer vertices are placed first, then inner vertices
+		for(int subdiv = 0; subdiv < subdivisions + 2; subdiv++) {
+			final float angle = (float) (Math.PI - subdiv * subdivAngle);
+
+			float deltaRightOuter = (float) (outerRadius * Math.cos(angle));
+			float deltaUpOuter = (float) (outerRadius * Math.sin(angle));
+			
+			float deltaRightInner = (float) (innerRadius * Math.cos(angle));
+			float deltaUpInner = (float) (innerRadius * Math.sin(angle));
+
+			float outerX = center.x + rightVector.x * deltaRightOuter;
+			float outerY = center.y + deltaUpOuter;
+			float outerZ = center.z + rightVector.z * deltaRightOuter;
+			
+			float innerX = center.x + rightVector.x * deltaRightInner;
+			float innerY = center.y + deltaUpInner;
+			float innerZ = center.z + rightVector.z * deltaRightInner;
+			
+			vertices[subdiv] = innerX;
+			vertices[subdiv + 1] = innerY;
+			vertices[subdiv + 2] = innerZ;
+			
+			vertices[subdivisions + 2 + subdiv] = outerX;
+			vertices[subdivisions + 2 + subdiv + 1] = outerY;
+			vertices[subdivisions + 2 + subdiv + 2] = outerZ;
+		}
+		
+		return vertices;
+	}
+	
+	private float[] generateFaceNormals(int vertCount, int subdivisions) {
+		float[] normals = new float[vertCount * 3];
+
+		for(int subdiv = 0; subdiv < subdivisions + 2; subdiv++) {
+			normals[subdiv * 3] = 0f;
+			normals[subdiv * 3 + 1] = 1f;
+			normals[subdiv * 3 + 2] = 0f;
+			
+			normals[subdivisions + 2 + subdiv * 3] = 0f;
+			normals[subdivisions + 2 + subdiv * 3 + 1] = 1f;
+			normals[subdivisions + 2 + subdiv * 3 + 2] = 0f;
+		}
+		
+		return normals;
+	}
+	
+	private float[] generateFaceTextureCoordinates(int subdivisions, float innerRadius,
+			float outerRadius, int vertCount, float faceTextureWidth, float faceTextureHeight) {
+		float[] textureCoords = new float[vertCount * 2];
+		
+		double subdivAngle = Math.PI / (double)(subdivisions + 1);
+		
+		for(int subdiv = 0; subdiv < subdivisions + 2; subdiv++) {
+			float angle = (float) (Math.PI - subdiv * subdivAngle);
+
+			float innerUCoord = (float) ((outerRadius + innerRadius * Math.cos(angle)) / faceTextureWidth);
+			float outerUCoord = (float) ((outerRadius + outerRadius * Math.cos(angle)) / faceTextureWidth);
+			
+			float outerVCoord = (float) (outerRadius * Math.sin(angle) / faceTextureHeight);
+			float innerVCoord = (float) (innerRadius * Math.sin(angle) / faceTextureHeight);
+				
+			textureCoords[subdiv] = outerUCoord;
+			textureCoords[subdiv + 1] = outerVCoord;
+			
+			textureCoords[subdivisions + 2 + subdiv] = innerUCoord;
+			textureCoords[subdivisions + 2 + subdiv + 1] = innerVCoord;
+		}
+		
+		return textureCoords;
+	}
+	
+	private int[] generateFaceIndices(int subdivisions, boolean cw) {
+		int[] indices = new int[6 * (subdivisions + 1)];
+		
+		int indicesPointer = 0;
+		
+		for(int subdiv = 0; subdiv < subdivisions + 1; subdiv++) {
+			int topLeft = subdiv;
+			int topRight = topLeft + 1;
+			int bottomLeft = topLeft + subdivisions + 2;
+			int bottomRight = bottomLeft + 1;
+			
+			if(cw) { // clockwise indexing
+				indices[indicesPointer++] = topLeft;
+				indices[indicesPointer++] = topRight;
+				indices[indicesPointer++] = bottomLeft;
+				indices[indicesPointer++] = topRight;
+				indices[indicesPointer++] = bottomRight;
+				indices[indicesPointer++] = bottomLeft;
+			} else {
+				indices[indicesPointer++] = topLeft;
+				indices[indicesPointer++] = bottomLeft;
+				indices[indicesPointer++] = topRight;
+				indices[indicesPointer++] = topRight;
+				indices[indicesPointer++] = bottomLeft;
+				indices[indicesPointer++] = bottomRight;
 			}
 		}
 		

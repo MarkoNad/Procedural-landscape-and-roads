@@ -223,8 +223,8 @@ public class DebugScene2 {
 				.flatMap(td -> Arrays.asList(td.getFirstEndpointLocation(), td.getSecondEndpointLocation()).stream())
 				.map(te -> new Entity(chestnutTrunk, te, 0f, 0f, 0f, 40f))
 				.collect(Collectors.toList());
-		
-		TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData(), 1, 0.2f, 50f, 50f, "cliff3", "cliff3", loader);
+
+		TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData(), 2, 0.5f, 50f, 50f, 50f, 50f, "cliff3", "cliff3", "cliff3", loader);
 		List<Entity> tunnelPartEntities = tunnelManager.getAllTunnelEntities();
 		
 		while(!Display.isCloseRequested()) {
