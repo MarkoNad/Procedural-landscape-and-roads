@@ -18,12 +18,12 @@ public class TrajectoryPostprocessor {
 	private List<TunnelData> tunnelData;
 	
 	public TrajectoryPostprocessor(List<Vector3f> initialTrajectory, List<PathPoint3D> pathPoints, 
-			IHeightGenerator heightMap, float minimalTunnelDepth) {
+			IHeightGenerator heightMap, float minimalTunnelDepth, int endpointOffset, int maskOffset) {
 		modifierTrajectories = new ArrayList<>();
 		trajectory = new ArrayList<>();
 		tunnelData = new ArrayList<>();
 		
-		process(initialTrajectory, pathPoints, heightMap, minimalTunnelDepth);
+		process(initialTrajectory, pathPoints, heightMap, minimalTunnelDepth, endpointOffset, maskOffset);
 	}
 
 	public List<Vector3f> getCorrectedTrajectory() {
@@ -39,7 +39,8 @@ public class TrajectoryPostprocessor {
 	}
 	
 	private void process(List<Vector3f> initialTrajectory, List<PathPoint3D> pathPoints, 
-			IHeightGenerator heightMap, float minimalTunnelDepth) {
+			IHeightGenerator heightMap, float minimalTunnelDepth, int endpointOffset,
+			int maskOffset) {
 		List<Vector3f> newModifier = new ArrayList<>();
 		
 		int pi = 0; // path index
@@ -95,10 +96,22 @@ public class TrajectoryPostprocessor {
 							
 							newModifier = new ArrayList<>();
 
-							Vector3f entranceDirection = determineDirection(initialTrajectory, ti, true);
-
-							tunnelDatum.setFirstEndpointLocation(itp);
+//							Vector3f entranceDirection = determineDirection(initialTrajectory, ti, true);
+//							tunnelDatum.setFirstEndpointLocation(itp);
+//							tunnelDatum.setFirstEndpointOrientation(entranceDirection);
+							
+							int startIndex = ti - endpointOffset;
+							if(startIndex < 0) startIndex = 0;
+							Vector3f entranceLocation = initialTrajectory.get(startIndex);
+							Vector3f entranceDirection = determineDirection(initialTrajectory, startIndex, true);
+							
+							int maskIndex = ti - maskOffset;
+							if(maskIndex < 0) maskIndex = 0;
+							Vector3f maskLocation = initialTrajectory.get(maskIndex);
+							
+							tunnelDatum.setFirstEndpointLocation(entranceLocation);
 							tunnelDatum.setFirstEndpointOrientation(entranceDirection);
+							tunnelDatum.setFirstEndpointMask(maskLocation);
 						}
 
 						itp = initialTrajectory.get(++ti);
@@ -111,10 +124,24 @@ public class TrajectoryPostprocessor {
 							tunnelBodyDone = true;
 							LOGGER.fine("Tunnel body done.");
 							
-							Vector3f exitDirection = determineDirection(initialTrajectory, ti, false);
-
-							tunnelDatum.setSecondEndpointLocation(itp);
+							newModifier.add(itp);
+							
+//							Vector3f exitDirection = determineDirection(initialTrajectory, ti, false);
+//							tunnelDatum.setSecondEndpointLocation(itp);
+//							tunnelDatum.setSecondEndpointOrientation(exitDirection);
+							
+							int endIndex = ti + endpointOffset;
+							if(endIndex >= initialTrajectory.size()) endIndex = initialTrajectory.size() - 1;
+							Vector3f exitLocation = initialTrajectory.get(endIndex);
+							
+							int maskIndex = ti + maskOffset;
+							if(maskIndex >= initialTrajectory.size()) maskIndex = initialTrajectory.size() - 1;
+							Vector3f maskLocation = initialTrajectory.get(maskIndex);
+							
+							Vector3f exitDirection = determineDirection(initialTrajectory, endIndex, false);
+							tunnelDatum.setSecondEndpointLocation(exitLocation);
 							tunnelDatum.setSecondEndpointOrientation(exitDirection);
+							tunnelDatum.setSecondEndpointMask(maskLocation);
 						}
 
 						itp = initialTrajectory.get(++ti);

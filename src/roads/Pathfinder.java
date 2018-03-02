@@ -27,6 +27,8 @@ public class Pathfinder {
 	private final IHeuristics<Point2Di> heuristics;
 	
 	private final float minimalTunnelDepth;
+	private final int endpointOffset;
+	private final int maskOffset;
 	private TrajectoryPostprocessor trajectoryPostprocessor;
 	
 	List<PathPoint3D> waypointsCache = null;
@@ -34,9 +36,12 @@ public class Pathfinder {
 	
 	public Pathfinder(Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
-			float cellSize, boolean allowTunnels, float minimalTunnelDepth) {
+			float cellSize, boolean allowTunnels, float minimalTunnelDepth,
+			int endpointOffset, int maskOffset) {
 		this.heightGenerator = heightGenerator;
 		this.minimalTunnelDepth = minimalTunnelDepth;
+		this.endpointOffset = endpointOffset;
+		this.maskOffset = maskOffset;
 		searchProblem = setupProblem(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
 				heightGenerator, cellSize, allowTunnels);
 		heuristics = setupHeuristics(goal);
@@ -85,7 +90,7 @@ public class Pathfinder {
 		List<Vector3f> trajectory = curve.getCurvePointsCopy();
 		
 		trajectoryPostprocessor = new TrajectoryPostprocessor(trajectory, waypointsCache,
-				heightGenerator, minimalTunnelDepth);
+				heightGenerator, minimalTunnelDepth, endpointOffset, maskOffset);
 		
 		return trajectoryPostprocessor.getCorrectedTrajectory();
 	}

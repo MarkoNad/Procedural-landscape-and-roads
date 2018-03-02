@@ -323,13 +323,13 @@ public class Tunnel {
 			float innerY = center.y + deltaUpInner;
 			float innerZ = center.z + rightVector.z * deltaRightInner;
 			
-			vertices[subdiv] = innerX;
-			vertices[subdiv + 1] = innerY;
-			vertices[subdiv + 2] = innerZ;
+			vertices[subdiv * 3] = innerX;
+			vertices[subdiv * 3 + 1] = innerY;
+			vertices[subdiv * 3 + 2] = innerZ;
 			
-			vertices[subdivisions + 2 + subdiv] = outerX;
-			vertices[subdivisions + 2 + subdiv + 1] = outerY;
-			vertices[subdivisions + 2 + subdiv + 2] = outerZ;
+			vertices[(subdivisions + 2 + subdiv) * 3] = outerX;
+			vertices[(subdivisions + 2 + subdiv) * 3 + 1] = outerY;
+			vertices[(subdivisions + 2 + subdiv) * 3 + 2] = outerZ;
 		}
 		
 		return vertices;
@@ -343,9 +343,9 @@ public class Tunnel {
 			normals[subdiv * 3 + 1] = 1f;
 			normals[subdiv * 3 + 2] = 0f;
 			
-			normals[subdivisions + 2 + subdiv * 3] = 0f;
-			normals[subdivisions + 2 + subdiv * 3 + 1] = 1f;
-			normals[subdivisions + 2 + subdiv * 3 + 2] = 0f;
+			normals[(subdivisions + 2 + subdiv) * 3] = 0f;
+			normals[(subdivisions + 2 + subdiv) * 3 + 1] = 1f;
+			normals[(subdivisions + 2 + subdiv) * 3 + 2] = 0f;
 		}
 		
 		return normals;
@@ -366,11 +366,11 @@ public class Tunnel {
 			float outerVCoord = (float) (outerRadius * Math.sin(angle) / faceTextureHeight);
 			float innerVCoord = (float) (innerRadius * Math.sin(angle) / faceTextureHeight);
 				
-			textureCoords[subdiv] = outerUCoord;
-			textureCoords[subdiv + 1] = outerVCoord;
+			textureCoords[subdiv * 2] = outerUCoord;
+			textureCoords[subdiv * 2 + 1] = outerVCoord;
 			
-			textureCoords[subdivisions + 2 + subdiv] = innerUCoord;
-			textureCoords[subdivisions + 2 + subdiv + 1] = innerVCoord;
+			textureCoords[(subdivisions + 2 + subdiv) * 2] = innerUCoord;
+			textureCoords[(subdivisions + 2 + subdiv) * 2 + 1] = innerVCoord;
 		}
 		
 		return textureCoords;
