@@ -2,6 +2,7 @@ package roads;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.lwjgl.util.vector.Vector3f;
 
@@ -9,14 +10,20 @@ import objConverter.ModelData;
 
 public class Tunnel {
 	
+	private static final Logger LOGGER = Logger.getLogger(Tunnel.class.getName());
+	private static final double EPS = 1e-6;
+	
 	private final ModelData innerRing;
 	private final ModelData outerRing;
 	private final ModelData entranceFace;
 	private final ModelData exitFace;
+	private final ModelData entranceMask;
+	private final ModelData exitMask;
 	
-	public Tunnel(List<Vector3f> leftTrajectory, List<Vector3f> rightTrajectory, int subdivisions, 
-			float wallThickness, float tunnelInnerTextureDepth, float tunnelOuterTextureDepth, 
-			float faceTextureWidth, float faceTextureHeight) {
+	public Tunnel(List<Vector3f> leftTrajectory, List<Vector3f> rightTrajectory, List<Vector3f> centerTrajectory,
+			int subdivisions, float wallThickness, Vector3f entranceMaskLocation, Vector3f exitMaskLocation,
+			float tunnelInnerTextureDepth, float tunnelOuterTextureDepth, float faceTextureWidth,
+			float faceTextureHeight, float maskTextureWidth, float maskTextureHeight) {
 		if(leftTrajectory == null ||
 				rightTrajectory == null ||
 				leftTrajectory.size() < 2 ||
@@ -73,6 +80,28 @@ public class Tunnel {
 				faceTextureWidth,
 				faceTextureHeight,
 				false);
+		
+		entranceMask = generateMask(
+				leftTrajectory,
+				rightTrajectory,
+				centerTrajectory,
+				entranceMaskLocation,
+				subdivisions,
+				innerRadius,
+				maskTextureWidth,
+				maskTextureHeight,
+				false);
+		
+		exitMask = generateMask(
+				leftTrajectory,
+				rightTrajectory,
+				centerTrajectory,
+				exitMaskLocation,
+				subdivisions,
+				innerRadius,
+				maskTextureWidth,
+				maskTextureHeight,
+				true);
 	}
 
 	public ModelData getInnerRing() {
@@ -89,6 +118,14 @@ public class Tunnel {
 	
 	public ModelData getExitFace() {
 		return exitFace;
+	}
+	
+	public ModelData getEntranceMask() {
+		return entranceMask;
+	}
+	
+	public ModelData getExitMask() {
+		return exitMask;
 	}
 	
 	/////////////////////////////////////////
@@ -401,6 +438,145 @@ public class Tunnel {
 				indices[indicesPointer++] = topRight;
 				indices[indicesPointer++] = bottomLeft;
 				indices[indicesPointer++] = bottomRight;
+			}
+		}
+		
+		return indices;
+	}
+	
+	/////////////////////////////////////////
+	// Tunnel mask generation
+	/////////////////////////////////////////
+
+	private ModelData generateMask(List<Vector3f> leftTrajectory, List<Vector3f> rightTrajectory,
+			List<Vector3f> centerTrajectory, Vector3f maskLocation, int subdivisions, float innerRadius,
+			float maskTextureWidth, float maskTextureHeight, boolean cw) {
+		final int vertCount = subdivisions + 2 + 1;
+		
+		float[] vertices = generateMaskVertices(
+				vertCount,
+				leftTrajectory,
+				rightTrajectory,
+				centerTrajectory,
+				maskLocation,
+				subdivisions,
+				innerRadius);
+		
+		float[] normals = generateMaskNormals(vertCount);
+		
+		float[] textureCoords = generateMaskTextureCoordinates(
+				subdivisions,
+				innerRadius,
+				vertCount,
+				maskTextureWidth,
+				maskTextureHeight);
+
+		int[] indices = generateMaskIndices(subdivisions, cw);
+		
+		return new ModelData(vertices, textureCoords, normals, null, indices, -1f);
+	}
+
+	private float[] generateMaskVertices(int vertCount, List<Vector3f> leftTrajectory,
+			List<Vector3f> rightTrajectory, List<Vector3f> centerTrajectory, Vector3f maskLocation,
+			int subdivisions, float innerRadius) {
+		float[] vertices = new float[vertCount * 3];
+		
+		double subdivAngle = Math.PI / (double)(subdivisions + 1);
+		
+		int trajectoryPointIndex = indexOf(maskLocation, centerTrajectory, EPS);
+		Vector3f left = leftTrajectory.get(trajectoryPointIndex);
+		Vector3f right = rightTrajectory.get(trajectoryPointIndex);
+		Vector3f center = (Vector3f) Vector3f.add(left, right, null).scale(0.5f);
+		Vector3f rightVector = Vector3f.sub(right, center, null).normalise(null);
+
+		for(int subdiv = 0; subdiv < subdivisions + 2; subdiv++) {
+			final float angle = (float) (Math.PI - subdiv * subdivAngle);
+
+			float deltaRight = (float) (innerRadius * Math.cos(angle));
+			float deltaUp = (float) (innerRadius * Math.sin(angle));
+
+			float innerX = center.x + rightVector.x * deltaRight;
+			float innerY = center.y + deltaUp;
+			float innerZ = center.z + rightVector.z * deltaRight;
+			
+			vertices[3 + subdiv * 3] = innerX;
+			vertices[3 + subdiv * 3 + 1] = innerY;
+			vertices[3 + subdiv * 3 + 2] = innerZ;
+		}
+		
+		// center point
+		vertices[0] = center.x;
+		vertices[1] = center.y;
+		vertices[2] = center.z;
+		
+		return vertices;
+	}
+
+	private int indexOf(Vector3f maskLocation, List<Vector3f> centerTrajectory, double eps) {
+		for(int i = 0; i < centerTrajectory.size(); i++) {
+			Vector3f tp = centerTrajectory.get(i);
+			
+			if(Vector3f.sub(maskLocation, tp, null).lengthSquared() <= eps * eps) {
+				return i;
+			}
+		}
+		
+		LOGGER.severe("Cannot determine location of tunnel endpoint mask.");
+		return 0;
+	}
+
+	private float[] generateMaskNormals(int vertCount) {
+		float[] normals = new float[vertCount * 3];
+		
+		for(int i = 0; i < vertCount; i++) {
+			normals[i * 3] = 0f;
+			normals[i * 3 + 1] = 1f;
+			normals[i * 3 + 2] = 0f;
+		}
+		
+		return normals;
+	}
+
+	private float[] generateMaskTextureCoordinates(int subdivisions, float innerRadius, int vertCount,
+			float maskTextureWidth, float maskTextureHeight) {
+		float[] textureCoords = new float[vertCount * 2];
+		
+		double subdivAngle = Math.PI / (double)(subdivisions + 1);
+		
+		for(int subdiv = 0; subdiv < subdivisions + 2; subdiv++) {
+			float angle = (float) (Math.PI - subdiv * subdivAngle);
+
+			float uCoord = (float) ((innerRadius + innerRadius * Math.cos(angle)) / maskTextureWidth);
+			float vCoord = (float) (innerRadius * Math.sin(angle) / maskTextureHeight);
+
+			textureCoords[2 + subdiv * 2] = uCoord;
+			textureCoords[2 + subdiv * 2 + 1] = vCoord;
+		}
+		
+		textureCoords[0] = innerRadius / maskTextureWidth;
+		textureCoords[1] = innerRadius / maskTextureHeight;
+		
+		return textureCoords;
+	}
+
+	private int[] generateMaskIndices(int subdivisions, boolean cw) {
+		int[] indices = new int[3 * (subdivisions + 1)];
+		
+		int indicesPointer = 0;
+		
+		for(int subdiv = 0; subdiv < subdivisions + 1; subdiv++) {
+			int center = 0;
+			int left = 1 + subdiv;
+			int right = left + 1;
+			
+			if(cw) { // clockwise indexing
+				indices[indicesPointer++] = left;
+				indices[indicesPointer++] = right;
+				indices[indicesPointer++] = center;
+			} else {
+				indices[indicesPointer++] = right;
+				indices[indicesPointer++] = left;
+				indices[indicesPointer++] = center;
 			}
 		}
 		

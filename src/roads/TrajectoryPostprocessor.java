@@ -95,10 +95,6 @@ public class TrajectoryPostprocessor {
 							LOGGER.finer("Added modifier.");
 							
 							newModifier = new ArrayList<>();
-
-//							Vector3f entranceDirection = determineDirection(initialTrajectory, ti, true);
-//							tunnelDatum.setFirstEndpointLocation(itp);
-//							tunnelDatum.setFirstEndpointOrientation(entranceDirection);
 							
 							int startIndex = ti - endpointOffset;
 							if(startIndex < 0) startIndex = 0;
@@ -125,11 +121,7 @@ public class TrajectoryPostprocessor {
 							LOGGER.fine("Tunnel body done.");
 							
 							newModifier.add(itp);
-							
-//							Vector3f exitDirection = determineDirection(initialTrajectory, ti, false);
-//							tunnelDatum.setSecondEndpointLocation(itp);
-//							tunnelDatum.setSecondEndpointOrientation(exitDirection);
-							
+
 							int endIndex = ti + endpointOffset;
 							if(endIndex >= initialTrajectory.size()) endIndex = initialTrajectory.size() - 1;
 							Vector3f exitLocation = initialTrajectory.get(endIndex);

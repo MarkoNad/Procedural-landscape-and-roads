@@ -212,7 +212,8 @@ public class DebugScene2 {
 				.map(te -> new Entity(chestnutTrunk, te, 0f, 0f, 0f, 40f))
 				.collect(Collectors.toList());
 
-		TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData(), 5, 1.0f, 50f, 50f, 50f, 50f, "cliff3", "cliff3", "cliff3", loader);
+		TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData(), 5, 1.0f, 50f,
+				50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "tunnel", loader);
 		List<Entity> tunnelPartEntities = tunnelManager.getAllTunnelEntities();
 		
 		while(!Display.isCloseRequested()) {
