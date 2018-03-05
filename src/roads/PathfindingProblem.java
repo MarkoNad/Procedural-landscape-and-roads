@@ -69,6 +69,10 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		int gridZ = (int)((realPoint.getZ() - origin.getZ()) / cellSize);
 		return new Point2Di(gridX, gridZ);
 	}
+	
+	public float getMax2DRoadSize() {
+		return 2f * cellSize; // TODO update when neighborhood is defined for roads
+	}
 
 	@Override
 	public Point2Di getInitialState() {

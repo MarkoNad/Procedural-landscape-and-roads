@@ -149,66 +149,50 @@ public class Pathfinder {
 			Point2Df p = pp.location;
 			
 			// tunnel started, define both end points
-			if(pp.isTunnelEndpoint && firstTunnelEndpoint == null) {
+			if(pp.entrance) {
 				firstTunnelEndpoint = p;
 				firstEndpointY = heightGenerator.getHeightApprox(p.getX(), p.getZ());
 				
-				secondTunnelEndpoint = findNextTunnelEndpoint(i, pathPoints);
-				secondEndpointY = heightGenerator.getHeightApprox(secondTunnelEndpoint.getX(), secondTunnelEndpoint.getZ());
+				secondTunnelEndpoint = findNextExit(i, pathPoints);
+				secondEndpointY = heightGenerator.getHeightApprox(secondTunnelEndpoint.getX(), 
+						secondTunnelEndpoint.getZ());
 				
 				System.out.println("first: " + firstTunnelEndpoint);
 				System.out.println("second: " + secondTunnelEndpoint);
 
 				Vector3f newWaypointLoc = new Vector3f(p.getX(), firstEndpointY, p.getZ());
-				waypoints.add(new PathPoint3D(newWaypointLoc, pp.isTunnelEndpoint, pp.isTunnelBodyPoint));
+				waypoints.add(new PathPoint3D(newWaypointLoc, pp.entrance, pp.exit, pp.body));
 				
-				LOGGER.finer("Postprocessed point: " + p.toString() + firstEndpointY + " TUNNEL ENDPOINT");
+				LOGGER.finer("Postprocessed point: " + p.toString() + firstEndpointY + 
+						" TUNNEL ENTRANCE" + (pp.exit ? "AND EXIT" : ""));
 				continue;
 			}
 			
 			// tunnel ended, erase endpoint information
-			if(pp.isTunnelEndpoint && firstTunnelEndpoint != null) {
-				firstTunnelEndpoint = null;
-				firstEndpointY = -1;
-
+			if(pp.exit) {
 				float height = heightGenerator.getHeightApprox(p.getX(), p.getZ());
 				Vector3f newWaypointLoc = new Vector3f(p.getX(), height, p.getZ());
-				waypoints.add(new PathPoint3D(newWaypointLoc, pp.isTunnelEndpoint, pp.isTunnelBodyPoint));
-				
-				// this endpoint is possibly also start for another tunnel
-				if(i + 1 < pathPoints.size() && pathPoints.get(i + 1).isTunnelBodyPoint) {
-					LOGGER.finer("Postprocessed point: " + p.toString() + height + " TUNNEL DOUBLE ENDPOINT");
-					
-					firstTunnelEndpoint = p;
-					firstEndpointY = height;
-					secondTunnelEndpoint = findNextTunnelEndpoint(i, pathPoints);
-					secondEndpointY = heightGenerator.getHeightApprox(secondTunnelEndpoint.getX(), secondTunnelEndpoint.getZ());
-				} else {
-					LOGGER.finer("Postprocessed point: " + p.toString() + height + " TUNNEL ENDPOINT");
-				}
+				waypoints.add(new PathPoint3D(newWaypointLoc, pp.entrance, pp.exit, pp.body));
 				
 				System.out.println("double first: " + firstTunnelEndpoint);
 				System.out.println("double second: " + secondTunnelEndpoint);
 				
+				LOGGER.finer("Postprocessed point: " + p.toString() + firstEndpointY + " TUNNEL EXIT");
 				continue;
 			}
 			
 			// point outside tunnel
-			if(firstTunnelEndpoint == null) {
+			if(!pp.body) {
 				float height = heightGenerator.getHeightApprox(p.getX(), p.getZ());
 				Vector3f newWaypointLoc = new Vector3f(p.getX(), height, p.getZ());
-				waypoints.add(new PathPoint3D(newWaypointLoc, pp.isTunnelEndpoint, pp.isTunnelBodyPoint));
+				waypoints.add(new PathPoint3D(newWaypointLoc, pp.entrance, pp.exit, pp.body));
 				
-				LOGGER.finer("Postprocessed point: " + p.toString() + height);
-				if(pp.isTunnelBodyPoint) {
-					LOGGER.severe("Point should not be in tunnel.");
-				}
-				
+				LOGGER.finer("Postprocessed point: ROAD" + p.toString() + height);
 				continue;
 			}
 			
 			// point in tunnel
-			if(firstTunnelEndpoint != null) {
+			if(pp.body) {
 				float lowerY = firstEndpointY < secondEndpointY ? firstEndpointY : secondEndpointY;
 				float higherY = firstEndpointY < secondEndpointY ? secondEndpointY : firstEndpointY;
 				
@@ -229,54 +213,52 @@ public class Pathfinder {
 				float height = lowerY + (higherY - lowerY) * fraction;
 
 				Vector3f newWaypointLoc = new Vector3f(p.getX(), height, p.getZ());
-				waypoints.add(new PathPoint3D(newWaypointLoc, pp.isTunnelEndpoint, pp.isTunnelBodyPoint));
+				waypoints.add(new PathPoint3D(newWaypointLoc, pp.entrance, pp.exit, pp.body));
 				
-				LOGGER.finer("Postprocessed point: " + p.toString() + height + " TUNNEL");
-				if(!pp.isTunnelBodyPoint) {
-					LOGGER.severe("Point should be in tunnel.");
-				}
-				
+				LOGGER.finer("Postprocessed point: " + p.toString() + height + " TUNNEL BODY");
 				continue;
 			}
+			
+			LOGGER.severe("Non-classified point.");
 		}
 
 		return waypoints;
 	}
 	
-	private Point2Df findNextTunnelEndpoint(int i, List<PathPoint> pathPoints) {
+	private Point2Df findNextExit(int i, List<PathPoint> pathPoints) {
 		if(i + 1 >= pathPoints.size()) {
-			throw new IllegalStateException("Tunnel start endpoint without matching end endpoint found.");
+			throw new IllegalStateException("Tunnel entrance without matching exit found.");
 		}
 		
 		for(int j = i + 1; j < pathPoints.size(); j++) {
-			PathPoint pp2 = pathPoints.get(j);
-			if(!pp2.isTunnelBodyPoint) LOGGER.severe("Waypoint between tunnel endpoints not in tunnel.");
-			if(pp2.isTunnelEndpoint) {
-				return pp2.location;
-			}
+			PathPoint pp = pathPoints.get(j);
+			if(!pp.body && !pp.exit) LOGGER.severe("Waypoint between tunnel endpoints not in tunnel.");
+			if(pp.exit) return pp.location;
 		}
 		
-		throw new IllegalStateException("No endpoint after requested one found.");
+		throw new IllegalStateException("No exit after requested entrance found.");
 	}
 	
 	private static class PathPoint {
 		
 		private Point2Df location;
-		private boolean isTunnelEndpoint;
-		private boolean isTunnelBodyPoint;
+		private boolean entrance;
+		private boolean exit;
+		private boolean body;
 		
-		public PathPoint(Point2Df location, boolean isTunnelEndpoint, boolean isTunnelBodyPoint) {
+		public PathPoint(Point2Df location, boolean entrance, boolean exit, boolean body) {
 			this.location = location;
-			this.isTunnelEndpoint = isTunnelEndpoint;
-			this.isTunnelBodyPoint = isTunnelBodyPoint;
+			this.entrance = entrance;
+			this.exit = exit;
+			this.body = body;
 		}
 
 		@Override
 		public String toString() {
-			return "PathPoint [loc=" + location + ", endpoint=" + isTunnelEndpoint + ", body="
-					+ isTunnelBodyPoint + "]";
+			return "PathPoint [location=" + location + ", entrance=" + entrance + ", exit=" + exit + ", body=" + body
+					+ "]";
 		}
-
+		
 	}
 	
 	private List<PathPoint> postProcessPath(List<Point2Di> gridPoints, PathfindingProblem problem) {
@@ -284,7 +266,7 @@ public class Pathfinder {
 		
 		List<PathPoint> processed = new ArrayList<>();
 		
-		boolean nextPointIsTunnelEndpoint = false;
+		boolean nextIsEndpoint = false;
 		
 		for(int i = 0; i < gridPoints.size() - 1; i++) {
 			Point2Df curr = problem.gridToReal(gridPoints.get(i));
@@ -292,10 +274,10 @@ public class Pathfinder {
 			
 			float dist = Point2Df.distance(curr, next);
 
-			if(dist <= 2 * problem.getCellSize()) { // TODO detect road point vs tunnel point
-				PathPoint currTP = new PathPoint(curr, nextPointIsTunnelEndpoint, false);
+			if(dist <= problem.getMax2DRoadSize()) {
+				PathPoint currTP = new PathPoint(curr, false, nextIsEndpoint, false);
 				processed.add(currTP);
-				nextPointIsTunnelEndpoint = false;
+				nextIsEndpoint = false;
 				continue;
 			}
 			
@@ -308,15 +290,15 @@ public class Pathfinder {
 				float z = curr.getZ() + direction.getZ() * patchSize * j;
 				
 				Point2Df newPoint = new Point2Df(x, z);
-				PathPoint newTP = new PathPoint(newPoint, j == 0, j != 0);
+				PathPoint newTP = new PathPoint(newPoint, j == 0, nextIsEndpoint && j == 0, j != 0);
 				processed.add(newTP);
 			}
 			
-			nextPointIsTunnelEndpoint = true;
+			nextIsEndpoint = true;
 		}
 		
 		Point2Df lastPoint = problem.gridToReal(gridPoints.get(gridPoints.size() - 1));
-		PathPoint lastTP = new PathPoint(lastPoint, nextPointIsTunnelEndpoint, nextPointIsTunnelEndpoint);
+		PathPoint lastTP = new PathPoint(lastPoint, false, nextIsEndpoint, false);
 		processed.add(lastTP);
 		
 		LOGGER.fine("Post processing A star path finised. Num of points: " + processed.size());

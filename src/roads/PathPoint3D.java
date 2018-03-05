@@ -5,31 +5,37 @@ import org.lwjgl.util.vector.Vector3f;
 public class PathPoint3D {
 	
 	private Vector3f location;
-	private boolean isTunnelEndpoint;
-	private boolean isInTunnel;
+	private boolean entrance;
+	private boolean exit;
+	private boolean body;
 	
-	public PathPoint3D(Vector3f location, boolean isTunnelEndpoint, boolean isInTunnel) {
+	public PathPoint3D(Vector3f location, boolean entrance, boolean exit, boolean body) {
 		this.location = location;
-		this.isTunnelEndpoint = isTunnelEndpoint;
-		this.isInTunnel = isInTunnel;
+		this.entrance = entrance;
+		this.exit = exit;
+		this.body = body;
 	}
-	
+
 	public Vector3f getLocation() {
 		return location;
 	}
-	
-	public boolean isInTunnel() {
-		return isInTunnel;
+
+	public boolean isEntrance() {
+		return entrance;
 	}
-	
-	public boolean isTunnelEndpoint() {
-		return isTunnelEndpoint;
+
+	public boolean isExit() {
+		return exit;
+	}
+
+	public boolean isBody() {
+		return body;
 	}
 
 	@Override
 	public String toString() {
-		return "PathPoint3D [location=" + location + ", isTunnelEndpoint=" + isTunnelEndpoint + ", isInTunnel="
-				+ isInTunnel + "]";
+		return "PathPoint3D [loc=" + location + ", entrance=" + entrance + ", exit=" + 
+				exit + ", body=" + body + "]";
 	}
 
 }

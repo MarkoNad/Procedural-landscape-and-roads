@@ -132,6 +132,7 @@ public class DebugScene2 {
 		Random random = new Random(0);
 		
 		//List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
+		//List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
 		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
 		final float segmentLen = 1f;
 		List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
