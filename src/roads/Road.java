@@ -24,6 +24,9 @@ public class Road {
 	private RawModel model;
 	private boolean heightCorrection;
 	
+	private List<Vector3f> leftTrajectory;
+	private List<Vector3f> rightTrajectory;
+	
 	public Road(List<Point2Df> waypoints2D, Loader loader, float width, float textureLen,
 			float segmentLen, float groundOffset, IHeightGenerator heightMap, boolean heightCorrection) {
 		if(waypoints2D == null || waypoints2D.size() < 2) {
@@ -87,8 +90,16 @@ public class Road {
 		model = generate();
 	}
 	
-	public List<Vector3f> getTrajectory() {
+	public List<Vector3f> getCenterTrajectory() {
 		return Collections.unmodifiableList(trajectory);
+	}
+	
+	public List<Vector3f> getLeftTrajectory() {
+		return Collections.unmodifiableList(leftTrajectory);
+	}
+	
+	public List<Vector3f> getRightTrajectory() {
+		return Collections.unmodifiableList(rightTrajectory);
 	}
 	
 	private List<Vector3f> assignHeightsToWaypoints(List<Point2Df> waypoints2D, IHeightGenerator heightMap) {
@@ -132,6 +143,9 @@ public class Road {
 		float[] normals = new float[vertCount * 3];
 		float[] textureCoords = new float[vertCount * 2];
 		int[] indices = new int[6 * (trajectory.size() - 1)];
+		
+		leftTrajectory = new ArrayList<>();
+		rightTrajectory = new ArrayList<>();
 		
 		/*
 		 * The road is drawn as follows:
@@ -236,10 +250,32 @@ public class Road {
 		}
 		
 		setupIndices(indices, trajectory);
+		
+		cacheEdgeTrajectories(vertices);
 
 		return loader.loadToVAO(vertices, textureCoords, normals, indices);
 	}
 	
+	private void cacheEdgeTrajectories(float[] vertices) {
+		int trajectoryPoints = vertices.length / 3 / 2;
+		
+		for(int i = 0; i < trajectoryPoints; i++) {
+			float leftX = vertices[i * 3];
+			float leftY = vertices[i * 3 + 1];
+			float leftZ = vertices[i * 3 + 2];
+			
+			Vector3f leftVertex = new Vector3f(leftX, leftY, leftZ);
+			leftTrajectory.add(leftVertex);
+			
+			float rightX = vertices[(trajectoryPoints + i) * 3];
+			float rightY = vertices[(trajectoryPoints + i) * 3 + 1];
+			float rightZ = vertices[(trajectoryPoints + i) * 3 + 2];
+			
+			Vector3f rightVertex = new Vector3f(rightX, rightY, rightZ);
+			rightTrajectory.add(rightVertex);
+		}
+	}
+
 	private List<Float> determineDistances(List<Vector3f> trajectory) {
 		List<Float> waypointDistances = new ArrayList<>();
 		waypointDistances.add(0f);
