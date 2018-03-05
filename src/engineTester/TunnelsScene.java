@@ -171,7 +171,7 @@ public class TunnelsScene {
 		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
 
 		TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData(), 10, 1.0f,
-				50f, 50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "tunnel", loader);
+				50f, 50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
 		List<Entity> tunnelPartEntities = tunnelManager.getAllTunnelEntities();
 		
 		while(!Display.isCloseRequested()) {

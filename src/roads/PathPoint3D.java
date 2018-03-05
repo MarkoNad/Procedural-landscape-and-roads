@@ -26,4 +26,10 @@ public class PathPoint3D {
 		return isTunnelEndpoint;
 	}
 
+	@Override
+	public String toString() {
+		return "PathPoint3D [location=" + location + ", isTunnelEndpoint=" + isTunnelEndpoint + ", isInTunnel="
+				+ isInTunnel + "]";
+	}
+
 }

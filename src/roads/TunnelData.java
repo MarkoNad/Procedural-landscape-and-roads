@@ -73,4 +73,12 @@ public class TunnelData {
 		this.secondEndpointMask = secondEndpointMask;
 	}
 
+	@Override
+	public String toString() {
+		return "TunnelData [firstEndpointLocation=" + firstEndpointLocation + ", firstEndpointOrientation="
+				+ firstEndpointOrientation + ", secondEndpointLocation=" + secondEndpointLocation
+				+ ", secondEndpointOrientation=" + secondEndpointOrientation + ", firstEndpointMask="
+				+ firstEndpointMask + ", secondEndpointMask=" + secondEndpointMask + "]";
+	}
+
 }

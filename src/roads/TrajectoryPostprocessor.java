@@ -23,7 +23,13 @@ public class TrajectoryPostprocessor {
 		trajectory = new ArrayList<>();
 		tunnelData = new ArrayList<>();
 		
+		LOGGER.info("Trajectory postprocessor determining tunnel endpoints.");
+		LOGGER.finer("Received points:");
+		pathPoints.forEach(p -> LOGGER.finer(p.toString()));
+		
 		process(initialTrajectory, pathPoints, heightMap, minimalTunnelDepth, endpointOffset, maskOffset);
+		
+		tunnelData.forEach(td -> LOGGER.fine(td.toString()));
 	}
 
 	public List<Vector3f> getCorrectedTrajectory() {
