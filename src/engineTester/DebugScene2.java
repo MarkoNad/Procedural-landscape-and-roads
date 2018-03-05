@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -128,14 +129,17 @@ public class DebugScene2 {
 		
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
+		Random random = new Random(0);
 		
-		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 50f, 10, 8);
+		//List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
+		//List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
+		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
 		final float segmentLen = 1f;
 		List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
 		//Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.02f);
 		Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.0f);
 		//Road road = new Road(loader, roadWaypoints, 10, 12, segmentLen, 0.02f, heightGenerator, false);
-		Entity roadEntity = setupRoad(loader, heightGenerator, roadWaypoints, road);
+		Entity roadEntity = setupRoad(loader, heightGenerator, road);
 
 		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
 		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
@@ -213,7 +217,7 @@ public class DebugScene2 {
 				.collect(Collectors.toList());
 
 		TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData(), 5, 1.0f, 50f,
-				50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "tunnel", loader);
+				50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
 		List<Entity> tunnelPartEntities = tunnelManager.getAllTunnelEntities();
 		
 		while(!Display.isCloseRequested()) {
@@ -251,8 +255,7 @@ public class DebugScene2 {
 		DisplayManager.closeDisplay();
 	}
 	
-	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator,
-			List<Vector3f> waypoints, Road road) {
+	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator, Road road) {
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
@@ -261,14 +264,16 @@ public class DebugScene2 {
 	private static List<Vector3f> findPath(Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
 			boolean allowTunnels, float minimalTunnelDepth, int endpointOffset,
-			int maskOffset) {
+			int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
+			int tunnelCandidates, boolean limitTunnelCandidates, Random random) {
 		Point2Df start = new Point2Df(9500f, -5000f); // TODO
 		Point2Df goal = new Point2Df(10000f, -22000f); // TODO
 		float cellSize = 200f; // TODO
 		
 		pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
 				heightGenerator, cellSize, allowTunnels, minimalTunnelDepth, endpointOffset,
-				maskOffset);
+				maskOffset, tunnelInnerRadius, tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates,
+				random);
 		return pathfinder.findWaypoints();
 	}
 	

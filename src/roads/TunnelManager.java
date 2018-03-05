@@ -38,6 +38,8 @@ public class TunnelManager {
 		this.faceTexturePath = faceTexturePath;
 		this.maskTexturePath = maskTexturePath;
 		
+		LOGGER.info("Tunnel manager generating tunnel meshes.");
+		
 		this.tunnels = createTunnels(road, tunnelData, subdivisions, wallThickness, tunnelInnerTextureDepth,
 				tunnelOuterTextureDepth, faceTextureWidth, faceTextureHeight, maskTextureWidth,
 				maskTextureHeight);
@@ -57,6 +59,9 @@ public class TunnelManager {
 		for(TunnelData tunnelDatum : tunnelData) {
 			Vector3f firstEndpoint = tunnelDatum.getFirstEndpointLocation();
 			Vector3f secondEndpoint = tunnelDatum.getSecondEndpointLocation();
+			
+			LOGGER.finer("First endpoint: " + firstEndpoint);
+			LOGGER.finer("Second endpoint: " + secondEndpoint);
 			
 			List<Vector3f> tunnelLeftTrajectory = new ArrayList<>();
 			List<Vector3f> tunnelRightTrajectory = new ArrayList<>();
