@@ -162,12 +162,8 @@ public class TrajectoryPostprocessor {
 			PathPoint3D roadEnd = pathPoints.get(pi);
 			
 			while(!samePoint(itp, roadEnd, EPS)) {
-				float height = heightMap.getHeight(itp.x, itp.z);
-				Vector3f tp = new Vector3f(itp.x, height, itp.z);
-				
-				trajectory.add(tp);
-				newModifier.add(tp);
-				
+				trajectory.add(itp);
+				newModifier.add(itp);
 				itp = initialTrajectory.get(++ti);
 			}
 			
