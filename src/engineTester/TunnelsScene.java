@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -129,8 +130,10 @@ public class TunnelsScene {
 		
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
+		Random random = new Random(0);
 		
-		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 50f, 10, 8);
+		//List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 50f, 10, 8);
+		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, false, random);
 		final float segmentLen = 1f;
 		List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
 		Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.0f);
@@ -205,14 +208,16 @@ public class TunnelsScene {
 	private static List<Vector3f> findPath(Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
 			boolean allowTunnels, float minimalTunnelDepth, int endpointOffset,
-			int maskOffset) {
-		Point2Df start = new Point2Df(9500f, -5000f);
-		Point2Df goal = new Point2Df(10000f, -22000f);
-		float cellSize = 200f;
+			int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
+			int tunnelCandidates, boolean limitTunnelCandidates, Random random) {
+		Point2Df start = new Point2Df(9500f, -5000f); // TODO
+		Point2Df goal = new Point2Df(10000f, -22000f); // TODO
+		float cellSize = 200f; // TODO
 		
 		pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
 				heightGenerator, cellSize, allowTunnels, minimalTunnelDepth, endpointOffset,
-				maskOffset);
+				maskOffset, tunnelInnerRadius, tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates,
+				random);
 		return pathfinder.findWaypoints();
 	}
 	

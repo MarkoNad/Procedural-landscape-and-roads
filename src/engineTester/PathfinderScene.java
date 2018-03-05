@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -130,8 +131,10 @@ public class PathfinderScene {
 		
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
+		Random random = new Random(0);
 		
-		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, 0, 0);
+		//List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, 0, 0);
+		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, false, 15f, 10, 8, 4500f, 6000f, 100, false, random);
 		final float segmentLen = 1f;
 		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
 		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
@@ -247,16 +250,34 @@ public class PathfinderScene {
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
 	}
 
+//	private static List<Vector3f> findPath(Point2Df domainLowerLeftLimit,
+//			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator,
+//			int endpointOffset, int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
+//			int tunnelCandidates, boolean limitTunnelCandidates, Random random) {
+//		Point2Df start = new Point2Df(9500f, -5000f); // TODO
+//		Point2Df goal = new Point2Df(10000f, -22000f); // TODO
+//		float cellSize = 200f; // TODO
+//		
+//		Pathfinder pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
+//				heightGenerator, cellSize, false, 0f, endpointOffset,
+//				maskOffset, tunnelInnerRadius, tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates,
+//				random);
+//		return pathfinder.findWaypoints();
+//	}
+	
 	private static List<Vector3f> findPath(Point2Df domainLowerLeftLimit,
-			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator,
-			int endpointOffset, int maskOffset) {
+			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
+			boolean allowTunnels, float minimalTunnelDepth, int endpointOffset,
+			int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
+			int tunnelCandidates, boolean limitTunnelCandidates, Random random) {
 		Point2Df start = new Point2Df(9500f, -5000f); // TODO
 		Point2Df goal = new Point2Df(10000f, -22000f); // TODO
 		float cellSize = 200f; // TODO
 		
 		Pathfinder pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
-				heightGenerator, cellSize, false, 0f, endpointOffset,
-				maskOffset);
+				heightGenerator, cellSize, allowTunnels, minimalTunnelDepth, endpointOffset,
+				maskOffset, tunnelInnerRadius, tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates,
+				random);
 		return pathfinder.findWaypoints();
 	}
 	

@@ -60,12 +60,9 @@ public class TrajectoryPostprocessor {
 				if(curr.isExit()) LOGGER.severe("Tunnel exit at the end of trajectory.");
 				
 				Vector3f itp = initialTrajectory.get(ti); // initial-trajectory point
-				
-				float surfaceHeight = heightMap.getHeight(itp.x, itp.z);
-				Vector3f correctedTP = new Vector3f(itp.x, surfaceHeight, itp.z);
-				
-				trajectory.add(correctedTP);
-				newModifier.add(correctedTP);
+
+				trajectory.add(itp);
+				newModifier.add(itp);
 				modifierTrajectories.add(newModifier);
 				
 				break;

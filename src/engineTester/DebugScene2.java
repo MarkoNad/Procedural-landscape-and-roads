@@ -139,7 +139,7 @@ public class DebugScene2 {
 		//Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.02f);
 		Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.0f);
 		//Road road = new Road(loader, roadWaypoints, 10, 12, segmentLen, 0.02f, heightGenerator, false);
-		Entity roadEntity = setupRoad(loader, heightGenerator, roadWaypoints, road);
+		Entity roadEntity = setupRoad(loader, heightGenerator, road);
 
 		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
 		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
@@ -255,8 +255,7 @@ public class DebugScene2 {
 		DisplayManager.closeDisplay();
 	}
 	
-	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator,
-			List<Vector3f> waypoints, Road road) {
+	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator, Road road) {
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);

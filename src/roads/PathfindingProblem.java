@@ -25,10 +25,6 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	private final boolean allowTunnels;
 
 	private final float cellSize;
-//	private final float tunnelInnerRadius = 4500f; // TODO
-//	private final float tunnelOuterRadius = 6000f; // TODO
-//	private final int tunnelCandidates = 50; // TODO
-//	private final boolean limitTunnelCandidates = true; // TODO
 	private final float tunnelInnerRadius;
 	private final float tunnelOuterRadius;
 	private final int tunnelCandidates;
