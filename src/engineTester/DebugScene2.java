@@ -131,21 +131,17 @@ public class DebugScene2 {
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
 		Random random = new Random(0);
 		
-		//List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
-		//List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
-		List<Vector3f> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
+		//Optional<List<Vector3f>> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
+		Optional<List<Vector3f>> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, false, 15f, 10, 8, 4500f, 6000f, 100, true, random);
 		final float segmentLen = 1f;
-		List<Vector3f> roadTrajectory = pathfinder.findTrajectory(segmentLen);
+		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(segmentLen);
 		//Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.02f);
-		Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.0f);
-		//Road road = new Road(loader, roadWaypoints, 10, 12, segmentLen, 0.02f, heightGenerator, false);
-		Entity roadEntity = setupRoad(loader, heightGenerator, road);
+		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, segmentLen, 0.0f));
+		Optional<Entity> maybeRoadEntity = maybeRoad.map(road -> setupRoad(loader, heightGenerator, road));
 
 		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
 		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
-		for(List<Vector3f> modifier : pathfinder.findModifierTrajectories(-0.05f)) {
-			heightGenerator.updateHeight(modifier, influenceFn, 15f);
-		}
+		pathfinder.findModifierTrajectories(-0.05f).ifPresent(modifiers -> modifiers.forEach(m -> heightGenerator.updateHeight(m, influenceFn, 15f)));
 		
 		float texWidth = 5f;
 		float texDepth = 5f;
@@ -209,17 +205,20 @@ public class DebugScene2 {
 		final float terrainLODTolerance = 200f;
 		
 		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
-
-		List<Entity> tunnelEndpoints = pathfinder.findTunnelsData()
-				.stream()
-				.flatMap(td -> Arrays.asList(td.getFirstEndpointLocation(), td.getSecondEndpointLocation()).stream())
-				.map(te -> new Entity(chestnutTrunk, te, 0f, 0f, 0f, 40f))
-				.collect(Collectors.toList());
-
-		TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData(), 5, 1.0f, 50f,
-				50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
-		List<Entity> tunnelPartEntities = tunnelManager.getAllTunnelEntities();
 		
+		Optional<List<Entity>> tunnelEndpoints = pathfinder.findTunnelsData()
+				.map(tdList -> tdList
+						.stream()
+						.flatMap(td -> Arrays.asList(td.getFirstEndpointLocation(), td.getSecondEndpointLocation()).stream())
+						.map(te -> new Entity(chestnutTrunk, te, 0f, 0f, 0f, 40f))
+						.collect(Collectors.toList()));
+		
+		Optional<List<Entity>> tunnelPartEntities = maybeRoad.map(road -> {
+			TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData().get(), 5, 1.0f, 50f,
+					50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
+			return tunnelManager.getAllTunnelEntities();
+		});
+
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
@@ -231,20 +230,19 @@ public class DebugScene2 {
 
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
 			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
-			//roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeightApprox(p.x, p.z), p.z), 0f, 0f, 0f, 20f)));
-			roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, p.y, p.z), 0f, 0f, 0f, 20f)));
+			roadWaypoints.ifPresent(wps -> wps.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, p.y, p.z), 0f, 0f, 0f, 20f))));
 			entities.add(chestnutEntityTrunk);
 			entities.add(chestnutEntityTop);
 			entities.add(cubeEntity);
 			entities.add(cubeEntity2);
 			
-			tunnelEndpoints.forEach(te -> renderer.processEntity(te));
-			tunnelPartEntities.forEach(e -> renderer.processEntity(e));
+			tunnelEndpoints.ifPresent(tes -> tes.forEach(te -> renderer.processEntity(te)));
+			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
 			
 			entities.forEach(e -> renderer.processEntity(e));
 			nmEntites.forEach(e -> renderer.processNMEntity(e));
 			terrains.forEach(t -> renderer.processTerrain(t));
-			renderer.processEntity(roadEntity);
+			maybeRoadEntity.ifPresent(roadEntity -> renderer.processEntity(roadEntity));
 			renderer.render(light, camera);
 			
 			DisplayManager.updateDisplay();
@@ -261,7 +259,7 @@ public class DebugScene2 {
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
 	}
 
-	private static List<Vector3f> findPath(Point2Df domainLowerLeftLimit,
+	private static Optional<List<Vector3f>> findPath(Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
 			boolean allowTunnels, float minimalTunnelDepth, int endpointOffset,
 			int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,

@@ -3,6 +3,7 @@ package roads;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -40,7 +41,8 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		this.domainLowerLeftLimit = domainLowerLeftLimit;
 		this.domainUpperRightLimit = domainUpperRightLimit;
 		this.heightGenerator = heightGenerator;
-		this.cellSize = cellSize;
+		//this.cellSize = cellSize;
+		this.cellSize = 100f; // TODO
 		this.allowTunnels = allowTunnels;
 		this.tunnelInnerRadius = tunnelInnerRadius;
 		this.tunnelOuterRadius = tunnelOuterRadius;
@@ -93,6 +95,11 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		return candidates;
 	}
 	
+	@Override
+	public double getMaximumCost() {
+		return Double.POSITIVE_INFINITY;
+	}
+	
 	private List<Point2Di> generateRoadCandidates(Point2Di p) {
 		return new ArrayList<>(Arrays.asList(
 				new Point2Di(p.getX(), p.getZ() - step),
@@ -114,47 +121,62 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 
 	@Override
-	public double getTransitionCost(Point2Di first, Point2Di second) {
-		if(Point2Di.l1Distance(first, second) > 2 * step) {
-			return tunnelCost(first, second);
+	public double getTransitionCost(Point2Di current, Point2Di candidate, Optional<Point2Di> previous) {
+		if(Point2Df.distance(gridToReal(current), gridToReal(candidate)) <= getMax2DRoadSize()) {
+			return roadCost(current, candidate, previous);
 		} else {
-			return roadCost(first, second);
+			return tunnelCost(current, candidate, previous);
 		}
 	}
 	
-	private double roadCost(Point2Di first, Point2Di second) {
-		Point2Df p1 = gridToReal(first);
-		Point2Df p2 = gridToReal(second);
+	private double roadCost(Point2Di currentGP, Point2Di candidateGP, Optional<Point2Di> previousGP) {
+		Point2Df current = gridToReal(currentGP);
+		Point2Df candidate = gridToReal(candidateGP);
+		Optional<Point2Df> previous = previousGP.map(prevGP -> gridToReal(prevGP));
 		
-		if(p2.getX() < domainLowerLeftLimit.getX() ||
-				p2.getX() > domainUpperRightLimit.getX() ||
-				p2.getZ() > domainLowerLeftLimit.getZ() || 
-				p2.getZ() < domainUpperRightLimit.getZ()) {
+		if(candidate.getX() < domainLowerLeftLimit.getX() ||
+				candidate.getX() > domainUpperRightLimit.getX() ||
+				candidate.getZ() > domainLowerLeftLimit.getZ() || 
+				candidate.getZ() < domainUpperRightLimit.getZ()) {
 			return Double.POSITIVE_INFINITY;
 		}
-		
-		double totalCost = 0.0;
 
-		double y1 = heightGenerator.getHeightApprox(p1.getX(), p1.getZ());
-		double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
+		double y1 = heightGenerator.getHeightApprox(current.getX(), current.getZ());
+		double y2 = heightGenerator.getHeightApprox(candidate.getX(), candidate.getZ());
 		
-		double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
-				Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
+		double distance = Math.sqrt(
+				Math.pow(current.getX() - candidate.getX(), 2.0) + 
+				Math.pow(y1 - y2, 2.0) + 
+				Math.pow(current.getZ() - candidate.getZ(), 2.0));
 		double distanceCost = distance;
 		
-		double slope = Math.abs(y2 - y1) / distance;
-		double slopeCost = Math.pow(slope, 2.0) * 10000f;
+		final double angleThreshold = percentageToAngle(0.5);
+		double slope = Math.asin(Math.abs(y2 - y1) / distance);
+		double slopeCost = slope > angleThreshold ? Double.POSITIVE_INFINITY : distance * Math.pow(slope, 2.0) * 80.0;
 		
-//		System.out.println(String.format("slope:   %.2f, slope cost:    %.2f", slope, slopeCost));
-//		System.out.println(String.format("distance:%.2f, distance cost: %.2f", distance, distanceCost));
+		System.out.println(String.format("distance:%.2f, distance cost:  %.2f", distance, distanceCost));
+		System.out.println(String.format("slope:   %.2f, slope cost:     %.2f", slope, slopeCost));
 		
-		totalCost += distanceCost;
-		totalCost += slopeCost;
+		double curvatureCost = 0.0;
+		if(previous.isPresent()) {
+			Point2Df direction1 = Point2Df.sub(current, previous.get());
+			Point2Df direction2 = Point2Df.sub(candidate, current);
+			double angle = Point2Df.angle(direction1, direction2);
+			curvatureCost = Math.pow(angle, 2.0) * 10.0;
+			System.out.println(String.format("angle:   %.2f, curvature cost: %.2f", angle, curvatureCost));
+		}
+
+		System.out.println();
 		
+		double totalCost = distanceCost + slopeCost + curvatureCost;
 		return totalCost;
 	}
 	
-	private double tunnelCost(Point2Di first, Point2Di second) {
+	private double percentageToAngle(double p) {
+		return p / Math.sqrt(1 + p * p);
+	}
+	
+	private double tunnelCost(Point2Di first, Point2Di second, Optional<Point2Di> previous) {
 		Point2Df p1 = gridToReal(first);
 		Point2Df p2 = gridToReal(second);
 		

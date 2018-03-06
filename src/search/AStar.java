@@ -2,6 +2,7 @@ package search;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -16,7 +17,7 @@ public class AStar<S> implements ISearchAlgorithm<S> {
 	}
 
 	@Override
-	public HeuristicsNode<S> search() {
+	public Optional<Node<S>> search() {
 		S initialState = problem.getInitialState();
 		
 		Map<S, HeuristicsNode<S>> openMap = new HashMap<>();
@@ -25,7 +26,7 @@ public class AStar<S> implements ISearchAlgorithm<S> {
 			(a, b) -> Double.compare(a.getEstimatedTotalCost(), b.getEstimatedTotalCost()));
 
 		HeuristicsNode<S> startNode = new HeuristicsNode<>(
-				initialState, null, 0.0, heuristics.getEstimatedCost(initialState));
+				initialState, Optional.empty(), 0.0, heuristics.getEstimatedCost(initialState));
 		
 		openMap.put(initialState, startNode);
 		openQueue.add(startNode);
@@ -36,17 +37,24 @@ public class AStar<S> implements ISearchAlgorithm<S> {
 			closedMap.put(current.getState(), current);
 			
 			if(problem.isGoal(current.getState())) {
-				return current;
+				return Optional.of(current);
+			}
+			
+			if(current.cost >= problem.getMaximumCost()) {
+				return Optional.empty();
 			}
 			
 			for(S succState : problem.getSuccessors(current.getState())) {
 				if(closedMap.containsKey(succState)) continue;
 				
-				double transitionCost = problem.getTransitionCost(current.getState(), succState);
+				double transitionCost = problem.getTransitionCost(
+						current.getState(),
+						succState,
+						current.getPredecessor().map(node -> node.getState()));
 				
 				HeuristicsNode<S> candidateSucc = new HeuristicsNode<>(
 					succState,
-					current,
+					Optional.of(current),
 					current.getCost() + transitionCost,
 					current.getCost() + transitionCost + heuristics.getEstimatedCost(succState));
 				
@@ -70,6 +78,6 @@ public class AStar<S> implements ISearchAlgorithm<S> {
 			}
 		}
 		
-		throw new IllegalStateException("Evaluated all nodes before goal was found.");
+		return Optional.empty();
 	}
 }

@@ -2,6 +2,7 @@ package roads;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,8 +31,8 @@ public class Pathfinder {
 	private final int maskOffset;
 	private TrajectoryPostprocessor trajectoryPostprocessor;
 	
-	List<PathPoint3D> waypointsCache = null;
-	List<Vector3f> trajectoryCache = null;
+	Optional<List<PathPoint3D>> waypointsCache = null;
+	Optional<List<Vector3f>> trajectoryCache = null;
 	
 	public Pathfinder(Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
@@ -69,23 +70,34 @@ public class Pathfinder {
 		};
 	}
 	
-	public List<TunnelData> findTunnelsData() {
-		return trajectoryPostprocessor.getTunnelsData();
+	public Optional<List<TunnelData>> findTunnelsData() {
+		if(trajectoryPostprocessor == null) return Optional.empty();
+		return Optional.ofNullable(trajectoryPostprocessor.getTunnelsData());
 	}
 	
-	public List<Vector3f> findWaypoints() {
+	public Optional<List<Vector3f>> findWaypoints() {
 		if(waypointsCache == null) {
 			waypointsCache = generateWaypoints();
 		}
 		
-		return waypointsCache.stream().map(pp -> pp.getLocation()).collect(Collectors.toList());
+		return waypointsCache.map(pathpoints -> pathpoints
+				.stream()
+				.map(pp -> pp.getLocation())
+				.collect(Collectors.toList()));
 	}
 	
-	private List<PathPoint3D> generateWaypoints() {
+	private Optional<List<PathPoint3D>> generateWaypoints() {
 		long start = System.nanoTime();
 		
 		AStar<Point2Di> astar = new AStar<>(searchProblem, heuristics);
-		Node<Point2Di> goal = astar.search();
+		Optional<Node<Point2Di>> goalNode = astar.search();
+		
+		if(!goalNode.isPresent()) {
+			LOGGER.info("Pathfinder cannot create waypoints with provided terrain and constraints.");
+			return Optional.empty();
+		}
+		
+		Node<Point2Di> goal = goalNode.get();
 		
 		double duration = (System.nanoTime() - start) * 1e-9;
 		LOGGER.log(Level.FINE, "Astar duration:" + duration);
@@ -99,10 +111,10 @@ public class Pathfinder {
 		List<PathPoint3D> waypoints = setWaypointHeights(path, heightGenerator);
 		waypoints.forEach(p -> LOGGER.finer("Postprocessed point: " + p));
 		
-		return waypoints;
+		return Optional.of(waypoints);
 	}
 	
-	public List<Vector3f> findTrajectory(float segmentLength) {
+	public Optional<List<Vector3f>> findTrajectory(float segmentLength) {
 		if(trajectoryCache == null) {
 			trajectoryCache = generateTrajectory(segmentLength);
 		}
@@ -110,19 +122,24 @@ public class Pathfinder {
 		return trajectoryCache;
 	}
 	
-	private List<Vector3f> generateTrajectory(float segmentLength) {
-		List<Vector3f> waypoints = findWaypoints();
+	private Optional<List<Vector3f>> generateTrajectory(float segmentLength) {
+		Optional<List<Vector3f>> maybeWaypoints = findWaypoints();
+		if(!maybeWaypoints.isPresent()) return Optional.empty();
+		
+		List<Vector3f> waypoints = maybeWaypoints.get();
 		
 		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
 		List<Vector3f> trajectory = curve.getCurvePointsCopy();
 		
-		trajectoryPostprocessor = new TrajectoryPostprocessor(trajectory, waypointsCache,
+		trajectoryPostprocessor = new TrajectoryPostprocessor(trajectory, waypointsCache.get(),
 				heightGenerator, minimalTunnelDepth, endpointOffset, maskOffset);
 		
-		return trajectoryPostprocessor.getCorrectedTrajectory();
+		return Optional.of(trajectoryPostprocessor.getCorrectedTrajectory());
 	}
 	
-	public List<List<Vector3f>> findModifierTrajectories(float offset) {
+	public Optional<List<List<Vector3f>>> findModifierTrajectories(float offset) {
+		if(trajectoryPostprocessor == null) return Optional.empty();
+		
 		List<List<Vector3f>> shiftedModifiers = new ArrayList<>();
 		
 		for(List<Vector3f> originalModifier : trajectoryPostprocessor.getModifierTrajectories()) {
@@ -133,7 +150,7 @@ public class Pathfinder {
 			shiftedModifiers.add(shiftedModifier);
 		}
 		
-		return shiftedModifiers;
+		return Optional.of(shiftedModifiers);
 	}
 	
 	private List<PathPoint3D> setWaypointHeights(List<PathPoint> pathPoints, IHeightGenerator heightMap) {
