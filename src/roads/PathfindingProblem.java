@@ -130,6 +130,9 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 	
 	private double roadCost(Point2Di currentGP, Point2Di candidateGP, Optional<Point2Di> previousGP) {
+		final double slopeThreshold = percentageToAngle(0.45);
+		final double angleThreshold = 2.1; // 120 degrees
+		
 		Point2Df current = gridToReal(currentGP);
 		Point2Df candidate = gridToReal(candidateGP);
 		Optional<Point2Df> previous = previousGP.map(prevGP -> gridToReal(prevGP));
@@ -149,23 +152,27 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 				Math.pow(y1 - y2, 2.0) + 
 				Math.pow(current.getZ() - candidate.getZ(), 2.0));
 		double distanceCost = distance;
-		
-		final double angleThreshold = percentageToAngle(0.5);
+
 		double slope = Math.asin(Math.abs(y2 - y1) / distance);
-		double slopeCost = slope > angleThreshold ? Double.POSITIVE_INFINITY : distance * Math.pow(slope, 2.0) * 80.0;
+		if(slope > slopeThreshold) return Double.POSITIVE_INFINITY;
+		double slopeCost = distance * Math.pow(slope, 2.0) * 80.0;
 		
-		System.out.println(String.format("distance:%.2f, distance cost:  %.2f", distance, distanceCost));
-		System.out.println(String.format("slope:   %.2f, slope cost:     %.2f", slope, slopeCost));
+		System.out.format("distance: %10.2f, distance cost:  %10.2f\n", distance, distanceCost);
+		System.out.format("slope:    %10.2f, slope cost:     %10.2f\n", Math.toDegrees(slope), slopeCost);
 		
 		double curvatureCost = 0.0;
 		if(previous.isPresent()) {
 			Point2Df direction1 = Point2Df.sub(current, previous.get());
 			Point2Df direction2 = Point2Df.sub(candidate, current);
-			double angle = Point2Df.angle(direction1, direction2);
-			curvatureCost = Math.pow(angle, 2.0) * 10.0;
-			System.out.println(String.format("angle:   %.2f, curvature cost: %.2f", angle, curvatureCost));
-		}
 
+			double angle = Point2Df.angle(direction1, direction2);
+			if(angle > angleThreshold) return Double.POSITIVE_INFINITY;
+			
+			curvatureCost = Math.pow(angle, 3.0) * 10.0;
+			
+			System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
+		}
+		
 		System.out.println();
 		
 		double totalCost = distanceCost + slopeCost + curvatureCost;
