@@ -24,7 +24,7 @@ public class TrajectoryPostprocessor {
 		tunnelData = new ArrayList<>();
 		
 		LOGGER.info("Trajectory postprocessor determining tunnel endpoints.");
-		LOGGER.finer("Received points:");
+		LOGGER.finer("Trajectory postprocessor received points:");
 		pathPoints.forEach(p -> LOGGER.finer(p.toString()));
 		
 		process(initialTrajectory, pathPoints, heightMap, minimalTunnelDepth, endpointOffset, maskOffset);

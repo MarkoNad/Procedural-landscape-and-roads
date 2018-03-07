@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -99,8 +98,8 @@ public class Pathfinder {
 		
 		Node<Point2Di> goal = goalNode.get();
 		
-		double duration = (System.nanoTime() - start) * 1e-9;
-		LOGGER.log(Level.FINE, "Astar duration:" + duration);
+		LOGGER.info("A Star duration: " + (System.nanoTime() - start) * 1e-9);
+		LOGGER.info("A star goal cost: " + goal.getCost());
 		
 		List<Point2Di> gridPath = goal.reconstructPath();
 		gridPath.forEach(p -> LOGGER.finer("A star point: " + p));
@@ -181,7 +180,7 @@ public class Pathfinder {
 				waypoints.add(new PathPoint3D(newWaypointLoc, pp.entrance, pp.exit, pp.body));
 				
 				LOGGER.finer("Postprocessed point: " + p.toString() + firstEndpointY + 
-						" TUNNEL ENTRANCE" + (pp.exit ? "AND EXIT" : ""));
+						" TUNNEL ENTRANCE" + (pp.exit ? " AND EXIT" : ""));
 				continue;
 			}
 			

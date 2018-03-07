@@ -16,7 +16,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	
 	private static final Logger LOGGER = Logger.getLogger(PathfindingProblem.class.getName());
 	//private static final float samplingDist = 50f;
-	private static final float samplingDist = 25f; // TODO
+	private final float samplingDist; // TODO
 	
 	private final Point2Df origin;
 	private final Point2Di goal;
@@ -26,7 +26,8 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	private final boolean allowTunnels;
 
 	private final float cellSize;
-	private final int roadRange = 2;
+	private final int roadRange = 3;
+	//private final int roadRange = 4;
 	private final float tunnelInnerRadius;
 	private final float tunnelOuterRadius;
 	private final int tunnelCandidates;
@@ -42,7 +43,9 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		this.domainUpperRightLimit = domainUpperRightLimit;
 		this.heightGenerator = heightGenerator;
 		//this.cellSize = cellSize;
-		this.cellSize = 100f; // TODO hardcoded, + add road step
+		this.cellSize = 100f;
+		//this.cellSize = 25f; // TODO hardcoded, + add road step
+		this.samplingDist = this.cellSize / 4f;
 		this.allowTunnels = allowTunnels;
 		this.tunnelInnerRadius = tunnelInnerRadius;
 		this.tunnelOuterRadius = tunnelOuterRadius;
@@ -69,7 +72,6 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 	
 	public float getMax2DRoadSize() {
-		//return 2f * cellSize; // TODO update when neighborhood is defined for roads
 		return (float) (roadRange * cellSize * Math.sqrt(2.0));
 	}
 
@@ -102,7 +104,8 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 	
 	private List<Point2Di> generateRoadCandidates(Point2Di p) {
-		return SamplerUtility.sampleSquare(p, roadRange, SamplingType.NEAREST_UNIQUE, true);
+		return SamplerUtility.sampleSquare(p, roadRange, SamplingType.NEAREST_UNIQUE, true); // TODO
+		//return SamplerUtility.sampleSquare(p, roadRange, SamplingType.FARTHEST, true);
 	}
 	
 	private List<Point2Di> generateTunnelCandidates(Point2Di p, float cellSize, float innerRadius,
@@ -122,8 +125,12 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 	
 	private double roadCost(Point2Di currentGP, Point2Di candidateGP, Optional<Point2Di> previousGP) {
-		final double slopeThreshold = percentageToAngle(0.45);
-		final double angleThreshold = 2.1; // 120 degrees
+		//final double slopeThreshold = percentageToAngle(0.45);
+		//final double slopeThreshold = percentageToAngle(0.4);
+		final double slopeThreshold = percentageToAngle(0.3);
+		//final double angleThreshold = 2.1; // 120 degrees
+		//final double angleThreshold = 1.92; // 110 degrees
+		final double angleThreshold = 1.75; // 100 degrees
 		
 		Point2Df current = gridToReal(currentGP);
 		Point2Df candidate = gridToReal(candidateGP);
@@ -175,42 +182,64 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		return p / Math.sqrt(1 + p * p);
 	}
 	
-	private double tunnelCost(Point2Di first, Point2Di second, Optional<Point2Di> previous) {
-		Point2Df p1 = gridToReal(first);
-		Point2Df p2 = gridToReal(second);
+	private double tunnelCost(Point2Di currentGP, Point2Di candidateGP, Optional<Point2Di> previousGP) {
+		//final double slopeThreshold = percentageToAngle(0.3);
+		final double slopeThreshold = percentageToAngle(0.25);
+		final double angleThreshold = 1.75; // 100 degrees
+		final double distanceMultiplier = 10.0;
+		final double slopeMultiplier = 200.0; // 80.0
+		final double curvatureMultiplier = 10.0;
 		
-		if(p2.getX() < domainLowerLeftLimit.getX() ||
-				p2.getX() > domainUpperRightLimit.getX() ||
-				p2.getZ() > domainLowerLeftLimit.getZ() || 
-				p2.getZ() < domainUpperRightLimit.getZ()) {
+		Point2Df current = gridToReal(currentGP);
+		Point2Df candidate = gridToReal(candidateGP);
+		Optional<Point2Df> previous = previousGP.map(prevGP -> gridToReal(prevGP));
+		
+		if(candidate.getX() < domainLowerLeftLimit.getX() ||
+				candidate.getX() > domainUpperRightLimit.getX() ||
+				candidate.getZ() > domainLowerLeftLimit.getZ() || 
+				candidate.getZ() < domainUpperRightLimit.getZ()) {
 			return Double.POSITIVE_INFINITY;
 		}
-		
-		double totalCost = 0.0;
 
-		double y1 = heightGenerator.getHeightApprox(p1.getX(), p1.getZ());
-		double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
+		double y1 = heightGenerator.getHeightApprox(current.getX(), current.getZ());
+		double y2 = heightGenerator.getHeightApprox(candidate.getX(), candidate.getZ());
 		
-		if(!goesThroughMountain(p1, p2, (float)y1, (float)y2, samplingDist, heightGenerator)) {
+		if(!goesThroughMountain(current, candidate, (float)y1, (float)y2, samplingDist, heightGenerator)) {
 			return Double.POSITIVE_INFINITY;
 		}
 		
-		double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
-				Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
-		double distanceCost = distance * 1.1;
+		double distance = Math.sqrt(
+				Math.pow(current.getX() - candidate.getX(), 2.0) + 
+				Math.pow(y1 - y2, 2.0) + 
+				Math.pow(current.getZ() - candidate.getZ(), 2.0));
+		double distanceCost = distance * distanceMultiplier;
+
+		double slope = Math.asin(Math.abs(y2 - y1) / distance);
+		if(slope > slopeThreshold) return Double.POSITIVE_INFINITY;
+		double slopeCost = distance * Math.pow(slope, 2.0) * slopeMultiplier;
 		
-		double slope = Math.abs(y2 - y1) / distance;
-		double slopeCost = Math.pow(slope, 2.0) * 10000f;
+//		System.out.format("distance: %10.2f, distance cost:  %10.2f\n", distance, distanceCost);
+//		System.out.format("slope:    %10.2f, slope cost:     %10.2f\n", Math.toDegrees(slope), slopeCost);
 		
-//		System.out.println(String.format("TUNNEL slope:   %.2f, slope cost:    %.2f", slope, slopeCost));
-//		System.out.println(String.format("TUNNEL distance:%.2f, distance cost: %.2f", distance, distanceCost));
+		double curvatureCost = 0.0;
+		if(previous.isPresent()) {
+			Point2Df direction1 = Point2Df.sub(current, previous.get());
+			Point2Df direction2 = Point2Df.sub(candidate, current);
+
+			double angle = Point2Df.angle(direction1, direction2);
+			if(angle > angleThreshold) return Double.POSITIVE_INFINITY;
+			
+			curvatureCost = Math.pow(angle, 3.0) * curvatureMultiplier;
+			
+			//System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
+		}
 		
-		totalCost += distanceCost;
-		totalCost += slopeCost;
+//		System.out.println();
 		
+		double totalCost = distanceCost + slopeCost + curvatureCost;
 		return totalCost;
 	}
-	
+
 	private boolean goesThroughMountain(Point2Df p1, Point2Df p2, float y1, float y2,
 			float samplingDist, IHeightGenerator heightMap) {
 		Point2Df direction = Point2Df.sub(p2, p1);
