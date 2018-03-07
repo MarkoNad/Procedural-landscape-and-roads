@@ -63,6 +63,11 @@ public class TunnelManager {
 			LOGGER.finer("First endpoint: " + firstEndpoint);
 			LOGGER.finer("Second endpoint: " + secondEndpoint);
 			
+			if(firstEndpoint == null || secondEndpoint == null) {
+				LOGGER.severe("Null endpoints: " + firstEndpoint + ", " + secondEndpoint);
+				continue;
+			}
+			
 			List<Vector3f> tunnelLeftTrajectory = new ArrayList<>();
 			List<Vector3f> tunnelRightTrajectory = new ArrayList<>();
 			List<Vector3f> tunnelCenterTrajectory = new ArrayList<>();

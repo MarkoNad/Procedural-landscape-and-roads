@@ -38,6 +38,18 @@ public class Point2Df {
 		
 		return new Point2Df(newX, newZ);
 	}
+	
+	public static float dot(Point2Df p1, Point2Df p2) {
+		return p1.x * p2.x + p1.z * p2.z;
+	}
+	
+	public float length() {
+		return (float) Math.hypot(x, z);
+	}
+	
+	public static float angle(Point2Df p1, Point2Df p2) {
+		return (float) Math.acos(dot(p1, p2) / (p1.length() * p2.length()));
+	}
 
 	@Override
 	public int hashCode() {
