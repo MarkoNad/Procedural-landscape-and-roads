@@ -47,12 +47,11 @@ import toolbox.Globals;
 import toolbox.Point2Df;
 import toolbox.Range;
 import toolbox.TriFunction;
+import toolbox.SamplerUtility.SamplingType;
 
 public class DebugScene2 {
 	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-	
-	private static Pathfinder pathfinder; // remove
-	
+
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
 		
@@ -129,11 +128,42 @@ public class DebugScene2 {
 		
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
-		Random random = new Random(0);
-		
-		//Optional<List<Vector3f>> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
-		//Optional<List<Vector3f>> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, false, 15f, 10, 8, 4500f, 6000f, 100, true, random);
-		Optional<List<Vector3f>> roadWaypoints = findPath(domainLowerLeftLimit, domainUpperRightLimit, heightGenerator, true, 15f, 10, 8, 4500f, 6000f, 100, true, random);
+
+		Pathfinder pathfinder = new Pathfinder(
+				new Point2Df(9500f, -5000f), // start,
+				new Point2Df(10000f, -22000f), // goal,
+				domainLowerLeftLimit,
+				domainUpperRightLimit,
+				heightGenerator,
+				100f, // cellsize
+				true, // allowTunnels
+				15f, // minimum tunnel depth
+				10, // endpointOffset
+				8, // maskOffset
+				4500f, // tunnelInnerRadius
+				6000f, // tunnelOuterRadius
+				100, // tunnelCandidates
+				true, // limitTunnelCandidates
+				new Random(0), // random,
+				3, // roadRange,
+				0.3, // maxRoadSlopePercent,
+				1.75, //maxRoadCurvature,
+				1.0, // roadLengthMultiplier,
+				80.0, // roadSlopeMultiplier,
+				10.0, // roadCurvatureMultiplier,
+				2.0, // roadSlopeExponent,
+				3.0, // roadCurvatureExponent,
+				0.25, // maxTunnelSlopePercent,
+				1.75, // maxTunnelCurvature,
+				10.0, // tunnelLengthMultiplier,
+				200.0, // tunnelSlopeMultiplier,
+				10.0, // tunnelCurvatureMultiplier,
+				2.0, // tunnelSlopeExponent,
+				3.0, // tunnelCurvatureExponent,
+				SamplingType.NEAREST_UNIQUE // roadSamplingType
+		);
+
+		Optional<List<Vector3f>> roadWaypoints = pathfinder.findWaypoints();
 		final float segmentLen = 1f;
 		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(segmentLen);
 		//Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.02f);
@@ -260,22 +290,6 @@ public class DebugScene2 {
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
 	}
 
-	private static Optional<List<Vector3f>> findPath(Point2Df domainLowerLeftLimit,
-			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
-			boolean allowTunnels, float minimalTunnelDepth, int endpointOffset,
-			int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
-			int tunnelCandidates, boolean limitTunnelCandidates, Random random) {
-		Point2Df start = new Point2Df(9500f, -5000f); // TODO
-		Point2Df goal = new Point2Df(10000f, -22000f); // TODO
-		float cellSize = 200f; // TODO
-		
-		pathfinder = new Pathfinder(start, goal, domainLowerLeftLimit, domainUpperRightLimit,
-				heightGenerator, cellSize, allowTunnels, minimalTunnelDepth, endpointOffset,
-				maskOffset, tunnelInnerRadius, tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates,
-				random);
-		return pathfinder.findWaypoints();
-	}
-	
 	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
 		ModelData data = OBJFileLoader.loadOBJ(objFile, false, true);
 		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(),

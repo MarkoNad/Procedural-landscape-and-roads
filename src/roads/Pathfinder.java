@@ -16,6 +16,7 @@ import terrains.IHeightGenerator;
 import toolbox.CatmullRomSpline;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
+import toolbox.SamplerUtility.SamplingType;
 
 public class Pathfinder {
 	
@@ -37,7 +38,13 @@ public class Pathfinder {
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
 			float cellSize, boolean allowTunnels, float minimalTunnelDepth,
 			int endpointOffset, int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
-			int tunnelCandidates, boolean limitTunnelCandidates, Random random) {
+			int tunnelCandidates, boolean limitTunnelCandidates, Random random, int roadRange,
+			double maxRoadSlopePercent, double maxRoadCurvature,
+			double roadLengthMultiplier, double roadSlopeMultiplier, double roadCurvatureMultiplier,
+			double roadSlopeExponent, double roadCurvatureExponent, double maxTunnelSlopePercent,
+			double maxTunnelCurvature, double tunnelLengthMultiplier, double tunnelSlopeMultiplier,
+			double tunnelCurvatureMultiplier, double tunnelSlopeExponent, double tunnelCurvatureExponent,
+			SamplingType roadSamplingType) {
 		this.heightGenerator = heightGenerator;
 		this.minimalTunnelDepth = minimalTunnelDepth;
 		this.endpointOffset = endpointOffset;
@@ -45,9 +52,31 @@ public class Pathfinder {
 		
 		this.searchProblem = new PathfindingProblem(start, goal, domainLowerLeftLimit,
 				domainUpperRightLimit, heightGenerator, cellSize, allowTunnels, tunnelInnerRadius,
-				tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates, random);
+				tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates, random, roadRange,
+				maxRoadSlopePercent, maxRoadCurvature,
+				roadLengthMultiplier, roadSlopeMultiplier, roadCurvatureMultiplier,
+				roadSlopeExponent, roadCurvatureExponent, maxTunnelSlopePercent,
+				maxTunnelCurvature, tunnelLengthMultiplier, tunnelSlopeMultiplier,
+				tunnelCurvatureMultiplier, tunnelSlopeExponent, tunnelCurvatureExponent,
+				roadSamplingType);
 		this.heuristics = setupHeuristics(goal);
 	}
+	
+//	public Pathfinder(Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
+//			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
+//			float cellSize, boolean allowTunnels, float minimalTunnelDepth,
+//			int endpointOffset, int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
+//			int tunnelCandidates, boolean limitTunnelCandidates, Random random) {
+//		this.heightGenerator = heightGenerator;
+//		this.minimalTunnelDepth = minimalTunnelDepth;
+//		this.endpointOffset = endpointOffset;
+//		this.maskOffset = maskOffset;
+//		
+//		this.searchProblem = new PathfindingProblem(start, goal, domainLowerLeftLimit,
+//				domainUpperRightLimit, heightGenerator, cellSize, allowTunnels, tunnelInnerRadius,
+//				tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates, random);
+//		this.heuristics = setupHeuristics(goal);
+//	}
 	
 	private IHeuristics<Point2Di> setupHeuristics(Point2Df goal) {
 		double goalY = heightGenerator.getHeightApprox(goal.getX(), goal.getZ());

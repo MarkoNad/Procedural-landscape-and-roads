@@ -15,8 +15,9 @@ import toolbox.SamplerUtility.SamplingType;
 public class PathfindingProblem implements IProblem<Point2Di> {
 	
 	private static final Logger LOGGER = Logger.getLogger(PathfindingProblem.class.getName());
-	//private static final float samplingDist = 50f;
-	private final float samplingDist; // TODO
+	// how many times height is sampled to determine if a road goes through mountain
+	private static final int tunnelSamples = 5;
+	private final float samplingDist;
 	
 	private final Point2Df origin;
 	private final Point2Di goal;
@@ -26,39 +27,77 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	private final boolean allowTunnels;
 
 	private final float cellSize;
-	private final int roadRange = 3;
-	//private final int roadRange = 4;
+	private final int roadRange;
 	private final float tunnelInnerRadius;
 	private final float tunnelOuterRadius;
 	private final int tunnelCandidates;
 	private final boolean limitTunnelCandidates;
 	private final Random random;
 
-	public PathfindingProblem(Point2Df origin, Point2Df goal, Point2Df domainLowerLeftLimit, 
-			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, float cellSize,
-			boolean allowTunnels, float tunnelInnerRadius, float tunnelOuterRadius,
-			int tunnelCandidates, boolean limitTunnelCandidates, Random random) {
+	// road parameters
+	private final double maxRoadSlopePercent; // in percentage
+	private final double maxRoadCurvature; // in radians
+	private final double roadLengthMultiplier;
+	private final double roadSlopeMultiplier;
+	private final double roadCurvatureMultiplier;
+	private final double roadSlopeExponent;
+	private final double roadCurvatureExponent;
+	
+	private final SamplingType roadSamplingType;
+	
+	// tunnel parameters
+	private final double maxTunnelSlopePercent; // in percentage
+	private final double maxTunnelCurvature; // in radians
+	private final double tunnelLengthMultiplier;
+	private final double tunnelSlopeMultiplier;
+	private final double tunnelCurvatureMultiplier;
+	private final double tunnelSlopeExponent;
+	private final double tunnelCurvatureExponent;
+
+	public PathfindingProblem(Point2Df origin, Point2Df goal, Point2Df domainLowerLeftLimit,
+			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, float cellSize, boolean allowTunnels,
+			 float tunnelInnerRadius, float tunnelOuterRadius, int tunnelCandidates,
+			boolean limitTunnelCandidates, Random random, int roadRange, double maxRoadSlopePercent, double maxRoadCurvature,
+			double roadLengthMultiplier, double roadSlopeMultiplier, double roadCurvatureMultiplier,
+			double roadSlopeExponent, double roadCurvatureExponent, double maxTunnelSlopePercent,
+			double maxTunnelCurvature, double tunnelLengthMultiplier, double tunnelSlopeMultiplier,
+			double tunnelCurvatureMultiplier, double tunnelSlopeExponent, double tunnelCurvatureExponent,
+			SamplingType roadSamplingType) {
 		this.origin = origin;
 		this.domainLowerLeftLimit = domainLowerLeftLimit;
 		this.domainUpperRightLimit = domainUpperRightLimit;
 		this.heightGenerator = heightGenerator;
-		//this.cellSize = cellSize;
-		this.cellSize = 100f;
-		//this.cellSize = 25f; // TODO hardcoded, + add road step
-		this.samplingDist = this.cellSize / 4f;
 		this.allowTunnels = allowTunnels;
+		this.cellSize = cellSize;
+		this.samplingDist = this.cellSize / (float)tunnelSamples;
+		this.roadRange = roadRange;
 		this.tunnelInnerRadius = tunnelInnerRadius;
 		this.tunnelOuterRadius = tunnelOuterRadius;
 		this.tunnelCandidates = tunnelCandidates;
 		this.limitTunnelCandidates = limitTunnelCandidates;
 		this.random = random;
+		this.maxRoadSlopePercent = maxRoadSlopePercent;
+		this.maxRoadCurvature = maxRoadCurvature;
+		this.roadLengthMultiplier = roadLengthMultiplier;
+		this.roadSlopeMultiplier = roadSlopeMultiplier;
+		this.roadCurvatureMultiplier = roadCurvatureMultiplier;
+		this.roadSlopeExponent = roadSlopeExponent;
+		this.roadCurvatureExponent = roadCurvatureExponent;
+		this.maxTunnelSlopePercent = maxTunnelSlopePercent;
+		this.maxTunnelCurvature = maxTunnelCurvature;
+		this.tunnelLengthMultiplier = tunnelLengthMultiplier;
+		this.tunnelSlopeMultiplier = tunnelSlopeMultiplier;
+		this.tunnelCurvatureMultiplier = tunnelCurvatureMultiplier;
+		this.tunnelSlopeExponent = tunnelSlopeExponent;
+		this.tunnelCurvatureExponent = tunnelCurvatureExponent;
+		this.roadSamplingType = roadSamplingType;
 		this.goal = realToGrid(goal);
 	}
-	
+
 	public float getCellSize() {
 		return cellSize;
 	}
-	
+
 	public Point2Df gridToReal(Point2Di gridPoint) {
 		float realX = origin.getX() + gridPoint.getX() * cellSize;
 		float realZ = origin.getZ() + gridPoint.getZ() * cellSize;
@@ -104,8 +143,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 	
 	private List<Point2Di> generateRoadCandidates(Point2Di p) {
-		return SamplerUtility.sampleSquare(p, roadRange, SamplingType.NEAREST_UNIQUE, true); // TODO
-		//return SamplerUtility.sampleSquare(p, roadRange, SamplingType.FARTHEST, true);
+		return SamplerUtility.sampleSquare(p, roadRange, roadSamplingType, true);
 	}
 	
 	private List<Point2Di> generateTunnelCandidates(Point2Di p, float cellSize, float innerRadius,
@@ -124,14 +162,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		}
 	}
 	
-	private double roadCost(Point2Di currentGP, Point2Di candidateGP, Optional<Point2Di> previousGP) {
-		//final double slopeThreshold = percentageToAngle(0.45);
-		//final double slopeThreshold = percentageToAngle(0.4);
-		final double slopeThreshold = percentageToAngle(0.3);
-		//final double angleThreshold = 2.1; // 120 degrees
-		//final double angleThreshold = 1.92; // 110 degrees
-		final double angleThreshold = 1.75; // 100 degrees
-		
+	private double roadCost(Point2Di currentGP, Point2Di candidateGP, Optional<Point2Di> previousGP) {		
 		Point2Df current = gridToReal(currentGP);
 		Point2Df candidate = gridToReal(candidateGP);
 		Optional<Point2Df> previous = previousGP.map(prevGP -> gridToReal(prevGP));
@@ -150,11 +181,11 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 				Math.pow(current.getX() - candidate.getX(), 2.0) + 
 				Math.pow(y1 - y2, 2.0) + 
 				Math.pow(current.getZ() - candidate.getZ(), 2.0));
-		double distanceCost = distance;
+		double distanceCost = distance * roadLengthMultiplier;
 
 		double slope = Math.asin(Math.abs(y2 - y1) / distance);
-		if(slope > slopeThreshold) return Double.POSITIVE_INFINITY;
-		double slopeCost = distance * Math.pow(slope, 2.0) * 80.0;
+		if(slope > percentageToAngle(maxRoadSlopePercent)) return Double.POSITIVE_INFINITY;
+		double slopeCost = distance * Math.pow(slope, roadSlopeExponent) * roadSlopeMultiplier;
 		
 //		System.out.format("distance: %10.2f, distance cost:  %10.2f\n", distance, distanceCost);
 //		System.out.format("slope:    %10.2f, slope cost:     %10.2f\n", Math.toDegrees(slope), slopeCost);
@@ -165,9 +196,9 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 			Point2Df direction2 = Point2Df.sub(candidate, current);
 
 			double angle = Point2Df.angle(direction1, direction2);
-			if(angle > angleThreshold) return Double.POSITIVE_INFINITY;
+			if(angle > maxRoadCurvature) return Double.POSITIVE_INFINITY;
 			
-			curvatureCost = Math.pow(angle, 3.0) * 10.0;
+			curvatureCost = Math.pow(angle, roadCurvatureExponent) * roadCurvatureMultiplier;
 			
 			//System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
 		}
@@ -183,13 +214,6 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 	
 	private double tunnelCost(Point2Di currentGP, Point2Di candidateGP, Optional<Point2Di> previousGP) {
-		//final double slopeThreshold = percentageToAngle(0.3);
-		final double slopeThreshold = percentageToAngle(0.25);
-		final double angleThreshold = 1.75; // 100 degrees
-		final double distanceMultiplier = 10.0;
-		final double slopeMultiplier = 200.0; // 80.0
-		final double curvatureMultiplier = 10.0;
-		
 		Point2Df current = gridToReal(currentGP);
 		Point2Df candidate = gridToReal(candidateGP);
 		Optional<Point2Df> previous = previousGP.map(prevGP -> gridToReal(prevGP));
@@ -212,11 +236,11 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 				Math.pow(current.getX() - candidate.getX(), 2.0) + 
 				Math.pow(y1 - y2, 2.0) + 
 				Math.pow(current.getZ() - candidate.getZ(), 2.0));
-		double distanceCost = distance * distanceMultiplier;
+		double distanceCost = distance * tunnelLengthMultiplier;
 
 		double slope = Math.asin(Math.abs(y2 - y1) / distance);
-		if(slope > slopeThreshold) return Double.POSITIVE_INFINITY;
-		double slopeCost = distance * Math.pow(slope, 2.0) * slopeMultiplier;
+		if(slope > percentageToAngle(maxTunnelSlopePercent)) return Double.POSITIVE_INFINITY;
+		double slopeCost = distance * Math.pow(slope, tunnelSlopeExponent) * tunnelSlopeMultiplier;
 		
 //		System.out.format("distance: %10.2f, distance cost:  %10.2f\n", distance, distanceCost);
 //		System.out.format("slope:    %10.2f, slope cost:     %10.2f\n", Math.toDegrees(slope), slopeCost);
@@ -227,9 +251,9 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 			Point2Df direction2 = Point2Df.sub(candidate, current);
 
 			double angle = Point2Df.angle(direction1, direction2);
-			if(angle > angleThreshold) return Double.POSITIVE_INFINITY;
+			if(angle > maxTunnelCurvature) return Double.POSITIVE_INFINITY;
 			
-			curvatureCost = Math.pow(angle, 3.0) * curvatureMultiplier;
+			curvatureCost = Math.pow(angle, tunnelCurvatureExponent) * tunnelCurvatureMultiplier;
 			
 			//System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
 		}
@@ -277,7 +301,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 			} else if(Math.abs(deltaZ) > 1e-6) {
 				fraction = Math.abs(z - lowerP.getZ()) / deltaZ;
 			} else {
-				LOGGER.severe("Tried to check if two same points are going through mountain.");
+				LOGGER.severe("Tried to check if two same points were going through mountain.");
 				return false;
 			}
 
