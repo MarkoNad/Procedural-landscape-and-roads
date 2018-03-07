@@ -1,7 +1,5 @@
 package roads;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -9,14 +7,16 @@ import java.util.logging.Logger;
 
 import search.IProblem;
 import terrains.IHeightGenerator;
-import toolbox.CircularCrownSampler;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
+import toolbox.SamplerUtility;
+import toolbox.SamplerUtility.SamplingType;
 
 public class PathfindingProblem implements IProblem<Point2Di> {
 	
 	private static final Logger LOGGER = Logger.getLogger(PathfindingProblem.class.getName());
-	private static final float samplingDist = 50f;
+	//private static final float samplingDist = 50f;
+	private static final float samplingDist = 25f; // TODO
 	
 	private final Point2Df origin;
 	private final Point2Di goal;
@@ -26,12 +26,12 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	private final boolean allowTunnels;
 
 	private final float cellSize;
+	private final int roadRange = 2;
 	private final float tunnelInnerRadius;
 	private final float tunnelOuterRadius;
 	private final int tunnelCandidates;
 	private final boolean limitTunnelCandidates;
 	private final Random random;
-	private final int step = 1;
 
 	public PathfindingProblem(Point2Df origin, Point2Df goal, Point2Df domainLowerLeftLimit, 
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, float cellSize,
@@ -42,7 +42,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		this.domainUpperRightLimit = domainUpperRightLimit;
 		this.heightGenerator = heightGenerator;
 		//this.cellSize = cellSize;
-		this.cellSize = 100f; // TODO
+		this.cellSize = 100f; // TODO hardcoded, + add road step
 		this.allowTunnels = allowTunnels;
 		this.tunnelInnerRadius = tunnelInnerRadius;
 		this.tunnelOuterRadius = tunnelOuterRadius;
@@ -69,7 +69,8 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 	
 	public float getMax2DRoadSize() {
-		return 2f * cellSize; // TODO update when neighborhood is defined for roads
+		//return 2f * cellSize; // TODO update when neighborhood is defined for roads
+		return (float) (roadRange * cellSize * Math.sqrt(2.0));
 	}
 
 	@Override
@@ -101,28 +102,19 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 	
 	private List<Point2Di> generateRoadCandidates(Point2Di p) {
-		return new ArrayList<>(Arrays.asList(
-				new Point2Di(p.getX(), p.getZ() - step),
-				new Point2Di(p.getX() + step, p.getZ() - step),
-				new Point2Di(p.getX() + step, p.getZ()),
-				new Point2Di(p.getX() + step, p.getZ() + step),
-				new Point2Di(p.getX(), p.getZ() + step),
-				new Point2Di(p.getX() - step, p.getZ() + step),
-				new Point2Di(p.getX() - step, p.getZ()),
-				new Point2Di(p.getX() - step, p.getZ() - step))
-			);
+		return SamplerUtility.sampleSquare(p, roadRange, SamplingType.NEAREST_UNIQUE, true);
 	}
 	
 	private List<Point2Di> generateTunnelCandidates(Point2Di p, float cellSize, float innerRadius,
 			float outerRadius, int tunnelCandidates, Random random) {
 		return limitTunnelCandidates ?
-				CircularCrownSampler.sample(p, innerRadius, outerRadius, cellSize, true, tunnelCandidates, random) :
-				CircularCrownSampler.sample(p, innerRadius, outerRadius, cellSize, true);
+				SamplerUtility.sampleCircularCrown(p, innerRadius, outerRadius, cellSize, true, tunnelCandidates, random) :
+				SamplerUtility.sampleCircularCrown(p, innerRadius, outerRadius, cellSize, true);
 	}
 
 	@Override
 	public double getTransitionCost(Point2Di current, Point2Di candidate, Optional<Point2Di> previous) {
-		if(Point2Df.distance(gridToReal(current), gridToReal(candidate)) <= getMax2DRoadSize()) {
+		if(Point2Df.distance(gridToReal(current), gridToReal(candidate)) <= getMax2DRoadSize() + 1e-6) {
 			return roadCost(current, candidate, previous);
 		} else {
 			return tunnelCost(current, candidate, previous);
@@ -157,8 +149,8 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		if(slope > slopeThreshold) return Double.POSITIVE_INFINITY;
 		double slopeCost = distance * Math.pow(slope, 2.0) * 80.0;
 		
-		System.out.format("distance: %10.2f, distance cost:  %10.2f\n", distance, distanceCost);
-		System.out.format("slope:    %10.2f, slope cost:     %10.2f\n", Math.toDegrees(slope), slopeCost);
+//		System.out.format("distance: %10.2f, distance cost:  %10.2f\n", distance, distanceCost);
+//		System.out.format("slope:    %10.2f, slope cost:     %10.2f\n", Math.toDegrees(slope), slopeCost);
 		
 		double curvatureCost = 0.0;
 		if(previous.isPresent()) {
@@ -170,10 +162,10 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 			
 			curvatureCost = Math.pow(angle, 3.0) * 10.0;
 			
-			System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
+			//System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
 		}
 		
-		System.out.println();
+//		System.out.println();
 		
 		double totalCost = distanceCost + slopeCost + curvatureCost;
 		return totalCost;

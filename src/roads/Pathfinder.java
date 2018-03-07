@@ -291,7 +291,7 @@ public class Pathfinder {
 			
 			float dist = Point2Df.distance(curr, next);
 
-			if(dist <= problem.getMax2DRoadSize()) {
+			if(dist <= problem.getMax2DRoadSize() + 1e-6) {
 				PathPoint currTP = new PathPoint(curr, false, nextIsEndpoint, false);
 				processed.add(currTP);
 				nextIsEndpoint = false;
