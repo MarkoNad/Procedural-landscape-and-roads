@@ -1,7 +1,9 @@
 package search;
 
+import java.util.Optional;
+
 public interface ISearchAlgorithm<S> {
 	
-	public Node<S> search();
+	public Optional<Node<S>> search();
 
 }

@@ -2,14 +2,15 @@ package search;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 public class Node<S> implements Comparable<Node<S>> {
 
 	protected final S state;
-	protected final Node<S> predecessor;
+	protected final Optional<Node<S>> predecessor;
 	protected final double cost;
 	
-	public Node(S state, Node<S> predecessor, double cost) {
+	public Node(S state, Optional<Node<S>> predecessor, double cost) {
 		this.state = state;
 		this.predecessor = predecessor;
 		this.cost = cost;
@@ -19,7 +20,7 @@ public class Node<S> implements Comparable<Node<S>> {
 		return state;
 	}
 	
-	public Node<S> getPredecessor() {
+	public Optional<Node<S>> getPredecessor() {
 		return predecessor;
 	}
 	
@@ -33,8 +34,8 @@ public class Node<S> implements Comparable<Node<S>> {
 		
 		Node<S> current = this;
 		
-		while(current.getPredecessor() != null) {
-			current = current.getPredecessor();
+		while(current.getPredecessor().isPresent()) {
+			current = current.getPredecessor().get();
 			path.addFirst(current.getState());
 		}
 		

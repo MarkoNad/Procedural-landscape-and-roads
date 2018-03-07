@@ -3,6 +3,7 @@ package search;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import org.junit.Test;
 
@@ -22,12 +23,7 @@ public class AStarTest {
 					new Point(state.x, state.y + 1)
 				);
 			}
-	
-			@Override
-			public double getTransitionCost(Point first, Point second) {
-				return Math.abs(first.x - second.x) + Math.abs(first.y - second.y);
-			}
-	
+
 			@Override
 			public boolean isGoal(Point state) {
 				return state.x == goal.x && state.y == goal.y;
@@ -37,13 +33,24 @@ public class AStarTest {
 			public Point getInitialState() {
 				return new Point(0, 0);
 			}
+
+			@Override
+			public double getTransitionCost(Point first, Point second, Optional<Point> firstsPredecessor) {
+				return Math.abs(first.x - second.x) + Math.abs(first.y - second.y);
+			}
+
+			@Override
+			public double getMaximumCost() {
+				return Double.POSITIVE_INFINITY;
+			}
 			
 		};
 	
 		AStar<Point> astar = new AStar<>(searchProblem, s -> 0.0);
-		Node<Point> result = astar.search();
+		Optional<Node<Point>> result = astar.search();
 		
-		assertEquals(result.getState(), goal);
+		assertTrue(result.isPresent());
+		assertEquals(result.get().getState(), goal);
 	}
 	
 	private static class Point {

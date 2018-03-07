@@ -1,6 +1,5 @@
 package engineTester;
 
-import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -8,12 +7,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.Random;
 import java.util.TreeMap;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -31,31 +30,28 @@ import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
+import roads.Pathfinder;
 import roads.Road;
-import search.AStar;
-import search.IProblem;
-import search.Node;
+import roads.TunnelManager;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import terrains.TerrainLODGrid;
-import terrains.TreePlacer;
 import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.Globals;
 import toolbox.Point2Df;
-import toolbox.PoissonDiskSampler;
-import toolbox.QueueProduct;
 import toolbox.Range;
 import toolbox.TriFunction;
+import toolbox.SamplerUtility.SamplingType;
 
 public class DebugScene2 {
 	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-	
+
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
 		
@@ -130,14 +126,53 @@ public class DebugScene2 {
 		};
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		
-		List<Vector3f> roadWaypoints = findPath(heightGenerator);
+		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
+		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
+
+		Pathfinder pathfinder = new Pathfinder(
+				new Point2Df(9500f, -5000f), // start,
+				new Point2Df(10000f, -22000f), // goal,
+				domainLowerLeftLimit,
+				domainUpperRightLimit,
+				heightGenerator,
+				100f, // cellsize
+				true, // allowTunnels
+				15f, // minimum tunnel depth
+				10, // endpointOffset
+				8, // maskOffset
+				4500f, // tunnelInnerRadius
+				6000f, // tunnelOuterRadius
+				100, // tunnelCandidates
+				true, // limitTunnelCandidates
+				new Random(0), // random,
+				3, // roadRange,
+				0.3, // maxRoadSlopePercent,
+				1.75, //maxRoadCurvature,
+				1.0, // roadLengthMultiplier,
+				80.0, // roadSlopeMultiplier,
+				10.0, // roadCurvatureMultiplier,
+				2.0, // roadSlopeExponent,
+				3.0, // roadCurvatureExponent,
+				0.25, // maxTunnelSlopePercent,
+				1.75, // maxTunnelCurvature,
+				10.0, // tunnelLengthMultiplier,
+				200.0, // tunnelSlopeMultiplier,
+				10.0, // tunnelCurvatureMultiplier,
+				2.0, // tunnelSlopeExponent,
+				3.0, // tunnelCurvatureExponent,
+				SamplingType.NEAREST_UNIQUE // roadSamplingType
+		);
+
+		Optional<List<Vector3f>> roadWaypoints = pathfinder.findWaypoints();
 		final float segmentLen = 1f;
-		Road roadRawModel = new Road(loader, roadWaypoints, 10, 20, segmentLen, 0.02f, heightGenerator, false);
-		Entity road = setupRoad(loader, heightGenerator, roadWaypoints, roadRawModel);
-		
-		final float modifierSegementLen = 1f;
-		List<Vector3f> modifierTrajectory = Road.generateTrajectory(roadWaypoints, modifierSegementLen, heightGenerator);
-		heightGenerator.updateHeight(modifierTrajectory, x -> x <= 10f ? 1f : 1 - Math.min((x - 10f) / 5f, 1f), 15f);
+		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(segmentLen);
+		//Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.02f);
+		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, segmentLen, 0.0f));
+		Optional<Entity> maybeRoadEntity = maybeRoad.map(road -> setupRoad(loader, heightGenerator, road));
+
+		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
+		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
+		pathfinder.findModifierTrajectories(-0.05f).ifPresent(modifiers -> modifiers.forEach(m -> heightGenerator.updateHeight(m, influenceFn, 15f)));
 		
 		float texWidth = 5f;
 		float texDepth = 5f;
@@ -146,24 +181,22 @@ public class DebugScene2 {
 		LOGGER.log(Level.FINE, "Terrain: " + terrainDuration + "s");
 		
 		float patchSize = 500f;
-		Point2Df domainLowerLeftLimit = new Point2Df(0f, 0f);
-		Point2Df domainUpperRightLimit = new Point2Df(14_000f, -14_000f);
 		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, texWidth, texDepth,
 				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
 				Optional.of(Globals.getThreadPool()));
 
-		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
-		PoissonDiskSampler sampler = new PoissonDiskSampler(0, 0, 14000, -14000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(0f, 0f));
+//		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
+//		PoissonDiskSampler sampler = new PoissonDiskSampler(0, -5000, 10000, -22000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(0f, -5000f));
 		
-		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
-		ExecutorService pool = Globals.getThreadPool();
-		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
+//		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
+//		ExecutorService pool = Globals.getThreadPool();
+		//BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
 
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		grid.addToGrid(locationsPerType, pool);
+		//grid.addToGrid(locationsPerType, pool);
 
 		//Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f);
-		Camera camera = new FloatingCamera(new Vector3f(100.0f, 1000.0f, -5000.0f));
+		Camera camera = new FloatingCamera(new Vector3f(10000.0f, 1000.0f, -5000.0f));
 		
 		List<Entity> nmEntites = new ArrayList<>();
 
@@ -203,6 +236,20 @@ public class DebugScene2 {
 		final float terrainLODTolerance = 200f;
 		
 		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
+		
+		Optional<List<Entity>> tunnelEndpoints = pathfinder.findTunnelsData()
+				.map(tdList -> tdList
+						.stream()
+						.flatMap(td -> Arrays.asList(td.getFirstEndpointLocation(), td.getSecondEndpointLocation()).stream())
+						.map(te -> new Entity(chestnutTrunk, te, 0f, 0f, 0f, 40f))
+						.collect(Collectors.toList()));
+		
+		Optional<List<Entity>> tunnelPartEntities = maybeRoad.map(road -> {
+			TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData().get(), 5, 1.0f, 50f,
+					50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
+			return tunnelManager.getAllTunnelEntities();
+		});
+
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
@@ -214,16 +261,19 @@ public class DebugScene2 {
 
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
 			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
-			//roadWaypoints.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, heightGenerator.getHeightApprox(p.x, p.z), p.z), 0f, 0f, 0f, 2f)));
+			roadWaypoints.ifPresent(wps -> wps.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, p.y, p.z), 0f, 0f, 0f, 20f))));
 			entities.add(chestnutEntityTrunk);
 			entities.add(chestnutEntityTop);
 			entities.add(cubeEntity);
 			entities.add(cubeEntity2);
 			
+			tunnelEndpoints.ifPresent(tes -> tes.forEach(te -> renderer.processEntity(te)));
+			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
+			
 			entities.forEach(e -> renderer.processEntity(e));
 			nmEntites.forEach(e -> renderer.processNMEntity(e));
 			terrains.forEach(t -> renderer.processTerrain(t));
-			renderer.processEntity(road);
+			maybeRoadEntity.ifPresent(roadEntity -> renderer.processEntity(roadEntity));
 			renderer.render(light, camera);
 			
 			DisplayManager.updateDisplay();
@@ -234,89 +284,12 @@ public class DebugScene2 {
 		DisplayManager.closeDisplay();
 	}
 	
-	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator,
-			List<Vector3f> waypoints, Road road) {
+	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator, Road road) {
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
 	}
 
-	private static List<Vector3f> findPath(IHeightGenerator heightGenerator) {
-		long start = System.nanoTime();
-		
-		IProblem<Point2Df> searchProblem = new IProblem<Point2Df>() {
-			private Point2Df end = new Point2Df(14000f, -14000f);
-			private final float step = 500f;
-			private final float tolerance = 1000f;
-			
-			@Override
-			public Iterable<Point2Df> getSuccessors(Point2Df state) {
-				return Arrays.asList(
-					new Point2Df(state.getX(), state.getZ() - step),
-					new Point2Df(state.getX() + step, state.getZ() - step),
-					new Point2Df(state.getX() + step, state.getZ()),
-					new Point2Df(state.getX() + step, state.getZ() + step),
-					new Point2Df(state.getX(), state.getZ() + step),
-					new Point2Df(state.getX() - step, state.getZ() + step),
-					new Point2Df(state.getX() - step, state.getZ()),
-					new Point2Df(state.getX() - step, state.getZ() - step)
-				);
-			}
-	
-			@Override
-			public double getTransitionCost(Point2Df p1, Point2Df p2) {
-				double totalCost = 0.0;
-
-				double y1 = heightGenerator.getHeightApprox(p1.getX(), p1.getZ());
-				double y2 = heightGenerator.getHeightApprox(p2.getX(), p2.getZ());
-				double distance = Math.sqrt(Math.pow(p1.getX() - p2.getX(), 2.0) + 
-						Math.pow(y1 - y2, 2.0) + Math.pow(p1.getZ() - p2.getZ(), 2.0));
-				double distanceCost = distance;
-				
-				Vector3f normal1 = heightGenerator.getNormalApprox(p1.getX(), p1.getZ());
-				Vector3f normal2 = heightGenerator.getNormalApprox(p2.getX(), p2.getZ());
-				double deltaSlope = Vector3f.angle(normal1, normal2);
-				double deltaSlopeCost = deltaSlope * 1000.0;
-				
-				double slope = Vector3f.angle(Globals.Y_AXIS, normal2);
-				double slopeCost = slope * 10_000.0;
-				
-				totalCost += distanceCost;
-				totalCost += deltaSlopeCost;
-				totalCost += slopeCost;
-				
-				return totalCost; 
-			}
-	
-			@Override
-			public boolean isGoal(Point2Df point) {
-				return Point2Df.distance(point, end) <= tolerance;
-			}
-	
-			@Override
-			public Point2Df getInitialState() {
-				return new Point2Df(0, 0);
-			}
-			
-		};
-		
-		AStar<Point2Df> astar = new AStar<>(searchProblem, s -> 0.0);
-		Node<Point2Df> goal = astar.search();
-		
-		double duration = (System.nanoTime() - start) * 1e-9;
-		LOGGER.log(Level.FINE, "Astar duration:" + duration);
-		
-		List<Vector3f> waypoints = new ArrayList<>();
-		
-		for(Point2Df point : goal.reconstructPath()) {
-			float height = heightGenerator.getHeightApprox(point.getX(), point.getZ());;
-			waypoints.add(new Vector3f(point.getX(), height, point.getZ()));
-			LOGGER.log(Level.FINER, "A star point: " + point.toString());
-		}
-		
-		return waypoints;
-	}
-	
 	private static TexturedModel load(String objFile, String pngFile, Loader loader) {
 		ModelData data = OBJFileLoader.loadOBJ(objFile, false, true);
 		RawModel model = loader.loadToVAO(data.getVertices(), data.getTextureCoords(),

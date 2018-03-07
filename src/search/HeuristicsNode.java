@@ -1,10 +1,12 @@
 package search;
 
+import java.util.Optional;
+
 public class HeuristicsNode<S> extends Node<S> {
 	
 	private final double estimatedTotalCost;
 
-	public HeuristicsNode(S state, Node<S> predecessor, double cost, double estimatedTotalCost) {
+	public HeuristicsNode(S state, Optional<Node<S>> predecessor, double cost, double estimatedTotalCost) {
 		super(state, predecessor, cost);
 		this.estimatedTotalCost = estimatedTotalCost;
 	}

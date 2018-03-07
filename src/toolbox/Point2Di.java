@@ -29,6 +29,10 @@ public class Point2Di {
 	public static float distance(Point2Di p1, Point2Di p2) {
 		return (float) Math.hypot(p1.x - p2.x, p1.z - p2.z);
 	}
+	
+	public static int l1Distance(Point2Di p1, Point2Di p2) {
+		return Math.abs(p1.x - p2.x) + Math.abs(p1.z - p2.z);
+	}
 
 	@Override
 	public int hashCode() {
