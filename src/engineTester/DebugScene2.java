@@ -33,6 +33,7 @@ import renderEngine.MasterRenderer;
 import roads.Pathfinder;
 import roads.Road;
 import roads.TunnelManager;
+import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.NoiseMap;
@@ -45,9 +46,10 @@ import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.Globals;
 import toolbox.Point2Df;
+import toolbox.Point2Di;
 import toolbox.Range;
-import toolbox.TriFunction;
 import toolbox.SamplerUtility.SamplingType;
+import toolbox.TriFunction;
 
 public class DebugScene2 {
 	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
@@ -130,6 +132,7 @@ public class DebugScene2 {
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
 
 		Pathfinder pathfinder = new Pathfinder(
+				AStar<Point2Di>::new, // algorithm
 				new Point2Df(9500f, -5000f), // start,
 				new Point2Df(10000f, -22000f), // goal,
 				domainLowerLeftLimit,

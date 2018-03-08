@@ -33,6 +33,7 @@ import renderEngine.MasterRenderer;
 import roads.Pathfinder;
 import roads.Road;
 import roads.TunnelManager;
+import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.NoiseMap;
@@ -46,6 +47,7 @@ import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.Globals;
 import toolbox.Point2Df;
+import toolbox.Point2Di;
 import toolbox.PoissonDiskSampler;
 import toolbox.QueueProduct;
 import toolbox.Range;
@@ -129,6 +131,7 @@ public class MountainScene {
 
 		// tunnels not allowed, only roads with max slope 0.15
 		Pathfinder pathfinder = new Pathfinder(
+				AStar<Point2Di>::new, // algorithm
 				new Point2Df(6000f, -21560f), // start,
 				new Point2Df(11580f, -7130f), // goal,
 				domainLowerLeftLimit,
