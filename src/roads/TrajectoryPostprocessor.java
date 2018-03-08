@@ -139,6 +139,10 @@ public class TrajectoryPostprocessor {
 							tunnelDatum.setSecondEndpointLocation(exitLocation);
 							tunnelDatum.setSecondEndpointOrientation(exitDirection);
 							tunnelDatum.setSecondEndpointMask(maskLocation);
+							
+							LOGGER.fine("Added data of tunnel with length: " +
+									Vector3f.sub(tunnelDatum.getFirstEndpointLocation(),
+											tunnelDatum.getSecondEndpointLocation(), null).length());
 						}
 
 						itp = initialTrajectory.get(++ti);

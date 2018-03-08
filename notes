@@ -19,3 +19,7 @@ TODO
 - Road::generateTrajectory replace default segment length with given one
 - fix infinite cells (don't traverse all of them)
 - max height
+
+
+
+logger: -Djava.util.logging.config.file=./logging.properties
