@@ -13,26 +13,25 @@ public class SamplerUtility {
 			throw new IllegalArgumentException("Cannot limit number of samples to less than 0.");
 		}
 		
-		int innerDist = (int) (innerRadius / cellSize);
-		int outerDist = (int) (outerRadius / cellSize);
-		
+		int outerDist = (int) Math.ceil(outerRadius / cellSize);
+
 		List<Point2Di> candidatePoints = new ArrayList<>();
 		
-		for(int z = center.getZ() - outerDist; z <= center.getZ() + outerDist; z++) {
-			for(int x = center.getX() - outerDist; x <= center.getX() + outerDist; x++) {
-				int distSquared = 
-						(center.getX() - x) *  (center.getX() - x) + 
-						(center.getZ() - z) *  (center.getZ() - z);
+		for(int z = -outerDist; z <= outerDist; z++) {
+			for(int x = -outerDist; x <= outerDist; x++) {
+				float realX = x * cellSize;
+				float realZ = z * cellSize;
+				float distSquared = realX * realX + realZ * realZ;
 				
-				if(distSquared > outerDist * outerDist) continue;
-				if(distSquared < innerDist * innerDist) continue;
-				if(avoidSameDirections && gcd(Math.abs(x), Math.abs(z)) != 1) continue; // TODO center to origin
-				
-				Point2Di tunnelPoint = new Point2Di(x, z);
+				if(distSquared > outerRadius * outerRadius) continue;
+				if(distSquared < innerRadius * innerRadius) continue;
+				if(avoidSameDirections && gcd(Math.abs(x), Math.abs(z)) != 1) continue;
+
+				Point2Di tunnelPoint = new Point2Di(center.getX() + x, center.getZ() + z);
 				candidatePoints.add(tunnelPoint);
 			}
 		}
-		
+
 		if(samples == -1) return candidatePoints;
 		return randomElements(candidatePoints, samples, random);
 	}

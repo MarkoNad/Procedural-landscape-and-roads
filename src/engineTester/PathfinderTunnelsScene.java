@@ -151,7 +151,7 @@ public class PathfinderTunnelsScene {
 				10.0, // roadCurvatureMultiplier,
 				2.0, // roadSlopeExponent,
 				3.0, // roadCurvatureExponent,
-				0.25, // maxTunnelSlopePercent,
+				0.22, // maxTunnelSlopePercent,
 				1.75, // maxTunnelCurvature,
 				1.0, // tunnelLengthMultiplier,
 				200.0, // tunnelSlopeMultiplier,
