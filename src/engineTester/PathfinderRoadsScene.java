@@ -13,7 +13,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -162,8 +161,7 @@ public class PathfinderRoadsScene {
 				SamplingType.FARTHEST // roadSamplingType
 		);
 
-		//final float segmentLen = 1f; // TODO
-		final float segmentLen = 0.1f;
+		final float segmentLen = 0.5f;
 		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(segmentLen);
 		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, segmentLen, 0.0f));
 		Optional<Entity> maybeRoadEntity = maybeRoad.map(road -> setupRoad(loader, heightGenerator, road));
@@ -191,14 +189,7 @@ public class PathfinderRoadsScene {
 		final float terrainLODTolerance = 200f;
 		
 		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
-		
-		Optional<List<Entity>> tunnelEndpoints = pathfinder.findTunnelsData()
-				.map(tdList -> tdList
-						.stream()
-						.flatMap(td -> Arrays.asList(td.getFirstEndpointLocation(), td.getSecondEndpointLocation()).stream())
-						.map(te -> new Entity(chestnutTrunk, te, 0f, 0f, 0f, 40f))
-						.collect(Collectors.toList()));
-		
+
 		Optional<List<Entity>> tunnelPartEntities = maybeRoad.map(road -> {
 			TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData().get(), 5, 1.0f, 50f,
 					50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
@@ -211,7 +202,6 @@ public class PathfinderRoadsScene {
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
 			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			
-			tunnelEndpoints.ifPresent(tes -> tes.forEach(te -> renderer.processEntity(te)));
 			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
 			
 			entities.forEach(e -> renderer.processEntity(e));
