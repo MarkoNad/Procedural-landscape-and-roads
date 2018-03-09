@@ -173,20 +173,26 @@ public class TrajectoryPostprocessor {
 			LOGGER.fine("Road segment body done.");
 		}
 	}
-
+	
 	private Vector3f tunnelBodyEnd(List<Vector3f> initialTrajectory, PathPoint3D entrance, PathPoint3D exit,
 			float minimalTunnelDepth, IHeightGenerator heightMap) {
+		int entranceIndex = -1;
 		int exitIndex = -1;
 		for(int i = 0; i < initialTrajectory.size(); i++) {
 			Vector3f itp = initialTrajectory.get(i);
+			if(samePoint(itp, entrance, EPS)) {
+				entranceIndex = i;
+			}
 			if(samePoint(itp, exit, EPS)) {
 				exitIndex = i;
 			}
 		}
+
+		if(exitIndex == -1) LOGGER.severe("Couldn't find tunnel exit in initial trajectory.");
+		if(entranceIndex == -1) LOGGER.severe("Couldn't find tunnel entrance in initial trajectory.");
+		if(entranceIndex == exitIndex) LOGGER.severe("Tunnel entrance and exit are the same trajectory point.");
 		
-		if(exitIndex == -1) LOGGER.severe("Couldn't find tunnel exit in initial trajectory");
-		
-		for(int i = exitIndex; i >= 0; i--) { // TODO go at most to entrance
+		for(int i = exitIndex; i >= entranceIndex; i--) {
 			Vector3f itp = initialTrajectory.get(i);
 			
 			float surfaceHeight = heightMap.getHeight(itp.x, itp.z);

@@ -55,7 +55,8 @@ public class Pathfinder {
 		this.maskOffset = maskOffset;
 		
 		this.searchProblem = new PathfindingProblem(start, goal, domainLowerLeftLimit,
-				domainUpperRightLimit, heightGenerator, cellSize, allowTunnels, tunnelInnerRadius,
+				domainUpperRightLimit, heightGenerator, cellSize, allowTunnels, minimalTunnelDepth,
+				tunnelInnerRadius,
 				tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates, random, roadRange,
 				maxRoadSlopePercent, maxRoadCurvature,
 				roadLengthMultiplier, roadSlopeMultiplier, roadCurvatureMultiplier,

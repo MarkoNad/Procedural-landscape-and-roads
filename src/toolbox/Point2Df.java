@@ -51,9 +51,9 @@ public class Point2Df {
 		float cosTheta = dot(p1, p2) / (p1.length() * p2.length());
 		
 		cosTheta = Math.min(cosTheta, 1.0f);
-		cosTheta = Math.max(cosTheta, 0.0f);
+		cosTheta = Math.max(cosTheta, -1.0f);
 
-		return cosTheta;
+		return (float) Math.acos(cosTheta);
 	}
 
 	@Override

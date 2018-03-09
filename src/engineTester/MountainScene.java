@@ -167,6 +167,7 @@ public class MountainScene {
 		
 		// tunnels not allowed and max road slope - 0.1 - can't create roads on this terrain
 //		Pathfinder pathfinder = new Pathfinder(
+//				AStar<Point2Di>::new, // algorithm
 //				new Point2Df(6000f, -21560f), // start,
 //				new Point2Df(11580f, -7130f), // goal,
 //				domainLowerLeftLimit,
@@ -202,6 +203,7 @@ public class MountainScene {
 
 		// tunnels allowed
 //		Pathfinder pathfinder = new Pathfinder(
+//				AStar<Point2Di>::new, // algorithm
 //				new Point2Df(6000f, -21560f), // start,
 //				new Point2Df(11580f, -7130f), // goal,
 //				domainLowerLeftLimit,
