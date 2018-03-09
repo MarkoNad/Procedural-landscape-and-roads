@@ -80,4 +80,9 @@ public class AStar<S> implements ISearchAlgorithm<S> {
 		
 		return Optional.empty();
 	}
+
+	@Override
+	public String getName() {
+		return "A Star";
+	}
 }

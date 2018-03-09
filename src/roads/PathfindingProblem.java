@@ -30,6 +30,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	private final int roadRange;
 	private final float tunnelInnerRadius;
 	private final float tunnelOuterRadius;
+	private final float minimalTunnelDepth;
 	private final int tunnelCandidates;
 	private final boolean limitTunnelCandidates;
 	private final Random random;
@@ -56,7 +57,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 
 	public PathfindingProblem(Point2Df origin, Point2Df goal, Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, float cellSize, boolean allowTunnels,
-			 float tunnelInnerRadius, float tunnelOuterRadius, int tunnelCandidates,
+			float minimalTunnelDepth, float tunnelInnerRadius, float tunnelOuterRadius, int tunnelCandidates,
 			boolean limitTunnelCandidates, Random random, int roadRange, double maxRoadSlopePercent, double maxRoadCurvature,
 			double roadLengthMultiplier, double roadSlopeMultiplier, double roadCurvatureMultiplier,
 			double roadSlopeExponent, double roadCurvatureExponent, double maxTunnelSlopePercent,
@@ -73,6 +74,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		this.roadRange = roadRange;
 		this.tunnelInnerRadius = tunnelInnerRadius;
 		this.tunnelOuterRadius = tunnelOuterRadius;
+		this.minimalTunnelDepth = minimalTunnelDepth;
 		this.tunnelCandidates = tunnelCandidates;
 		this.limitTunnelCandidates = limitTunnelCandidates;
 		this.random = random;
@@ -199,13 +201,12 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 			if(angle > maxRoadCurvature) return Double.POSITIVE_INFINITY;
 			
 			curvatureCost = Math.pow(angle, roadCurvatureExponent) * roadCurvatureMultiplier;
-			
-			//System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
+//			System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
 		}
-		
-//		System.out.println();
-		
+
 		double totalCost = distanceCost + slopeCost + curvatureCost;
+		if(Double.isNaN(totalCost)) LOGGER.severe("Cost is NaN.");
+		
 		return totalCost;
 	}
 	
@@ -228,7 +229,8 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		double y1 = heightGenerator.getHeightApprox(current.getX(), current.getZ());
 		double y2 = heightGenerator.getHeightApprox(candidate.getX(), candidate.getZ());
 		
-		if(!goesThroughMountain(current, candidate, (float)y1, (float)y2, samplingDist, heightGenerator)) {
+		if(!goesThroughMountain(current, candidate, (float)y1, (float)y2, samplingDist,
+				heightGenerator, minimalTunnelDepth)) {
 			return Double.POSITIVE_INFINITY;
 		}
 		
@@ -241,10 +243,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		double slope = Math.asin(Math.abs(y2 - y1) / distance);
 		if(slope > percentageToAngle(maxTunnelSlopePercent)) return Double.POSITIVE_INFINITY;
 		double slopeCost = distance * Math.pow(slope, tunnelSlopeExponent) * tunnelSlopeMultiplier;
-		
-//		System.out.format("distance: %10.2f, distance cost:  %10.2f\n", distance, distanceCost);
-//		System.out.format("slope:    %10.2f, slope cost:     %10.2f\n", Math.toDegrees(slope), slopeCost);
-		
+
 		double curvatureCost = 0.0;
 		if(previous.isPresent()) {
 			Point2Df direction1 = Point2Df.sub(current, previous.get());
@@ -254,18 +253,14 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 			if(angle > maxTunnelCurvature) return Double.POSITIVE_INFINITY;
 			
 			curvatureCost = Math.pow(angle, tunnelCurvatureExponent) * tunnelCurvatureMultiplier;
-			
-			//System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
 		}
-		
-//		System.out.println();
-		
+
 		double totalCost = distanceCost + slopeCost + curvatureCost;
 		return totalCost;
 	}
 
 	private boolean goesThroughMountain(Point2Df p1, Point2Df p2, float y1, float y2,
-			float samplingDist, IHeightGenerator heightMap) {
+			float samplingDist, IHeightGenerator heightMap, float minimalTunnelDepth) {
 		Point2Df direction = Point2Df.sub(p2, p1);
 		direction = Point2Df.normalize(direction);
 		
@@ -288,13 +283,13 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		
 		final float deltaX = Math.abs(p2.getX() - p1.getX());
 		final float deltaZ = Math.abs(p2.getZ() - p1.getZ());
+		
+		boolean atLeastOnePointWithSufficientDepth = false;
 
 		for(int i = 0; i < samples; i++) {
 			float x = p1.getX() + direction.getX() * samplingDist * (i + 1);
 			float z = p1.getZ() + direction.getZ() * samplingDist * (i + 1);
 
-			float sampleHeight = heightMap.getHeightApprox(x, z);
-			
 			float fraction;
 			if(Math.abs(deltaX) > 1e-6) {
 				fraction = Math.abs(x - lowerP.getX()) / deltaX;
@@ -307,10 +302,14 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 
 			float minAllowedHeight = lowerY + (higherY - lowerY) * fraction;
 			
+			float sampleHeight = heightMap.getHeightApprox(x, z);
+			float depth = sampleHeight - minAllowedHeight;
+			
 			if(sampleHeight <= minAllowedHeight) return false;
+			atLeastOnePointWithSufficientDepth |= depth + 1e-6 >= minimalTunnelDepth;
 		}
 		
-		return true;
+		return atLeastOnePointWithSufficientDepth; // TODO perhaps more points needs to have sufficient depth
 	}
 
 }

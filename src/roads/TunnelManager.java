@@ -62,6 +62,7 @@ public class TunnelManager {
 			
 			LOGGER.finer("First endpoint: " + firstEndpoint);
 			LOGGER.finer("Second endpoint: " + secondEndpoint);
+			LOGGER.finer("Tunnel datum: " + tunnelDatum);
 			
 			if(firstEndpoint == null || secondEndpoint == null) {
 				LOGGER.severe("Null endpoints: " + firstEndpoint + ", " + secondEndpoint);

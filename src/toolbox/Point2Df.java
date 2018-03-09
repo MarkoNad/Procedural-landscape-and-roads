@@ -48,7 +48,12 @@ public class Point2Df {
 	}
 	
 	public static float angle(Point2Df p1, Point2Df p2) {
-		return (float) Math.acos(dot(p1, p2) / (p1.length() * p2.length()));
+		float cosTheta = dot(p1, p2) / (p1.length() * p2.length());
+		
+		cosTheta = Math.min(cosTheta, 1.0f);
+		cosTheta = Math.max(cosTheta, -1.0f);
+
+		return (float) Math.acos(cosTheta);
 	}
 
 	@Override

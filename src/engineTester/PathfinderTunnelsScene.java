@@ -33,6 +33,7 @@ import renderEngine.MasterRenderer;
 import roads.Pathfinder;
 import roads.Road;
 import roads.TunnelManager;
+import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.NoiseMap;
@@ -46,6 +47,7 @@ import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 import toolbox.Globals;
 import toolbox.Point2Df;
+import toolbox.Point2Di;
 import toolbox.PoissonDiskSampler;
 import toolbox.QueueProduct;
 import toolbox.Range;
@@ -127,7 +129,43 @@ public class PathfinderTunnelsScene {
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
 
+//		Pathfinder pathfinder = new Pathfinder(
+//				AStar<Point2Di>::new, // algorithm
+//				new Point2Df(9500f, -5000f), // start,
+//				new Point2Df(10000f, -22000f), // goal,
+//				domainLowerLeftLimit,
+//				domainUpperRightLimit,
+//				heightGenerator,
+//				100f, // cellSize
+//				true, // allowTunnels
+//				15f, // minimum tunnel depth
+//				10, // endpointOffset
+//				8, // maskOffset
+//				4500f, // tunnelInnerRadius
+//				6000f, // tunnelOuterRadius
+//				100, // tunnelCandidates
+//				true, // limitTunnelCandidates
+//				new Random(0), // random,
+//				3, // roadRange,
+//				0.3, // maxRoadSlopePercent,
+//				1.75, //maxRoadCurvature,
+//				1.0, // roadLengthMultiplier,
+//				80.0, // roadSlopeMultiplier,
+//				10.0, // roadCurvatureMultiplier,
+//				2.0, // roadSlopeExponent,
+//				3.0, // roadCurvatureExponent,
+//				0.22, // maxTunnelSlopePercent,
+//				1.75, // maxTunnelCurvature,
+//				1.0, // tunnelLengthMultiplier,
+//				200.0, // tunnelSlopeMultiplier,
+//				10.0, // tunnelCurvatureMultiplier,
+//				2.0, // tunnelSlopeExponent,
+//				3.0, // tunnelCurvatureExponent,
+//				SamplingType.NEAREST_UNIQUE // roadSamplingType
+//		);
+		
 		Pathfinder pathfinder = new Pathfinder(
+				AStar<Point2Di>::new, // algorithm
 				new Point2Df(9500f, -5000f), // start,
 				new Point2Df(10000f, -22000f), // goal,
 				domainLowerLeftLimit,
@@ -151,7 +189,7 @@ public class PathfinderTunnelsScene {
 				10.0, // roadCurvatureMultiplier,
 				2.0, // roadSlopeExponent,
 				3.0, // roadCurvatureExponent,
-				0.22, // maxTunnelSlopePercent,
+				0.25, // maxTunnelSlopePercent,
 				1.75, // maxTunnelCurvature,
 				1.0, // tunnelLengthMultiplier,
 				200.0, // tunnelSlopeMultiplier,

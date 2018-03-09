@@ -23,3 +23,13 @@ TODO
 
 
 logger: -Djava.util.logging.config.file=./logging.properties
+
+
+
+
+
+IMPORTANT
+goesThroughMountainDetection perhaps need to be done with more than
+one point that has at least minimal tunnel depth. It is possible that
+too much is excavated, even that entrance and exit are the same point, 
+and everything else is excavated.
