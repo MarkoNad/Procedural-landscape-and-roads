@@ -199,12 +199,9 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 			if(angle > maxRoadCurvature) return Double.POSITIVE_INFINITY;
 			
 			curvatureCost = Math.pow(angle, roadCurvatureExponent) * roadCurvatureMultiplier;
-			
-			//System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
+//			System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
 		}
-		
-//		System.out.println();
-		
+
 		double totalCost = distanceCost + slopeCost + curvatureCost;
 		return totalCost;
 	}
@@ -241,10 +238,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 		double slope = Math.asin(Math.abs(y2 - y1) / distance);
 		if(slope > percentageToAngle(maxTunnelSlopePercent)) return Double.POSITIVE_INFINITY;
 		double slopeCost = distance * Math.pow(slope, tunnelSlopeExponent) * tunnelSlopeMultiplier;
-		
-//		System.out.format("distance: %10.2f, distance cost:  %10.2f\n", distance, distanceCost);
-//		System.out.format("slope:    %10.2f, slope cost:     %10.2f\n", Math.toDegrees(slope), slopeCost);
-		
+
 		double curvatureCost = 0.0;
 		if(previous.isPresent()) {
 			Point2Df direction1 = Point2Df.sub(current, previous.get());
@@ -254,12 +248,8 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 			if(angle > maxTunnelCurvature) return Double.POSITIVE_INFINITY;
 			
 			curvatureCost = Math.pow(angle, tunnelCurvatureExponent) * tunnelCurvatureMultiplier;
-			
-			//System.out.format("angle:    %10.2f, curvature cost: %10.2f\n", Math.toDegrees(angle), curvatureCost);
 		}
-		
-//		System.out.println();
-		
+
 		double totalCost = distanceCost + slopeCost + curvatureCost;
 		return totalCost;
 	}
@@ -307,7 +297,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 
 			float minAllowedHeight = lowerY + (higherY - lowerY) * fraction;
 			
-			if(sampleHeight <= minAllowedHeight) return false;
+			if(sampleHeight <= minAllowedHeight) return false; // TODO add minimal tunnel depth
 		}
 		
 		return true;

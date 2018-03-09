@@ -186,7 +186,7 @@ public class TrajectoryPostprocessor {
 		
 		if(exitIndex == -1) LOGGER.severe("Couldn't find tunnel exit in initial trajectory");
 		
-		for(int i = exitIndex; i >= 0; i--) {
+		for(int i = exitIndex; i >= 0; i--) { // TODO go at most to entrance
 			Vector3f itp = initialTrajectory.get(i);
 			
 			float surfaceHeight = heightMap.getHeight(itp.x, itp.z);

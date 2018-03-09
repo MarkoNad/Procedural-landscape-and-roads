@@ -17,8 +17,8 @@ public class HeuristicsNode<S> extends Node<S> {
 	
 	@Override
 	public String toString() {
-		return String.format("state: %s, cost: %f, estimated total cost: %f", 
-				state, cost, estimatedTotalCost);
+		return String.format("state: %s, cost: %f, estimated total cost: %f, predecessor: %s", 
+				state, cost, estimatedTotalCost, predecessor);
 	}
 
 }

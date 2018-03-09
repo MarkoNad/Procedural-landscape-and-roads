@@ -33,7 +33,7 @@ import renderEngine.MasterRenderer;
 import roads.Pathfinder;
 import roads.Road;
 import roads.TunnelManager;
-import search.AStar;
+import search.GreedyBestFirstSearch;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.NoiseMap;
@@ -132,7 +132,7 @@ public class DebugScene2 {
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
 
 		Pathfinder pathfinder = new Pathfinder(
-				AStar<Point2Di>::new, // algorithm
+				GreedyBestFirstSearch<Point2Di>::new, //AStar<Point2Di>::new, // algorithm
 				new Point2Df(9500f, -5000f), // start,
 				new Point2Df(10000f, -22000f), // goal,
 				domainLowerLeftLimit,

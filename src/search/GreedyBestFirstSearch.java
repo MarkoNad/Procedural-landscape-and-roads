@@ -6,22 +6,15 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 public class GreedyBestFirstSearch<S> implements ISearchAlgorithm<S> {
-
+	
 	private final IProblem<S> problem;
 	private final IHeuristics<S> heuristics;
 	
 	public GreedyBestFirstSearch(IProblem<S> problem, IHeuristics<S> heuristics) {
-		if(problem == null) {
-			throw new IllegalArgumentException("Problem definition cannot be null.");
-		}
-		if(heuristics == null) {
-			throw new IllegalArgumentException("Heuristics cannot be null.");
-		}
-		
 		this.problem = problem;
 		this.heuristics = heuristics;
 	}
-	
+
 	@Override
 	public Optional<Node<S>> search() {
 		PriorityQueue<Node<S>> openQueue = new PriorityQueue<>(
@@ -39,24 +32,26 @@ public class GreedyBestFirstSearch<S> implements ISearchAlgorithm<S> {
 		
 		while(!openQueue.isEmpty()) {
 			Node<S> current = openQueue.remove();
-			
+
 			if(problem.isGoal(current.getState())) {
 				return Optional.of(current);
 			}
-			
-			if(current.getCost() + 1e-6 >= problem.getMaximumCost()) {
-				continue;
-			}
-			
+
 			closedStates.add(current.getState());
 			
 			for(S successor : problem.getSuccessors(current.getState())) {
-				if(closedStates.contains(successor)) continue;
+				if(closedStates.contains(successor)) {
+					continue;
+				}
 				
 				double transitionCost = problem.getTransitionCost(
 						current.getState(),
 						successor,
 						current.getPredecessor().map(node -> node.getState()));
+				
+				if(transitionCost + 1e-6 >= problem.getMaximumCost()) {
+					continue;
+				}
 				
 				Node<S> succNode = new HeuristicsNode<>(
 						successor,
@@ -75,5 +70,4 @@ public class GreedyBestFirstSearch<S> implements ISearchAlgorithm<S> {
 	public String getName() {
 		return "Greedy best-first";
 	}
-
 }
