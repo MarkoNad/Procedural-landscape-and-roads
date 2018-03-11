@@ -1,5 +1,6 @@
 package engineTester;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,6 +10,9 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,6 +44,7 @@ import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import terrains.TerrainLODGrid;
+import terrains.TreePlacer;
 import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
@@ -47,6 +52,8 @@ import textures.TerrainTexturePack;
 import toolbox.Globals;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
+import toolbox.PoissonDiskSampler;
+import toolbox.QueueProduct;
 import toolbox.Range;
 import toolbox.SamplerUtility.SamplingType;
 import toolbox.TriFunction;
@@ -133,7 +140,7 @@ public class DebugScene2 {
 
 		Pathfinder pathfinder = new Pathfinder(
 				AStar<Point2Di>::new, // algorithm
-				//GreedyBestFirstSearch<Point2Di>::new, //AStar<Point2Di>::new, // algorithm
+				//GreedyBestFirstSearch<Point2Di>::new, // algorithm
 				new Point2Df(9500f, -5000f), // start,
 				new Point2Df(10000f, -22000f), // goal,
 				domainLowerLeftLimit,
@@ -189,15 +196,16 @@ public class DebugScene2 {
 				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
 				Optional.of(Globals.getThreadPool()));
 
-//		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
-//		PoissonDiskSampler sampler = new PoissonDiskSampler(0, -5000, 10000, -22000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(0f, -5000f));
+		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
+		PoissonDiskSampler sampler = new PoissonDiskSampler(0, -5000, 10000, -22000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(10000f, -5000f));
 		
-//		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
-//		ExecutorService pool = Globals.getThreadPool();
-		//BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
+		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
+		pathfinder.findModifierTrajectories(0.0f).ifPresent(ts -> ts.forEach(t -> placer.addNoTreeZone(t, 7.0f)));
+		ExecutorService pool = Globals.getThreadPool();
+		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
 
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
-		//grid.addToGrid(locationsPerType, pool);
+		grid.addToGrid(locationsPerType, pool);
 
 		//Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f);
 		Camera camera = new FloatingCamera(new Vector3f(10000.0f, 1000.0f, -5000.0f));

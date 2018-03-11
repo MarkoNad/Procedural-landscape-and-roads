@@ -10,6 +10,10 @@ public class Point2Di {
 		this.z = z;
 	}
 	
+	public Point2Di() {
+		this(0, 0);
+	}
+	
 	public int getX() {
 		return x;
 	}
