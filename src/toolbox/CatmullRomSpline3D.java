@@ -47,7 +47,6 @@ public class CatmullRomSpline3D extends AbstractSpline<Vector3f> {
 			// edge point is not included
 			for(int i = 0; i < npoints - 1; i++) {
 				float t = i / (float)(npoints - 1);
-				
 				float t2 = t * t;
 				float t3 = t2 * t;
 				

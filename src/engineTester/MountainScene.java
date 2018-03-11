@@ -45,6 +45,7 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.CatmullRomSpline3D;
 import toolbox.Globals;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
@@ -100,8 +101,8 @@ public class MountainScene {
 		
 		// terrain setup
 		NavigableMap<Float, Integer> distanceToLODLevel = new TreeMap<>();
-		distanceToLODLevel.put(2000f, 0);
-		distanceToLODLevel.put(5000f, 1);
+		distanceToLODLevel.put(3000f, 0);
+		distanceToLODLevel.put(10000f, 1);
 		distanceToLODLevel.put(20000f, 2);
 		
 		Map<Integer, Float> lodLevelToVertsPerUnit = new HashMap<>();
@@ -132,6 +133,7 @@ public class MountainScene {
 		// tunnels not allowed, only roads with max slope 0.15
 		Pathfinder pathfinder = new Pathfinder(
 				AStar<Point2Di>::new, // algorithm
+				CatmullRomSpline3D::new, // spline
 				new Point2Df(6000f, -21560f), // start,
 				new Point2Df(11580f, -7130f), // goal,
 				domainLowerLeftLimit,
@@ -168,6 +170,7 @@ public class MountainScene {
 		// tunnels not allowed and max road slope - 0.1 - can't create roads on this terrain
 //		Pathfinder pathfinder = new Pathfinder(
 //				AStar<Point2Di>::new, // algorithm
+//				CatmullRomSpline3D::new, // spline
 //				new Point2Df(6000f, -21560f), // start,
 //				new Point2Df(11580f, -7130f), // goal,
 //				domainLowerLeftLimit,
@@ -204,6 +207,7 @@ public class MountainScene {
 		// tunnels allowed
 //		Pathfinder pathfinder = new Pathfinder(
 //				AStar<Point2Di>::new, // algorithm
+//				CatmullRomSpline3D::new, // spline
 //				new Point2Df(6000f, -21560f), // start,
 //				new Point2Df(11580f, -7130f), // goal,
 //				domainLowerLeftLimit,
@@ -239,7 +243,7 @@ public class MountainScene {
 
 		final float segmentLen = 1f;
 		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(segmentLen);
-		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, segmentLen, 0.0f));
+		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, 0.0f));
 		Optional<Entity> maybeRoadEntity = maybeRoad.map(road -> setupRoad(loader, heightGenerator, road));
 
 		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
@@ -261,6 +265,7 @@ public class MountainScene {
 				new Point2D.Float(camera.getPosition().x, camera.getPosition().z));
 		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
+		pathfinder.findModifierTrajectories(0.0f).ifPresent(ts -> ts.forEach(t -> placer.addNoTreeZone(t, 7.0f)));
 		ExecutorService pool = Globals.getThreadPool();
 		BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>> locationsPerType = placer.computeLocationsInBackground(pool);
 

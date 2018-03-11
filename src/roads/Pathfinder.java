@@ -15,7 +15,7 @@ import search.IProblem;
 import search.ISearchAlgorithm;
 import search.Node;
 import terrains.IHeightGenerator;
-import toolbox.CatmullRomSpline3D;
+import toolbox.AbstractSpline;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
 import toolbox.SamplerUtility.SamplingType;
@@ -33,11 +33,13 @@ public class Pathfinder {
 	private final int endpointOffset;
 	private final int maskOffset;
 	private TrajectoryPostprocessor trajectoryPostprocessor;
+	private final BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier;
 	
 	Optional<List<PathPoint3D>> waypointsCache = null;
 	Optional<List<Vector3f>> trajectoryCache = null;
 	
 	public Pathfinder(BiFunction<IProblem<Point2Di>, IHeuristics<Point2Di>, ISearchAlgorithm<Point2Di>> algorithmSupplier,
+			BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier,
 			Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
 			float cellSize, boolean allowTunnels, float minimalTunnelDepth,
@@ -53,6 +55,7 @@ public class Pathfinder {
 		this.minimalTunnelDepth = minimalTunnelDepth;
 		this.endpointOffset = endpointOffset;
 		this.maskOffset = maskOffset;
+		this.splineSupplier = splineSupplier;
 		
 		this.searchProblem = new PathfindingProblem(start, goal, domainLowerLeftLimit,
 				domainUpperRightLimit, heightGenerator, cellSize, allowTunnels, minimalTunnelDepth,
@@ -145,7 +148,7 @@ public class Pathfinder {
 		
 		List<Vector3f> waypoints = maybeWaypoints.get();
 		
-		CatmullRomSpline3D curve = new CatmullRomSpline3D(waypoints, segmentLength);
+		AbstractSpline<Vector3f> curve = splineSupplier.apply(waypoints, segmentLength);
 		List<Vector3f> trajectory = curve.getPointsCopy();
 		
 		trajectoryPostprocessor = new TrajectoryPostprocessor(trajectory, waypointsCache.get(),
@@ -153,7 +156,7 @@ public class Pathfinder {
 		
 		return Optional.of(trajectoryPostprocessor.getCorrectedTrajectory());
 	}
-	
+
 	public Optional<List<List<Vector3f>>> findModifierTrajectories(float offset) {
 		if(trajectoryPostprocessor == null) return Optional.empty();
 		

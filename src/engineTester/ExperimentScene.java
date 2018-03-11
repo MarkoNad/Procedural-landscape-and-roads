@@ -117,7 +117,7 @@ public class ExperimentScene {
 		waypoints.add(new Vector3f(500, 0, -1000));
 		waypoints.add(new Vector3f(0, 0, -1000));
 		waypoints.add(new Vector3f(-500, 0, -1500));
-		Road road = new Road(loader, waypoints, 250, 200, 50, 7, heightGenerator, true);
+		Road road = new Road(loader, waypoints, 250, 200, 50, 7, heightGenerator, true, CatmullRomSpline3D::new);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		
@@ -152,7 +152,7 @@ public class ExperimentScene {
 		waypoints2.add(new Vector3f(10500, 0, -500));
 		waypoints2.add(new Vector3f(10500, 0, -100));
 		waypoints2.add(new Vector3f(10500, 0, 0));
-		Road road2 = new Road(loader, waypoints2, 250, 200, 100, 7f, heightGenerator, true);
+		Road road2 = new Road(loader, waypoints2, 250, 200, 100, 7f, heightGenerator, true, CatmullRomSpline3D::new);
 		TexturedModel roadTM2 = new TexturedModel(road2.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM2.getTexture().setHasTransparency(true);
 		Entity road2Entity = new Entity(roadTM2, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
