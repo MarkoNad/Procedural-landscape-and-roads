@@ -1,10 +1,12 @@
 package terrains;
 
 import java.awt.geom.Point2D;
+import java.awt.geom.Point2D.Float;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -13,6 +15,9 @@ import java.util.logging.Logger;
 
 import org.lwjgl.util.vector.Vector3f;
 
+import toolbox.GriddedTrajectory;
+import toolbox.GriddedTrajectory.TrajectoryPoint;
+import toolbox.Point2Di;
 import toolbox.PoissonDiskSampler;
 import toolbox.QueueProduct;
 import toolbox.Sampler;
@@ -28,14 +33,27 @@ public class TreePlacer {
 	
 	private static final int BATCH_SIZE = 1000;
 
-	private IHeightGenerator heightMap;
-	private BiomesMap biomesMap;
-	private Sampler sampler;
-
-	public TreePlacer(IHeightGenerator heightMap, BiomesMap biomesMap, Sampler sampler) {
+	private final IHeightGenerator heightMap;
+	private final BiomesMap biomesMap;
+	private final Sampler sampler;
+	private final boolean usePreciseHeight;
+	private List<GriddedTrajectory> noTreeZones;
+	
+	public TreePlacer(IHeightGenerator heightMap, BiomesMap biomesMap, Sampler sampler,
+			boolean usePreciseHeight) {
 		this.heightMap = heightMap;
 		this.biomesMap = biomesMap;
 		this.sampler = sampler;
+		this.usePreciseHeight = usePreciseHeight;
+		noTreeZones = new ArrayList<>();
+	}
+
+	public TreePlacer(IHeightGenerator heightMap, BiomesMap biomesMap, Sampler sampler) {
+		this(heightMap, biomesMap, sampler, true);
+	}
+
+	public void addNoTreeZone(List<Vector3f> trajectory, float width) {
+		noTreeZones.add(new GriddedTrajectory(trajectory, width));
 	}
 	
 	public BlockingQueue<QueueProduct<Map<TreeType, List<Vector3f>>>>
@@ -87,8 +105,12 @@ public class TreePlacer {
 					}
 					
 					for(Point2D.Float location : locations) {
+						if(inNoTreeZone(location)) continue;
+						
 						TreeType type = biomesMap.getTreeType(location.x, location.y);
-						float height = heightMap.getHeightApprox(location.x, location.y);
+						float height = usePreciseHeight ?
+								heightMap.getHeight(location.x, location.y) :
+								heightMap.getHeightApprox(location.x, location.y);
 						locationsPerType.get(type).add(new Vector3f(location.x, height, location.y));
 					}
 					
@@ -104,7 +126,7 @@ public class TreePlacer {
 				}
 			}
 		});
-		
+
 		return outQueue;
 	}
 	
@@ -116,12 +138,50 @@ public class TreePlacer {
 
 		List<Point2D.Float> locations = sampler.sample();
 		for(Point2D.Float location : locations) {
+			if(inNoTreeZone(location)) continue;
+			
 			TreeType type = biomesMap.getTreeType(location.x, location.y);
-			float height = heightMap.getHeightApprox(location.x, location.y);
+			float height = usePreciseHeight ?
+					heightMap.getHeight(location.x, location.y) :
+					heightMap.getHeightApprox(location.x, location.y);
 			locationsPerType.get(type).add(new Vector3f(location.x, height, location.y));
 		}
 		
 		return locationsPerType;
+	}
+	
+	private boolean inNoTreeZone(Float location) {
+		final Point2Di indexBuf = new Point2Di(0, 0);
+		
+		for(GriddedTrajectory trajectory : noTreeZones) {
+			Point2Di middleCellIndex = trajectory.cellIndex(location.x, location.y);
+			int middleX = (int) (middleCellIndex.getX());
+			int middleY = (int) (middleCellIndex.getZ());
+			
+			for(int gridY = middleY - 1; gridY <= middleY + 1; gridY++) {
+				for(int gridX = middleX - 1; gridX <= middleX + 1; gridX++) {
+					indexBuf.setX(gridX);
+					indexBuf.setZ(gridY); // y and z both represent depth
+					
+					Optional<List<TrajectoryPoint>> pointsInCell = trajectory.getPointsInCell(indexBuf);
+					if(!pointsInCell.isPresent()) continue;
+					
+					for(TrajectoryPoint tp : pointsInCell.get()) {
+						Vector3f p = tp.getLocation();
+						
+						float distSquared = (p.x - location.x) * (p.x - location.x) +
+								(p.z - location.y) * (p.z - location.y);
+						
+						float range = trajectory.getInfluenceDistance();
+						if(distSquared <= range * range + 1e-6f) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		
+		return false;
 	}
 
 }

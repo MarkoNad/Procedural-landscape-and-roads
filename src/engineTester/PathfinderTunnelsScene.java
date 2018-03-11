@@ -13,7 +13,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -56,7 +55,7 @@ import toolbox.Range;
 import toolbox.SamplerUtility.SamplingType;
 import toolbox.TriFunction;
 
-public class PathfinderScene {
+public class PathfinderTunnelsScene {
 
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
@@ -131,6 +130,41 @@ public class PathfinderScene {
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
 
+//		Pathfinder pathfinder = new Pathfinder(
+//				AStar<Point2Di>::new, // algorithm
+//				new Point2Df(9500f, -5000f), // start,
+//				new Point2Df(10000f, -22000f), // goal,
+//				domainLowerLeftLimit,
+//				domainUpperRightLimit,
+//				heightGenerator,
+//				100f, // cellSize
+//				true, // allowTunnels
+//				15f, // minimum tunnel depth
+//				10, // endpointOffset
+//				8, // maskOffset
+//				4500f, // tunnelInnerRadius
+//				6000f, // tunnelOuterRadius
+//				100, // tunnelCandidates
+//				true, // limitTunnelCandidates
+//				new Random(0), // random,
+//				3, // roadRange,
+//				0.3, // maxRoadSlopePercent,
+//				1.75, //maxRoadCurvature,
+//				1.0, // roadLengthMultiplier,
+//				80.0, // roadSlopeMultiplier,
+//				10.0, // roadCurvatureMultiplier,
+//				2.0, // roadSlopeExponent,
+//				3.0, // roadCurvatureExponent,
+//				0.22, // maxTunnelSlopePercent,
+//				1.75, // maxTunnelCurvature,
+//				1.0, // tunnelLengthMultiplier,
+//				200.0, // tunnelSlopeMultiplier,
+//				10.0, // tunnelCurvatureMultiplier,
+//				2.0, // tunnelSlopeExponent,
+//				3.0, // tunnelCurvatureExponent,
+//				SamplingType.NEAREST_UNIQUE // roadSamplingType
+//		);
+		
 		Pathfinder pathfinder = new Pathfinder(
 				AStar<Point2Di>::new, // algorithm
 				CatmullRomSpline3D::new, // spline
@@ -139,7 +173,7 @@ public class PathfinderScene {
 				domainLowerLeftLimit,
 				domainUpperRightLimit,
 				heightGenerator,
-				100f, // cellsize
+				100f, // cellSize
 				true, // allowTunnels
 				15f, // minimum tunnel depth
 				10, // endpointOffset
@@ -159,7 +193,7 @@ public class PathfinderScene {
 				3.0, // roadCurvatureExponent,
 				0.25, // maxTunnelSlopePercent,
 				1.75, // maxTunnelCurvature,
-				10.0, // tunnelLengthMultiplier,
+				1.0, // tunnelLengthMultiplier,
 				200.0, // tunnelSlopeMultiplier,
 				10.0, // tunnelCurvatureMultiplier,
 				2.0, // tunnelSlopeExponent,
@@ -167,13 +201,13 @@ public class PathfinderScene {
 				SamplingType.NEAREST_UNIQUE // roadSamplingType
 		);
 
-		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(1f);
+		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(0.5f);
 		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, 0.0f));
 		Optional<Entity> maybeRoadEntity = maybeRoad.map(road -> setupRoad(loader, heightGenerator, road));
 
 		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
 		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
-		pathfinder.findModifierTrajectories(-0.05f).ifPresent(modifiers -> modifiers.forEach(m -> heightGenerator.updateHeight(m, influenceFn, 15f)));
+		pathfinder.findModifierTrajectories(-0.15f).ifPresent(modifiers -> modifiers.forEach(m -> heightGenerator.updateHeight(m, influenceFn, 15f)));
 
 		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, 500f, 5f, 5f,
 				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
@@ -195,13 +229,6 @@ public class PathfinderScene {
 		
 		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
 		
-		Optional<List<Entity>> tunnelEndpoints = pathfinder.findTunnelsData()
-				.map(tdList -> tdList
-						.stream()
-						.flatMap(td -> Arrays.asList(td.getFirstEndpointLocation(), td.getSecondEndpointLocation()).stream())
-						.map(te -> new Entity(chestnutTrunk, te, 0f, 0f, 0f, 40f))
-						.collect(Collectors.toList()));
-		
 		Optional<List<Entity>> tunnelPartEntities = maybeRoad.map(road -> {
 			TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData().get(), 5, 1.0f, 50f,
 					50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
@@ -214,7 +241,6 @@ public class PathfinderScene {
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
 			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			
-			tunnelEndpoints.ifPresent(tes -> tes.forEach(te -> renderer.processEntity(te)));
 			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
 			
 			entities.forEach(e -> renderer.processEntity(e));

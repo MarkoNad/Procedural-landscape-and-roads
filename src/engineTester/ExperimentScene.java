@@ -35,7 +35,8 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
-import toolbox.CatmullRomSpline;
+import toolbox.CatmullRomSpline3D;
+import toolbox.ITrajectory;
 import toolbox.PoissonDiskSampler;
 import toolbox.Range;
 
@@ -116,7 +117,7 @@ public class ExperimentScene {
 		waypoints.add(new Vector3f(500, 0, -1000));
 		waypoints.add(new Vector3f(0, 0, -1000));
 		waypoints.add(new Vector3f(-500, 0, -1500));
-		Road road = new Road(loader, waypoints, 250, 200, 50, 7, heightGenerator, true);
+		Road road = new Road(loader, waypoints, 250, 200, 50, 7, heightGenerator, true, CatmullRomSpline3D::new);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		
@@ -151,7 +152,7 @@ public class ExperimentScene {
 		waypoints2.add(new Vector3f(10500, 0, -500));
 		waypoints2.add(new Vector3f(10500, 0, -100));
 		waypoints2.add(new Vector3f(10500, 0, 0));
-		Road road2 = new Road(loader, waypoints2, 250, 200, 100, 7f, heightGenerator, true);
+		Road road2 = new Road(loader, waypoints2, 250, 200, 100, 7f, heightGenerator, true, CatmullRomSpline3D::new);
 		TexturedModel roadTM2 = new TexturedModel(road2.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM2.getTexture().setHasTransparency(true);
 		Entity road2Entity = new Entity(roadTM2, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);
@@ -163,9 +164,9 @@ public class ExperimentScene {
 		ctrlPoints.add(new Vector3f(600, 0, 0));
 		ctrlPoints.add(new Vector3f(800, 0, 0));
 		//BezierCurve curve = new BezierCurve(ctrlPoints, BezierType.APPROXIMATION, 10);
-		CatmullRomSpline curve = new CatmullRomSpline(ctrlPoints, 10);
+		ITrajectory<Vector3f> curve = new CatmullRomSpline3D(ctrlPoints, 10);
 		
-		for(Vector3f bpoint : curve.getCurvePoints()) {
+		for(Vector3f bpoint : curve.getPoints()) {
 			System.out.println(bpoint);
 		}
 		
@@ -212,7 +213,7 @@ public class ExperimentScene {
 			entities.add(new Entity(firLOD1, new Vector3f(-150, 0f, 500f), 0f, 0f, 0f, 35f));
 			
 			
-			for(Vector3f bpoint : curve.getCurvePoints()) {
+			for(Vector3f bpoint : curve.getPoints()) {
 				entities.add(new Entity(chestnutTreetop, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));
 				entities.add(new Entity(chestnutTrunk, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));
 			}

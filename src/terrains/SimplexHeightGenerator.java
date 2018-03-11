@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
 import org.lwjgl.util.vector.Vector3f;
 
+import toolbox.GriddedTrajectory;
+import toolbox.GriddedTrajectory.TrajectoryPoint;
 import toolbox.OpenSimplexNoise;
 import toolbox.Point2Di;
 
@@ -36,7 +39,8 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 	
 	private OpenSimplexNoise simplexNoiseGenerator;
 
-	private List<TrajectoryData> trajectories;
+	private List<GriddedTrajectory> trajectories;
+	private Map<GriddedTrajectory, Function<Float, Float>> trajectoryInfluences;
 	
 	public SimplexHeightGenerator(long seed) {
 		this(seed, DEFAULT_PREFERRED_HEIGHT, DEFAULT_BASE_FREQUENCY_MODIFIER,
@@ -60,14 +64,15 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		this.heightVariation = heightVariation;
 		this.simplexNoiseGenerator = new OpenSimplexNoise(seed);
 		this.trajectories = new ArrayList<>();
+		this.trajectoryInfluences = new HashMap<>();
 	}
 
 	@Override
 	public float getHeight(float x, float z) {
 		float finalHeight = getBaseHeight(x, z);
 
-		for(TrajectoryData trajectoryData : trajectories) {
-			finalHeight = getInterpolatedHeight(x, z, finalHeight, trajectoryData);
+		for(GriddedTrajectory griddedTrajectory : trajectories) {
+			finalHeight = getInterpolatedHeight(x, z, finalHeight, griddedTrajectory);
 		}
 		
 		return finalHeight;
@@ -131,77 +136,19 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		//return (float) (Math.pow(1.0f + heightBias, heightVariation) * preferredHeight);
 		return preferredHeight;
 	}
-	
-	private static class TrajectoryData {
-		private final List<Vector3f> trajectory;
-		private final Function<Float, Float> influenceDistribution;
-		private final Map<Point2Di, List<TrajectoryPoint>> grid;
-		private final float gridCellSize;
-		
-		public TrajectoryData(List<Vector3f> trajectory, Function<Float, Float> influenceDistribution,
-				float influenceDistance) {
-			if(trajectory == null || trajectory.isEmpty()) {
-				throw new IllegalArgumentException("Invalid trajectory definition.");
-			}
-			
-			this.trajectory = trajectory;
-			this.influenceDistribution = influenceDistribution;
-			this.gridCellSize = influenceDistance;
-			this.grid = new HashMap<>();
-			
-			populateGrid();
-		}
-		
-		private void populateGrid() {
-			for(int i = 0; i < trajectory.size(); i++) {
-				Vector3f curr = trajectory.get(i);
-				Vector3f prev = i == 0 ? null : trajectory.get(i - 1);
-				Vector3f next = i == trajectory.size() - 1 ? null : trajectory.get(i + 1);
-				TrajectoryPoint tp = new TrajectoryPoint(curr, prev, next);
-				
-				Point2Di cell = index(curr.x, curr.z);
-				
-				List<TrajectoryPoint> pointsInCell = grid.get(cell);
-				if(pointsInCell == null) {
-					pointsInCell = new ArrayList<>();
-					grid.put(cell, pointsInCell);
-				}
 
-				pointsInCell.add(tp);
-			}
-		}
-		
-		private Point2Di index(float x, float z) {
-			int gridX = (int) (x / gridCellSize);
-			int gridZ = (int) (z / gridCellSize);
-			return new Point2Di(gridX, gridZ);
-		}
-		
-	}
-	
-	private static class TrajectoryPoint {
-		private final Vector3f point;
-		private final Vector3f previous;
-		private final Vector3f next;
-		
-		public TrajectoryPoint(Vector3f point, Vector3f previous, Vector3f next) {
-			this.point = point;
-			this.previous = previous;
-			this.next = next;
-		}
-
-	}
-	
 	public void updateHeight(List<Vector3f> trajectory, Function<Float, Float> influenceDistribution, 
 			float influenceDistance) {
-		TrajectoryData data = new TrajectoryData(trajectory, influenceDistribution, influenceDistance);
-		trajectories.add(data);
+		GriddedTrajectory griddedTrajectory = new GriddedTrajectory(trajectory, influenceDistance);
+		trajectories.add(griddedTrajectory);
+		trajectoryInfluences.put(griddedTrajectory, influenceDistribution);
 	}
 	
 	private float getInterpolatedHeight(float x, float z, float originalHeight,
-			TrajectoryData trajectoryData) {
-		int middleX = (int) (x / trajectoryData.gridCellSize);
-		int middleZ = (int) (z / trajectoryData.gridCellSize);
+			GriddedTrajectory griddedTrajectory) {
+		Point2Di middleCellIndex = griddedTrajectory.cellIndex(x, z);
+		int middleX = (int) (middleCellIndex.getX());
+		int middleZ = (int) (middleCellIndex.getZ());
 		
 		float minDistSquared = -1;
 		TrajectoryPoint nearestTPoint = null;
@@ -212,12 +159,11 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 				indexBuf.setX(gridX);
 				indexBuf.setZ(gridZ);
 
-				List<TrajectoryPoint> pointsInCell = trajectoryData.grid.get(indexBuf);
+				Optional<List<TrajectoryPoint>> pointsInCell = griddedTrajectory.getPointsInCell(indexBuf);
+				if(!pointsInCell.isPresent()) continue;
 				
-				if(pointsInCell == null) continue;
-				
-				for(TrajectoryPoint tp : pointsInCell) {
-					Vector3f p = tp.point;
+				for(TrajectoryPoint tp : pointsInCell.get()) {
+					Vector3f p = tp.getLocation();
 					
 					float distSquared = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
 					
@@ -231,23 +177,25 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		
 		if(nearestTPoint == null) return originalHeight;
 
-		Vector3f previousP = nearestTPoint.previous;
-		Vector3f nextP = nearestTPoint.next;
+		Optional<Vector3f> previousP = nearestTPoint.getPrevious();
+		Optional<Vector3f> nextP = nearestTPoint.getNext();
 		
 		float secondMinDistSquared = -1;
 		Vector3f secondNearestPoint = null;
 		
-		if(previousP != null) {
-			float distSquared = (previousP.x - x) * (previousP.x - x) + (previousP.z - z) * (previousP.z - z);
+		if(previousP.isPresent()) {
+			float distSquared = (previousP.get().x - x) * (previousP.get().x - x) +
+					(previousP.get().z - z) * (previousP.get().z - z);
 			secondMinDistSquared = distSquared;
-			secondNearestPoint = previousP;
+			secondNearestPoint = previousP.get();
 		}
 		
-		if(nextP != null) {
-			float distSquared = (nextP.x - x) * (nextP.x - x) + (nextP.z - z) * (nextP.z - z);
+		if(nextP.isPresent()) {
+			float distSquared = (nextP.get().x - x) * (nextP.get().x - x) +
+					(nextP.get().z - z) * (nextP.get().z - z);
 			if(secondMinDistSquared == -1 || distSquared < secondMinDistSquared) {
 				secondMinDistSquared = distSquared;
-				secondNearestPoint = nextP;
+				secondNearestPoint = nextP.get();
 			}
 		}
 		
@@ -255,12 +203,12 @@ public class SimplexHeightGenerator implements IHeightGenerator {
 		float dist = (float) Math.sqrt(distanceFromTrajectorySquared);
 		
 		// influence of update height; must be between 0 and 1
-		float influence = trajectoryData.influenceDistribution.apply(dist);
+		float influence = trajectoryInfluences.get(griddedTrajectory).apply(dist);
 		if(influence < 0 || influence > 1) {
 			LOGGER.severe("Invalid influence of additional height value: " + influence);
 		}
 		
-		float trajectoryHeight = Math.min(nearestTPoint.point.y, secondNearestPoint.y);
+		float trajectoryHeight = Math.min(nearestTPoint.getLocation().y, secondNearestPoint.y);
 		
 		float newHeight = influence * trajectoryHeight + (1 - influence) * originalHeight;
 		return newHeight;

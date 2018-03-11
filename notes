@@ -19,3 +19,17 @@ TODO
 - Road::generateTrajectory replace default segment length with given one
 - fix infinite cells (don't traverse all of them)
 - max height
+
+
+
+logger: -Djava.util.logging.config.file=./logging.properties
+
+
+
+
+
+IMPORTANT
+goesThroughMountainDetection perhaps need to be done with more than
+one point that has at least minimal tunnel depth. It is possible that
+too much is excavated, even that entrance and exit are the same point, 
+and everything else is excavated.

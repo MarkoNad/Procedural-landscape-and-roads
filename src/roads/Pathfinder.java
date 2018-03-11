@@ -4,16 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.BiFunction;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.lwjgl.util.vector.Vector3f;
 
-import search.AStar;
 import search.IHeuristics;
+import search.IProblem;
+import search.ISearchAlgorithm;
 import search.Node;
 import terrains.IHeightGenerator;
-import toolbox.CatmullRomSpline;
+import toolbox.AbstractSpline;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
 import toolbox.SamplerUtility.SamplingType;
@@ -25,16 +27,20 @@ public class Pathfinder {
 	private final IHeightGenerator heightGenerator;
 	private final PathfindingProblem searchProblem;
 	private final IHeuristics<Point2Di> heuristics;
+	private final ISearchAlgorithm<Point2Di> searchAlgorithm;
 	
 	private final float minimalTunnelDepth;
 	private final int endpointOffset;
 	private final int maskOffset;
 	private TrajectoryPostprocessor trajectoryPostprocessor;
+	private final BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier;
 	
 	Optional<List<PathPoint3D>> waypointsCache = null;
 	Optional<List<Vector3f>> trajectoryCache = null;
 	
-	public Pathfinder(Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
+	public Pathfinder(BiFunction<IProblem<Point2Di>, IHeuristics<Point2Di>, ISearchAlgorithm<Point2Di>> algorithmSupplier,
+			BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier,
+			Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
 			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
 			float cellSize, boolean allowTunnels, float minimalTunnelDepth,
 			int endpointOffset, int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
@@ -49,9 +55,11 @@ public class Pathfinder {
 		this.minimalTunnelDepth = minimalTunnelDepth;
 		this.endpointOffset = endpointOffset;
 		this.maskOffset = maskOffset;
+		this.splineSupplier = splineSupplier;
 		
 		this.searchProblem = new PathfindingProblem(start, goal, domainLowerLeftLimit,
-				domainUpperRightLimit, heightGenerator, cellSize, allowTunnels, tunnelInnerRadius,
+				domainUpperRightLimit, heightGenerator, cellSize, allowTunnels, minimalTunnelDepth,
+				tunnelInnerRadius,
 				tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates, random, roadRange,
 				maxRoadSlopePercent, maxRoadCurvature,
 				roadLengthMultiplier, roadSlopeMultiplier, roadCurvatureMultiplier,
@@ -60,24 +68,9 @@ public class Pathfinder {
 				tunnelCurvatureMultiplier, tunnelSlopeExponent, tunnelCurvatureExponent,
 				roadSamplingType);
 		this.heuristics = setupHeuristics(goal);
+		this.searchAlgorithm = algorithmSupplier.apply(searchProblem, heuristics);
 	}
-	
-//	public Pathfinder(Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
-//			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
-//			float cellSize, boolean allowTunnels, float minimalTunnelDepth,
-//			int endpointOffset, int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
-//			int tunnelCandidates, boolean limitTunnelCandidates, Random random) {
-//		this.heightGenerator = heightGenerator;
-//		this.minimalTunnelDepth = minimalTunnelDepth;
-//		this.endpointOffset = endpointOffset;
-//		this.maskOffset = maskOffset;
-//		
-//		this.searchProblem = new PathfindingProblem(start, goal, domainLowerLeftLimit,
-//				domainUpperRightLimit, heightGenerator, cellSize, allowTunnels, tunnelInnerRadius,
-//				tunnelOuterRadius, tunnelCandidates, limitTunnelCandidates, random);
-//		this.heuristics = setupHeuristics(goal);
-//	}
-	
+
 	private IHeuristics<Point2Di> setupHeuristics(Point2Df goal) {
 		double goalY = heightGenerator.getHeightApprox(goal.getX(), goal.getZ());
 		
@@ -105,7 +98,7 @@ public class Pathfinder {
 	
 	public Optional<List<Vector3f>> findWaypoints() {
 		if(waypointsCache == null) {
-			waypointsCache = generateWaypoints();
+			waypointsCache = generateWaypoints(searchAlgorithm);
 		}
 		
 		return waypointsCache.map(pathpoints -> pathpoints
@@ -114,11 +107,10 @@ public class Pathfinder {
 				.collect(Collectors.toList()));
 	}
 	
-	private Optional<List<PathPoint3D>> generateWaypoints() {
+	private Optional<List<PathPoint3D>> generateWaypoints(ISearchAlgorithm<Point2Di> searchAlgorithm) {
 		long start = System.nanoTime();
 		
-		AStar<Point2Di> astar = new AStar<>(searchProblem, heuristics);
-		Optional<Node<Point2Di>> goalNode = astar.search();
+		Optional<Node<Point2Di>> goalNode = searchAlgorithm.search();
 		
 		if(!goalNode.isPresent()) {
 			LOGGER.info("Pathfinder cannot create waypoints with provided terrain and constraints.");
@@ -127,11 +119,11 @@ public class Pathfinder {
 		
 		Node<Point2Di> goal = goalNode.get();
 		
-		LOGGER.info("A Star duration: " + (System.nanoTime() - start) * 1e-9);
-		LOGGER.info("A star goal cost: " + goal.getCost());
+		LOGGER.info(searchAlgorithm.getName() + " duration: " + (System.nanoTime() - start) * 1e-9);
+		LOGGER.info(searchAlgorithm.getName() + " goal cost: " + goal.getCost());
 		
 		List<Point2Di> gridPath = goal.reconstructPath();
-		gridPath.forEach(p -> LOGGER.finer("A star point: " + p));
+		gridPath.forEach(p -> LOGGER.finer(searchAlgorithm.getName() + " point: " + p));
 		
 		List<PathPoint> path = postProcessPath(gridPath, searchProblem);
 		path.forEach(p -> LOGGER.finer("Path point: " + p));
@@ -156,15 +148,15 @@ public class Pathfinder {
 		
 		List<Vector3f> waypoints = maybeWaypoints.get();
 		
-		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
-		List<Vector3f> trajectory = curve.getCurvePointsCopy();
+		AbstractSpline<Vector3f> curve = splineSupplier.apply(waypoints, segmentLength);
+		List<Vector3f> trajectory = curve.getPointsCopy();
 		
 		trajectoryPostprocessor = new TrajectoryPostprocessor(trajectory, waypointsCache.get(),
 				heightGenerator, minimalTunnelDepth, endpointOffset, maskOffset);
 		
 		return Optional.of(trajectoryPostprocessor.getCorrectedTrajectory());
 	}
-	
+
 	public Optional<List<List<Vector3f>>> findModifierTrajectories(float offset) {
 		if(trajectoryPostprocessor == null) return Optional.empty();
 		
@@ -241,7 +233,9 @@ public class Pathfinder {
 				float lowerY = firstEndpointY < secondEndpointY ? firstEndpointY : secondEndpointY;
 				float higherY = firstEndpointY < secondEndpointY ? secondEndpointY : firstEndpointY;
 				
-				Point2Df lowerTunnelEndpoint = firstEndpointY < secondEndpointY ? firstTunnelEndpoint : secondTunnelEndpoint;
+				Point2Df lowerTunnelEndpoint = firstEndpointY < secondEndpointY ?
+							firstTunnelEndpoint :
+							secondTunnelEndpoint;
 				
 				float deltaX = Math.abs(secondTunnelEndpoint.getX() - firstTunnelEndpoint.getX());
 				float deltaZ = Math.abs(secondTunnelEndpoint.getZ() - firstTunnelEndpoint.getZ());
@@ -300,14 +294,15 @@ public class Pathfinder {
 
 		@Override
 		public String toString() {
-			return "PathPoint [location=" + location + ", entrance=" + entrance + ", exit=" + exit + ", body=" + body
-					+ "]";
+			return "PathPoint [location=" + location + ", entrance=" + entrance +
+					", exit=" + exit + ", body=" + body + "]";
 		}
 		
 	}
 	
 	private List<PathPoint> postProcessPath(List<Point2Di> gridPoints, PathfindingProblem problem) {
-		LOGGER.fine("Post processing A star path. Initial num of points: " + gridPoints.size());
+		LOGGER.fine("Post processing " + searchAlgorithm.getName() +
+				" path. Initial num of points: " + gridPoints.size());
 		
 		List<PathPoint> processed = new ArrayList<>();
 		
@@ -346,7 +341,8 @@ public class Pathfinder {
 		PathPoint lastTP = new PathPoint(lastPoint, false, nextIsEndpoint, false);
 		processed.add(lastTP);
 		
-		LOGGER.fine("Post processing A star path finised. Num of points: " + processed.size());
+		LOGGER.fine("Post processing " + searchAlgorithm.getName() +
+				" path finished. Num of points: " + processed.size());
 		
 		return processed;
 	}

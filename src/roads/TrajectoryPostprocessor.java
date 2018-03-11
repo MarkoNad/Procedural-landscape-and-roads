@@ -73,6 +73,8 @@ public class TrajectoryPostprocessor {
 				pi = nextExitIndex(pi + 1, pathPoints);
 				PathPoint3D exit = pathPoints.get(pi);
 				Vector3f itp = initialTrajectory.get(ti);
+				Vector3f tunnelBodyEnd = tunnelBodyEnd(initialTrajectory, curr, exit,
+						minimalTunnelDepth, heightMap);
 				
 				boolean entranceExcavationDone = false;
 				boolean tunnelBodyDone = false;
@@ -90,7 +92,7 @@ public class TrajectoryPostprocessor {
 					if(!entranceExcavationDone) {
 						newModifier.add(itp);
 						
-						if(depth > minimalTunnelDepth) {
+						if(depth + 1e-6 >= minimalTunnelDepth) {
 							entranceExcavationDone = true;
 							LOGGER.finer("Entrance excavation done.");
 
@@ -119,7 +121,7 @@ public class TrajectoryPostprocessor {
 					
 					// depth is enough here, no excavations - tunnel
 					if(entranceExcavationDone && !tunnelBodyDone) {
-						if(depth < minimalTunnelDepth) {
+						if(samePoint(itp, tunnelBodyEnd, EPS)) {
 							tunnelBodyDone = true;
 							LOGGER.fine("Tunnel body done.");
 							
@@ -137,6 +139,10 @@ public class TrajectoryPostprocessor {
 							tunnelDatum.setSecondEndpointLocation(exitLocation);
 							tunnelDatum.setSecondEndpointOrientation(exitDirection);
 							tunnelDatum.setSecondEndpointMask(maskLocation);
+							
+							LOGGER.fine("Added data of tunnel with length: " +
+									Vector3f.sub(tunnelDatum.getFirstEndpointLocation(),
+											tunnelDatum.getSecondEndpointLocation(), null).length());
 						}
 
 						itp = initialTrajectory.get(++ti);
@@ -168,6 +174,39 @@ public class TrajectoryPostprocessor {
 		}
 	}
 	
+	private Vector3f tunnelBodyEnd(List<Vector3f> initialTrajectory, PathPoint3D entrance, PathPoint3D exit,
+			float minimalTunnelDepth, IHeightGenerator heightMap) {
+		int entranceIndex = -1;
+		int exitIndex = -1;
+		for(int i = 0; i < initialTrajectory.size(); i++) {
+			Vector3f itp = initialTrajectory.get(i);
+			if(samePoint(itp, entrance, EPS)) {
+				entranceIndex = i;
+			}
+			if(samePoint(itp, exit, EPS)) {
+				exitIndex = i;
+			}
+		}
+
+		if(exitIndex == -1) LOGGER.severe("Couldn't find tunnel exit in initial trajectory.");
+		if(entranceIndex == -1) LOGGER.severe("Couldn't find tunnel entrance in initial trajectory.");
+		if(entranceIndex == exitIndex) LOGGER.severe("Tunnel entrance and exit are the same trajectory point.");
+		
+		for(int i = exitIndex; i >= entranceIndex; i--) {
+			Vector3f itp = initialTrajectory.get(i);
+			
+			float surfaceHeight = heightMap.getHeight(itp.x, itp.z);
+			float depth = surfaceHeight - itp.y;
+			
+			if(depth + 1e-6 >= minimalTunnelDepth) {
+				return itp;
+			}
+		}
+		
+		LOGGER.severe("Couldn't determine tunnel body end.");
+		return initialTrajectory.get(exitIndex);
+	}
+
 	private Vector3f determineDirection(List<Vector3f> trajectory, int trajectoryIndex, boolean isEntrance) {
 		Vector3f enpointLoc = trajectory.get(trajectoryIndex);
 		Vector3f direction = null;
@@ -215,8 +254,11 @@ public class TrajectoryPostprocessor {
 
 	private boolean samePoint(Vector3f tp, PathPoint3D pp, double eps) {
 		Vector3f ppLocation = pp.getLocation();
-		
-		return Vector3f.sub(tp, ppLocation, null).lengthSquared() <= eps * eps;
+		return samePoint(tp, ppLocation, eps);
+	}
+	
+	private boolean samePoint(Vector3f tp1, Vector3f tp2, double eps) {
+		return Vector3f.sub(tp1, tp2, null).lengthSquared() <= eps * eps;
 	}
 
 }
