@@ -36,6 +36,7 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.CatmullRomSpline3D;
 import toolbox.PoissonDiskSampler;
 import toolbox.Range;
 import toolbox.TriFunction;
@@ -160,7 +161,7 @@ public class RoadsScene {
 		waypoints.add(new Vector3f(10500, 0, -100));
 		waypoints.add(new Vector3f(10500, 0, 0));
 		
-		Road road = new Road(loader, waypoints, 250, 200, 50, 7f, heightGenerator, true);
+		Road road = new Road(loader, waypoints, 250, 200, 50, 7f, heightGenerator, true, CatmullRomSpline3D::new);
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);

@@ -49,6 +49,7 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.CatmullRomSpline3D;
 import toolbox.Globals;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
@@ -109,8 +110,8 @@ public class DebugScene2 {
 		
 		// terrain setup
 		NavigableMap<Float, Integer> distanceToLODLevel = new TreeMap<>();
-		distanceToLODLevel.put(2000f, 0);
-		distanceToLODLevel.put(5000f, 1);
+		distanceToLODLevel.put(3000f, 0);
+		distanceToLODLevel.put(10000f, 1);
 		distanceToLODLevel.put(20000f, 2);
 		
 		Map<Integer, Float> lodLevelToVertsPerUnit = new HashMap<>();
@@ -141,6 +142,7 @@ public class DebugScene2 {
 		Pathfinder pathfinder = new Pathfinder(
 				AStar<Point2Di>::new, // algorithm
 				//GreedyBestFirstSearch<Point2Di>::new, // algorithm
+				CatmullRomSpline3D::new, // spline
 				new Point2Df(9500f, -5000f), // start,
 				new Point2Df(10000f, -22000f), // goal,
 				domainLowerLeftLimit,
@@ -175,10 +177,9 @@ public class DebugScene2 {
 		);
 
 		Optional<List<Vector3f>> roadWaypoints = pathfinder.findWaypoints();
-		final float segmentLen = 1f;
-		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(segmentLen);
+		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(1f);
 		//Road road = new Road(loader, roadTrajectory, 10, 12, segmentLen, 0.02f);
-		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, segmentLen, 0.0f));
+		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, 0.0f));
 		Optional<Entity> maybeRoadEntity = maybeRoad.map(road -> setupRoad(loader, heightGenerator, road));
 
 		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width

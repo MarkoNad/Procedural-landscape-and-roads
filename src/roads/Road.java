@@ -3,13 +3,14 @@ package roads;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import org.lwjgl.util.vector.Vector3f;
 
 import models.RawModel;
 import renderEngine.Loader;
 import terrains.IHeightGenerator;
-import toolbox.CatmullRomSpline;
+import toolbox.AbstractSpline;
 import toolbox.Globals;
 import toolbox.Point2Df;
 
@@ -20,56 +21,47 @@ public class Road {
 	private List<Vector3f> trajectory;
 	private IHeightGenerator heightMap;
 	private final float width;
-	private float textureLen;
+	private float textureLength;
 	private RawModel model;
 	private boolean heightCorrection;
 	
 	private List<Vector3f> leftTrajectory;
 	private List<Vector3f> rightTrajectory;
 	
-	public Road(List<Point2Df> waypoints2D, Loader loader, float width, float textureLen,
-			float segmentLen, float groundOffset, IHeightGenerator heightMap, boolean heightCorrection) {
-		if(waypoints2D == null || waypoints2D.size() < 2) {
-			throw new IllegalArgumentException("At least two waypoints are required.");
-		}
-		
-		if(heightCorrection && heightMap == null) {
-			throw new IllegalArgumentException("Height map was null - cannot perform height correction.");
-		}
-		
-		List<Vector3f> waypoints3D = assignHeightsToWaypoints(waypoints2D, heightMap);
-
+	private Road(Loader loader, float width, float textureLength, float groundOffset,
+			IHeightGenerator heightMap, boolean heightCorrection) {
 		this.loader = loader;
 		this.width = width;
-		this.textureLen = textureLen;
+		this.textureLength = textureLength;
 		this.groundOffset = groundOffset;
 		this.heightMap = heightMap;
 		this.heightCorrection = heightCorrection;
-		
-		this.trajectory = generateTrajectory(waypoints3D, segmentLen);
-		adhereTrajectoryToHeightMap(this.trajectory, heightMap);
-		model = generate();
 	}
 	
-	public Road(Loader loader, List<Vector3f> trajectory, float width, float textureLen,
-			float segmentLen, float groundOffset) {
+	public Road(Loader loader, List<Vector3f> trajectory, float width, float textureLength,
+			float groundOffset) {
+		this(loader, width, textureLength, groundOffset, null, false);
+		
 		if(trajectory == null || trajectory.isEmpty()) {
 			throw new IllegalArgumentException("Trajectory cannot be empty.");
 		}
 		
-		this.loader = loader;
-		this.width = width;
-		this.textureLen = textureLen;
-		this.groundOffset = groundOffset;
-		this.heightMap = null;
-		this.heightCorrection = false;
-		
 		this.trajectory = trajectory;
-		model = generate();
+		this.model = generate();
 	}
 	
-	public Road(Loader loader, List<Vector3f> waypoints, float width, float textureLen, float segmentLen,
-			float groundOffset, IHeightGenerator heightMap, boolean heightCorrection) {
+	public Road(List<Point2Df> waypoints2D, Loader loader, float width, float textureLength,
+			float segmentLength, float groundOffset, IHeightGenerator heightMap, boolean heightCorrection,
+			BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier) {
+		this(loader, assignHeightsToWaypoints(waypoints2D, heightMap), width, textureLength,
+				segmentLength, groundOffset, heightMap, heightCorrection, splineSupplier);
+	}
+	
+	public Road(Loader loader, List<Vector3f> waypoints, float width, float textureLen, float segmentLength,
+			float groundOffset, IHeightGenerator heightMap, boolean heightCorrection,
+			BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier) {
+		this(loader, width, textureLen, groundOffset, heightMap, heightCorrection);
+		
 		if(waypoints == null || waypoints.size() < 2) {
 			throw new IllegalArgumentException("At least two waypoints are required.");
 		}
@@ -77,15 +69,8 @@ public class Road {
 		if(heightCorrection && heightMap == null) {
 			throw new IllegalArgumentException("Height map was null - cannot perform height correction.");
 		}
-		
-		this.loader = loader;
-		this.width = width;
-		this.textureLen = textureLen;
-		this.groundOffset = groundOffset;
-		this.heightMap = heightMap;
-		this.heightCorrection = heightCorrection;
-		
-		this.trajectory = generateTrajectory(waypoints, segmentLen);
+
+		this.trajectory = generateTrajectory(waypoints, segmentLength, splineSupplier);
 		adhereTrajectoryToHeightMap(this.trajectory, heightMap);
 		model = generate();
 	}
@@ -102,7 +87,8 @@ public class Road {
 		return Collections.unmodifiableList(rightTrajectory);
 	}
 	
-	private List<Vector3f> assignHeightsToWaypoints(List<Point2Df> waypoints2D, IHeightGenerator heightMap) {
+	private static List<Vector3f> assignHeightsToWaypoints(List<Point2Df> waypoints2D,
+			IHeightGenerator heightMap) {
 		List<Vector3f> waypoints3D = new ArrayList<>();
 		
 		waypoints2D.forEach(p -> {
@@ -113,14 +99,15 @@ public class Road {
 		return waypoints3D;
 	}
 	
-	public static List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength) {
-		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
-		return curve.getCurvePointsCopy();
+	public static List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength,
+			BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier) {
+		AbstractSpline<Vector3f> curve = splineSupplier.apply(waypoints, segmentLength);
+		return curve.getPointsCopy();
 	}
 	
 	public static List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength, 
-			IHeightGenerator heightMap) {
-		List<Vector3f> trajectory = generateTrajectory(waypoints, segmentLength);
+			IHeightGenerator heightMap, BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier) {
+		List<Vector3f> trajectory = generateTrajectory(waypoints, segmentLength, splineSupplier);
 		adhereTrajectoryToHeightMap(trajectory, heightMap);
 		return trajectory;
 	}
@@ -240,7 +227,7 @@ public class Road {
 		
 		List<Float> pointDistances = determineDistances(trajectory);
 		for(int wpPointer = 0; wpPointer < trajectory.size(); wpPointer++) {
-			float vcoord = pointDistances.get(wpPointer) / textureLen;
+			float vcoord = pointDistances.get(wpPointer) / textureLength;
 			
 			textureCoords[wpPointer * 2] = 0f;
 			textureCoords[wpPointer * 2 + 1] = vcoord;
