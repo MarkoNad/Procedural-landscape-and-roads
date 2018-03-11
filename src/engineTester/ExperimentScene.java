@@ -35,7 +35,8 @@ import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
-import toolbox.CatmullRomSpline;
+import toolbox.CatmullRomSpline3D;
+import toolbox.ITrajectory;
 import toolbox.PoissonDiskSampler;
 import toolbox.Range;
 
@@ -163,9 +164,9 @@ public class ExperimentScene {
 		ctrlPoints.add(new Vector3f(600, 0, 0));
 		ctrlPoints.add(new Vector3f(800, 0, 0));
 		//BezierCurve curve = new BezierCurve(ctrlPoints, BezierType.APPROXIMATION, 10);
-		CatmullRomSpline curve = new CatmullRomSpline(ctrlPoints, 10);
+		ITrajectory<Vector3f> curve = new CatmullRomSpline3D(ctrlPoints, 10);
 		
-		for(Vector3f bpoint : curve.getCurvePoints()) {
+		for(Vector3f bpoint : curve.getPoints()) {
 			System.out.println(bpoint);
 		}
 		
@@ -212,7 +213,7 @@ public class ExperimentScene {
 			entities.add(new Entity(firLOD1, new Vector3f(-150, 0f, 500f), 0f, 0f, 0f, 35f));
 			
 			
-			for(Vector3f bpoint : curve.getCurvePoints()) {
+			for(Vector3f bpoint : curve.getPoints()) {
 				entities.add(new Entity(chestnutTreetop, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));
 				entities.add(new Entity(chestnutTrunk, new Vector3f(bpoint.x, bpoint.y, bpoint.z), 0f, 0f, 0f, 5f));
 			}

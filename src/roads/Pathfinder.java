@@ -15,7 +15,7 @@ import search.IProblem;
 import search.ISearchAlgorithm;
 import search.Node;
 import terrains.IHeightGenerator;
-import toolbox.CatmullRomSpline;
+import toolbox.CatmullRomSpline3D;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
 import toolbox.SamplerUtility.SamplingType;
@@ -145,8 +145,8 @@ public class Pathfinder {
 		
 		List<Vector3f> waypoints = maybeWaypoints.get();
 		
-		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
-		List<Vector3f> trajectory = curve.getCurvePointsCopy();
+		CatmullRomSpline3D curve = new CatmullRomSpline3D(waypoints, segmentLength);
+		List<Vector3f> trajectory = curve.getPointsCopy();
 		
 		trajectoryPostprocessor = new TrajectoryPostprocessor(trajectory, waypointsCache.get(),
 				heightGenerator, minimalTunnelDepth, endpointOffset, maskOffset);

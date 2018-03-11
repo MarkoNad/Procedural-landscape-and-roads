@@ -9,7 +9,7 @@ import org.lwjgl.util.vector.Vector3f;
 import models.RawModel;
 import renderEngine.Loader;
 import terrains.IHeightGenerator;
-import toolbox.CatmullRomSpline;
+import toolbox.CatmullRomSpline3D;
 import toolbox.Globals;
 import toolbox.Point2Df;
 
@@ -114,8 +114,8 @@ public class Road {
 	}
 	
 	public static List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength) {
-		CatmullRomSpline curve = new CatmullRomSpline(waypoints, segmentLength);
-		return curve.getCurvePointsCopy();
+		CatmullRomSpline3D curve = new CatmullRomSpline3D(waypoints, segmentLength);
+		return curve.getPointsCopy();
 	}
 	
 	public static List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength, 

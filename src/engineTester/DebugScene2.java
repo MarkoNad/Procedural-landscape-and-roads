@@ -109,8 +109,8 @@ public class DebugScene2 {
 		
 		// terrain setup
 		NavigableMap<Float, Integer> distanceToLODLevel = new TreeMap<>();
-		distanceToLODLevel.put(2000f, 0);
-		distanceToLODLevel.put(5000f, 1);
+		distanceToLODLevel.put(3000f, 0);
+		distanceToLODLevel.put(6000f, 1);
 		distanceToLODLevel.put(20000f, 2);
 		
 		Map<Integer, Float> lodLevelToVertsPerUnit = new HashMap<>();
