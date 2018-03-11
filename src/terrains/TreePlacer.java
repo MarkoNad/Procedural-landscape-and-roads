@@ -126,7 +126,7 @@ public class TreePlacer {
 				}
 			}
 		});
-		
+
 		return outQueue;
 	}
 	
@@ -153,8 +153,8 @@ public class TreePlacer {
 	private boolean inNoTreeZone(Float location) {
 		final Point2Di indexBuf = new Point2Di(0, 0);
 		
-		for(GriddedTrajectory trajectoryData : noTreeZones) {
-			Point2Di middleCellIndex = trajectoryData.cellIndex(location.x, location.y);
+		for(GriddedTrajectory trajectory : noTreeZones) {
+			Point2Di middleCellIndex = trajectory.cellIndex(location.x, location.y);
 			int middleX = (int) (middleCellIndex.getX());
 			int middleY = (int) (middleCellIndex.getZ());
 			
@@ -163,7 +163,7 @@ public class TreePlacer {
 					indexBuf.setX(gridX);
 					indexBuf.setZ(gridY); // y and z both represent depth
 					
-					Optional<List<TrajectoryPoint>> pointsInCell = trajectoryData.getPointsInCell(indexBuf);
+					Optional<List<TrajectoryPoint>> pointsInCell = trajectory.getPointsInCell(indexBuf);
 					if(!pointsInCell.isPresent()) continue;
 					
 					for(TrajectoryPoint tp : pointsInCell.get()) {
@@ -172,7 +172,7 @@ public class TreePlacer {
 						float distSquared = (p.x - location.x) * (p.x - location.x) +
 								(p.z - location.y) * (p.z - location.y);
 						
-						float range = trajectoryData.getInfluenceDistance();
+						float range = trajectory.getInfluenceDistance();
 						if(distSquared <= range * range + 1e-6f) {
 							return true;
 						}

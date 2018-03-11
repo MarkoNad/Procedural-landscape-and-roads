@@ -16,24 +16,24 @@ public class GriddedTrajectory {
 	
 	public static class TrajectoryPoint {
 		private final Vector3f location;
-		private final Vector3f previous;
-		private final Vector3f next;
+		private final Optional<Vector3f> previous;
+		private final Optional<Vector3f> next;
 		
 		public TrajectoryPoint(Vector3f location, Vector3f previous, Vector3f next) {
 			this.location = location;
-			this.previous = previous;
-			this.next = next;
+			this.previous = Optional.ofNullable(previous);
+			this.next = Optional.ofNullable(next);
 		}
 
 		public Vector3f getLocation() {
 			return location;
 		}
 		
-		public Vector3f getNext() {
+		public Optional<Vector3f> getNext() {
 			return next;
 		}
 		
-		public Vector3f getPrevious() {
+		public Optional<Vector3f> getPrevious() {
 			return previous;
 		}
 		
