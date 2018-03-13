@@ -129,15 +129,15 @@ public class Terrain {
 				float zcoord = z / (float) (zVertices - 1) * depth + zUpperLeft;
 				float height = heightGenerator.getHeight(xcoord, zcoord);
 				
-				System.out.println("TERRAIN x: " + x + ", z: " + z + ", xcoord: " + xcoord + ", zcoord: " + zcoord + ", height: " + height);
+//				System.out.println("TERRAIN x: " + x + ", z: " + z + ", xcoord: " + xcoord + ", zcoord: " + zcoord + ", height: " + height);
 
 				vertices[vertexPointer * 3] = xcoord;
 				vertices[vertexPointer * 3 + 1] = height;
 				vertices[vertexPointer * 3 + 2] = zcoord;
 
 				Vector3f normal = heightGenerator.getNormalApprox(xcoord, zcoord); // TODO
-				System.out.println("Terrain normal: " + normal);
-				System.out.println();
+//				System.out.println("Terrain normal: " + normal);
+//				System.out.println();
 				//Vector3f normal = new Vector3f(0f, 1f, 0f);
 				normals[vertexPointer * 3] = normal.x;
 				normals[vertexPointer * 3 + 1] = normal.y;

@@ -52,7 +52,7 @@ public class ImageHeightMap implements IHeightGenerator {
 				z + 1e-6 < 0.0 || 
 				x > (heightMap.length - 1) * vertexDistance + 1e-6 || // heightMap.length == width
 				z > (heightMap[0].length - 1) * vertexDistance + 1e-6) {
-			System.out.println("x z out of map bounds; x: " + x + ", z: " + z);
+//			System.out.println("x z out of map bounds; x: " + x + ", z: " + z);
 			return 0.0f;
 		}
 		
@@ -67,7 +67,7 @@ public class ImageHeightMap implements IHeightGenerator {
 		double xGrid = x / vertexDistance;
 		double zGrid = z / vertexDistance;
 		
-		System.out.println("Grid x: " + xGrid + ", z: " + zGrid);
+//		System.out.println("Grid x: " + xGrid + ", z: " + zGrid);
 
 		int leftX = (int) xGrid;
 		int upZ = (int) zGrid; // up is forward, towards -z
@@ -77,8 +77,8 @@ public class ImageHeightMap implements IHeightGenerator {
 		double u = xGrid - leftX;
 		double v = zGrid - upZ;
 		
-		System.out.println("u: " + u);
-		System.out.println("v: " + v);
+//		System.out.println("u: " + u);
+//		System.out.println("v: " + v);
 		
 		double heightLeftUp = heightMap[leftX][upZ];
 		double heightLeftDown = heightMap[leftX][downZ];
@@ -89,19 +89,29 @@ public class ImageHeightMap implements IHeightGenerator {
 		double heightDown = (1.0 - u) * heightLeftDown + u * heightRightDown;
 		double height = (1.0 - v) * heightUp + v * heightDown;
 
-		System.out.println("Height at x: " + x + ", z: " + z + ": " + height);
+//		System.out.println("Height at x: " + x + ", z: " + z + ": " + height);
 		
 		return (float) height;
 	}
 	
 	@Override
 	public Vector3f getNormal(float x, float z) {
-		float heightL = getHeight((float) (x - vertexDistance), z);
-		float heightR = getHeight((float) (x + vertexDistance), z);
-		float heightD = getHeight(x, (float) (z + vertexDistance));
-		float heightU = getHeight(x, (float) (z - vertexDistance));
+		//final float DIFF = 0.01f;
+		final float DIFF = 3f;
+		
+		float heightL = getHeight(x - DIFF, z);
+		float heightR = getHeight(x + DIFF, z);
+		float heightD = getHeight(x, z + DIFF);
+		float heightU = getHeight(x, z - DIFF);
+		
+//		Vector3f normal = new Vector3f(
+//				(heightL - heightR) / (2f * DIFF),
+//				1f,
+//				(heightU - heightD) / (2f * DIFF));
+		
+//		Vector3f normal = new Vector3f(heightL - heightR, 2f, heightU - heightD);
+		Vector3f normal = new Vector3f(heightL - heightR, 2f, heightU - heightD);
 
-		Vector3f normal = new Vector3f(heightL - heightR, 2.0f, heightU - heightD);
 		normal.normalise();
 		
 		return normal;
@@ -109,12 +119,12 @@ public class ImageHeightMap implements IHeightGenerator {
 	
 //	@Override
 //	public Vector3f getNormal(float x, float z) {
-//		float heightL = getHeight(x - 1, z);
-//		float heightR = getHeight(x + 1, z);
-//		float heightD = getHeight(x, z - 1);
-//		float heightU = getHeight(x, z + 1);
+//		float heightL = getHeight((float) (x - vertexDistance), z);
+//		float heightR = getHeight((float) (x + vertexDistance), z);
+//		float heightD = getHeight(x, (float) (z + vertexDistance));
+//		float heightU = getHeight(x, (float) (z - vertexDistance));
 //
-//		Vector3f normal = new Vector3f(heightL - heightR, 2.0f, heightD - heightU);
+//		Vector3f normal = new Vector3f(heightL - heightR, 2.0f, heightU - heightD);
 //		normal.normalise();
 //		
 //		return normal;

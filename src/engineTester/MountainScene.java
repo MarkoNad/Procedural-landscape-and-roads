@@ -243,8 +243,7 @@ public class MountainScene {
 //				SamplingType.NEAREST_UNIQUE // roadSamplingType
 //		);
 
-		final float segmentLen = 1f;
-		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(segmentLen);
+		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(1f);
 		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, 0.0f));
 		Optional<Entity> maybeRoadEntity = maybeRoad.map(road -> setupRoad(loader, heightGenerator, road));
 

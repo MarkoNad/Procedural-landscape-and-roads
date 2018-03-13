@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
@@ -29,18 +31,26 @@ import objConverter.OBJFileLoader;
 import renderEngine.DisplayManager;
 import renderEngine.Loader;
 import renderEngine.MasterRenderer;
+import roads.Pathfinder;
 import roads.Road;
+import roads.TunnelManager;
+import search.AStar;
 import terrains.BiomesMap;
-import terrains.ImageHeightMap;
 import terrains.IHeightGenerator;
+import terrains.ImageHeightMap;
 import terrains.NoiseMap;
 import terrains.Terrain;
+import terrains.TerrainLODGrid;
 import terrains.TreeType;
 import textures.ModelTexture;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
+import toolbox.CatmullRomSpline3D;
+import toolbox.Globals;
 import toolbox.Point2Df;
+import toolbox.Point2Di;
 import toolbox.Range;
+import toolbox.SamplerUtility.SamplingType;
 import toolbox.TriFunction;
 
 public class HeightMapScene2 {
@@ -95,15 +105,17 @@ public class HeightMapScene2 {
 		// terrain setup
 		BufferedImage heightImage = null;
 		try {
-			heightImage = ImageIO.read(new File("res/heightMap3.png"));
+			heightImage = ImageIO.read(new File("res/heightMap.png"));
 		} catch (IOException ex) {
 			ex.printStackTrace();
 			System.exit(1);
 		}
 		
-		double pixelDistance = 50.0;
-		double vertsPerUnit = 1.0 / pixelDistance; // TODO
-		//double vertsPerUnit = 2.0 / pixelDistance;
+//		double pixelDistance = 50.0; // TODO
+//		double vertsPerUnit = 1.0 / pixelDistance; // TODO
+		double pixelDistance = 3.0;
+		double vertsPerUnit = 1.0 / pixelDistance * 3.0;
+		System.out.println("verts per unit: " + (float)vertsPerUnit);
 		
 		NavigableMap<Float, Integer> distanceToLODLevel = new TreeMap<>();
 		//distanceToLODLevel.put(3000f, 0);
@@ -125,7 +137,7 @@ public class HeightMapScene2 {
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
 		//SimplexHeightGenerator heightGenerator = new SimplexHeightGenerator(1, 9000f, 0.0001f, 2f, 5, 0.4f, 0.2f, 5f);
-		IHeightGenerator heightGenerator = new ImageHeightMap(heightImage, 100f, pixelDistance);
+		IHeightGenerator heightGenerator = new ImageHeightMap(heightImage, 80f, pixelDistance);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
 		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
 			NoiseMap texVariationMap = new NoiseMap(450f, 0.0005f, 0);
@@ -134,20 +146,63 @@ public class HeightMapScene2 {
 		};
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
 		
-		Point2Df domainLowerLeftLimit = new Point2Df(0f, 0f);
-		Point2Df domainUpperRightLimit = new Point2Df(150f, -150f);
-		
-		System.out.println("verts per unit: " + (float)vertsPerUnit);
-		
-		Terrain terrain = new Terrain(0f, 0f, new Vector3f(), 100f, 100f, (float)vertsPerUnit,
+		float size = (float) (256 * pixelDistance);
+		Terrain terrain = new Terrain(0f, 0f, new Vector3f(), size, size, (float)vertsPerUnit,
 				5f, 5f, texturePack, blendMap, heightGenerator, biomesMap, loader);
+		
+		Point2Df domainLowerLeftLimit = new Point2Df(0f, size);
+		Point2Df domainUpperRightLimit = new Point2Df(size, 0f);
+		
+		Pathfinder pathfinder = new Pathfinder(
+				AStar<Point2Di>::new, // algorithm
+				CatmullRomSpline3D::new, // spline
+				new Point2Df(10f, 10f), // start,
+				new Point2Df(size, size), // goal,
+				domainLowerLeftLimit,
+				domainUpperRightLimit,
+				heightGenerator,
+				10f, // cellSize
+				false, // allowTunnels
+				15f, // minimum tunnel depth
+				10, // endpointOffset
+				8, // maskOffset
+				4500f, // tunnelInnerRadius
+				6000f, // tunnelOuterRadius
+				100, // tunnelCandidates
+				true, // limitTunnelCandidates
+				new Random(0), // random,
+				3, // roadRange,
+				0.25, // maxRoadSlopePercent,
+				1.75, //maxRoadCurvature,
+				1.0, // roadLengthMultiplier,
+				80.0, // roadSlopeMultiplier,
+				10.0, // roadCurvatureMultiplier,
+				2.0, // roadSlopeExponent,
+				3.0, // roadCurvatureExponent,
+				0.25, // maxTunnelSlopePercent,
+				1.75, // maxTunnelCurvature,
+				10.0, // tunnelLengthMultiplier,
+				200.0, // tunnelSlopeMultiplier,
+				10.0, // tunnelCurvatureMultiplier,
+				2.0, // tunnelSlopeExponent,
+				3.0, // tunnelCurvatureExponent,
+				SamplingType.NEAREST_UNIQUE // roadSamplingType
+		);
+		
+		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(1f);
+		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, 0.0f));
+		Optional<Entity> maybeRoadEntity = maybeRoad.map(road -> setupRoad(loader, heightGenerator, road));
 
-//		float texWidth = 5f;
-//		float texDepth = 5f;
-//		float patchSize = 500f;
-//		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, texWidth, texDepth,
-//				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
-//				Optional.of(Globals.getThreadPool()));
+		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
+//		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
+//		pathfinder.findModifierTrajectories(-0.05f).ifPresent(modifiers -> modifiers.forEach(m -> heightGenerator.updateHeight(m, influenceFn, 15f)));
+
+		float texWidth = 5f;
+		float texDepth = 5f;
+		float patchSize = 50f;
+		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, texWidth, texDepth,
+				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
+				Optional.of(Globals.getThreadPool()));
 
 //		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
 //		PoissonDiskSampler sampler = new PoissonDiskSampler(0, -5000, 10000, -22000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(10000f, -5000f));
@@ -208,18 +263,27 @@ public class HeightMapScene2 {
 		
 		final float terrainLODTolerance = 200f;
 		
-		light = new Light(new Vector3f(0, 100, -10), new Vector3f(1, 1, 1));
+		light = new Light(new Vector3f(500, 1000, -500), new Vector3f(1, 1, 1));
 		
 		List<Entity> entities = new ArrayList<>();
 		entities.add(chestnutEntityTrunk);
 		entities.add(chestnutEntityTop);
 		entities.add(cubeEntity);
 		entities.add(cubeEntity2);
+		
+		Optional<List<Entity>> tunnelPartEntities = maybeRoad.map(road -> {
+			TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData().get(), 5, 1.0f, 50f,
+					50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
+			return tunnelManager.getAllTunnelEntities();
+		});
 
 		while(!Display.isCloseRequested()) {
 			camera.update();
 			
-			renderer.processTerrain(terrain);
+			//renderer.processTerrain(terrain);
+			
+			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
+			maybeRoadEntity.ifPresent(roadEntity -> renderer.processEntity(roadEntity));
 			
 			barrelEntity.increaseRotation(0, 0.5f, 0);
 			crateEntity.increaseRotation(0, 0.5f, 0);
@@ -227,10 +291,10 @@ public class HeightMapScene2 {
 			//barrelEntity2.increaseRotation(0, 0.5f, 0);
 			//crateEntity2.increaseRotation(0, 0.5f, 0);
 
-			//List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
+			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			//entities.forEach(e -> renderer.processEntity(e));
 			nmEntites.forEach(e -> renderer.processNMEntity(e));
-			//terrains.forEach(t -> renderer.processTerrain(t));
+			terrains.forEach(t -> renderer.processTerrain(t));
 			renderer.render(light, camera);
 			
 			DisplayManager.updateDisplay();
