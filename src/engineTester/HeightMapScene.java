@@ -1,9 +1,14 @@
 package engineTester;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
+import javax.imageio.ImageIO;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -22,7 +27,7 @@ import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import renderEngine.OBJLoader;
 import terrains.BiomesMap;
-import terrains.HeightMapHeightGenerator;
+import terrains.ImageHeightMap;
 import terrains.Terrain;
 import textures.ModelTexture;
 import textures.TerrainTexture;
@@ -70,7 +75,16 @@ public class HeightMapScene {
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
-		HeightMapHeightGenerator heightGenerator = new HeightMapHeightGenerator("res/heightMap.png");
+		
+		BufferedImage heightImage = null;
+		try {
+			heightImage = ImageIO.read(new File("res/heightMap.png"));
+		} catch (IOException ex) {
+			ex.printStackTrace();
+			System.exit(1);
+		}
+
+		ImageHeightMap heightGenerator = new ImageHeightMap(heightImage, 100, 0.02f);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		//Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, heightGenerator, heightGenerator.getXPoints(), heightGenerator.getYPoints());

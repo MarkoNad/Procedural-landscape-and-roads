@@ -89,11 +89,13 @@ public class MountainScene {
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
 		chestnutLods.put(200f, chestnutLOD0Comp);
-		chestnutLods.put(2000f, chestnutLOD1Comp);
+		//chestnutLods.put(2000f, chestnutLOD1Comp); //TODO
+		chestnutLods.put(1200f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
 		firLods.put(200f, firLOD0Comp);
-		firLods.put(2000f, firLOD1Comp);
+		//firLods.put(2000f, firLOD1Comp); //TODO
+		firLods.put(1200f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
 		lodLevelsForType.put(TreeType.OAK, chestnutLods);
