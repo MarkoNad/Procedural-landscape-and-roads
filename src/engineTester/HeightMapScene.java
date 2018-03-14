@@ -84,7 +84,7 @@ public class HeightMapScene {
 			System.exit(1);
 		}
 
-		ImageHeightMap heightGenerator = new ImageHeightMap(heightImage, 100, 0.02f);
+		ImageHeightMap heightGenerator = new ImageHeightMap(heightImage, 0, 100, 0.02f);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f);
 		//Terrain terrain = new Terrain(0, -1, loader, texturePack, blendMap, heightGenerator, heightGenerator.getXPoints(), heightGenerator.getYPoints());

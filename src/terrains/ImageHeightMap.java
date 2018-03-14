@@ -2,11 +2,10 @@ package terrains;
 
 import java.awt.image.BufferedImage;
 
-import org.lwjgl.util.vector.Vector3f;
-
-public class ImageHeightMap implements IHeightGenerator {
+public class ImageHeightMap extends MutableHeightMap {
 
 	private static final int MAX_PIXEL_COLOR = 256 * 256 * 256;
+	private static final float DIFF = 12000.0f / 1080.0f;
 	
 	private final double maxHeight;
 	private final double vertexDistance;
@@ -16,6 +15,8 @@ public class ImageHeightMap implements IHeightGenerator {
 
 	public ImageHeightMap(BufferedImage heightMapImage, double minHeight, double maxHeight,
 			double vertexDistance) {
+		super(DIFF);
+		
 		this.maxHeight = maxHeight;
 		this.vertexDistance = vertexDistance;
 		this.xVerts = heightMapImage.getWidth();
@@ -81,11 +82,6 @@ public class ImageHeightMap implements IHeightGenerator {
 				
 				double height = minHeight + intervalsRatio * (percentage - minAfterScale);
 
-//				double height = minHeight + 
-//						(maxHeight - minHeight) *
-//						(percentage - minAfterScale) / 
-//						(maxAfterScale - minAfterScale);
-				
 				if(height > maxFoundHeightFinal) maxFoundHeightFinal = height;
 				if(height < minFoundHeightFinal) minFoundHeightFinal = height;
 
@@ -102,9 +98,9 @@ public class ImageHeightMap implements IHeightGenerator {
 		
 		return heightMap;
 	}
-
+	
 	@Override
-	public float getHeight(float x, float z) {
+	protected float getBaseHeight(float x, float z) {
 		if(x + 1e-6 < 0.0 || 
 				z + 1e-6 < 0.0 || 
 				x > (heightMap.length - 1) * vertexDistance + 1e-6 || // heightMap.length == width
@@ -150,56 +146,10 @@ public class ImageHeightMap implements IHeightGenerator {
 		
 		return (float) height;
 	}
-	
-	@Override
-	public Vector3f getNormal(float x, float z) {
-		//final float DIFF = 0.01f;
-		final float DIFF = 11.1111f;
-		
-		float heightL = getHeight(x - DIFF, z);
-		float heightR = getHeight(x + DIFF, z);
-		float heightD = getHeight(x, z + DIFF);
-		float heightU = getHeight(x, z - DIFF);
-		
-//		Vector3f normal = new Vector3f(
-//				(heightL - heightR) / (2f * DIFF),
-//				1f,
-//				(heightU - heightD) / (2f * DIFF));
-		
-//		Vector3f normal = new Vector3f(heightL - heightR, 2f, heightU - heightD);
-		Vector3f normal = new Vector3f(heightL - heightR, 20f, heightU - heightD);
-
-		normal.normalise();
-		
-		return normal;
-	}
-	
-//	@Override
-//	public Vector3f getNormal(float x, float z) {
-//		float heightL = getHeight((float) (x - vertexDistance), z);
-//		float heightR = getHeight((float) (x + vertexDistance), z);
-//		float heightD = getHeight(x, (float) (z + vertexDistance));
-//		float heightU = getHeight(x, (float) (z - vertexDistance));
-//
-//		Vector3f normal = new Vector3f(heightL - heightR, 2.0f, heightU - heightD);
-//		normal.normalise();
-//		
-//		return normal;
-//	}
 
 	@Override
 	public float getMaxHeight() {
 		return (float) maxHeight;
-	}
-
-	@Override
-	public float getHeightApprox(float x, float z) {
-		return getHeight(x, z);
-	}
-
-	@Override
-	public Vector3f getNormalApprox(float x, float z) {
-		return getNormal(x, z);
 	}
 
 }
