@@ -89,12 +89,10 @@ public class MountainScene {
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
 		chestnutLods.put(200f, chestnutLOD0Comp);
-		//chestnutLods.put(2000f, chestnutLOD1Comp); //TODO
 		chestnutLods.put(1200f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
 		firLods.put(200f, firLOD0Comp);
-		//firLods.put(2000f, firLOD1Comp); //TODO
 		firLods.put(1200f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
@@ -250,7 +248,7 @@ public class MountainScene {
 		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
 		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
 		pathfinder.findModifierTrajectories(-0.05f).ifPresent(modifiers -> modifiers.forEach(m -> heightGenerator.updateHeight(m, influenceFn, 15f)));
-		
+
 		Camera camera = new FloatingCamera(new Vector3f(11580f, 3000.0f, -7130f));
 		
 		float texWidth = 5f;

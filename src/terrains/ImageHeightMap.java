@@ -14,34 +14,91 @@ public class ImageHeightMap implements IHeightGenerator {
 	private final int xVerts;
 	private final int zVerts;
 
-	public ImageHeightMap(BufferedImage heightMapImage, double maxHeight, double vertexDistance) {
+	public ImageHeightMap(BufferedImage heightMapImage, double minHeight, double maxHeight,
+			double vertexDistance) {
 		this.maxHeight = maxHeight;
 		this.vertexDistance = vertexDistance;
 		this.xVerts = heightMapImage.getWidth();
 		this.zVerts = heightMapImage.getHeight();
-		this.heightMap = generateHeightMap(heightMapImage, maxHeight);
+		this.heightMap = generateHeightMap(heightMapImage, minHeight, maxHeight);
 		
 		for(int z = 0; z < heightMap[0].length; z++) {
 			for(int x = 0; x < heightMap.length; x++) {
-				System.out.println("Map x: " + x + ", z: " + z + ", height: " + heightMap[x][z]);
+				//System.out.println("Map x: " + x + ", z: " + z + ", height: " + heightMap[x][z]);
 			}
 		}
 	}
-
-	private double[][] generateHeightMap(BufferedImage heightMapImage, double maxHeight) {
+	
+	private double[][] generateHeightMap(BufferedImage heightMapImage, double minHeight, 
+			double maxHeight) {
 		double[][] heightMap = new double[heightMapImage.getWidth()][heightMapImage.getHeight()];
+		
+		double minOriginalHeight = Double.POSITIVE_INFINITY; // remove
+		double maxOriginaldHeight = Double.NEGATIVE_INFINITY; // remove
+		double minAfterScale = Double.POSITIVE_INFINITY;
+		double maxAfterScale = Double.NEGATIVE_INFINITY;
 		
 		for(int y = 0; y < heightMapImage.getHeight(); y++) {
 			for(int x = 0; x < heightMapImage.getWidth(); x++) {
 				double height = heightMapImage.getRGB(x, y);
+				
+//				int rgb = heightMapImage.getRGB(x, y);
+//				int a = (rgb >> 24) & 0xFF;
+//				int r = (rgb >> 16) & 0xFF;
+//				int g = (rgb >> 8) & 0xFF;
+//				int b = rgb & 0xFF;
+//				
+//				System.out.println("rgb: " + rgb);
+//				System.out.println("height: " + height);
+//				System.out.println("a: " + a);
+//				System.out.println("r: " + r);
+//				System.out.println("g: " + g);
+//				System.out.println("b: " + b);
+//				System.out.println("a: " + Integer.toBinaryString(a));
+
+				if(height > maxOriginaldHeight) maxOriginaldHeight = height;
+				if(height < minOriginalHeight) minOriginalHeight = height;
 
 				height += MAX_PIXEL_COLOR;
 				height /= MAX_PIXEL_COLOR;
-				height *= maxHeight;
 				
+				if(height > maxAfterScale) maxAfterScale = height;
+				if(height < minAfterScale) minAfterScale = height;
+			}
+		}
+		
+		double minFoundHeightFinal = Float.MAX_VALUE;
+		double maxFoundHeightFinal = Float.MIN_VALUE;
+		
+		final double intervalsRatio = (maxHeight - minHeight) / (maxAfterScale - minAfterScale);
+		
+		for(int y = 0; y < heightMapImage.getHeight(); y++) {
+			for(int x = 0; x < heightMapImage.getWidth(); x++) {
+				double percentage = heightMapImage.getRGB(x, y);
+
+				percentage += MAX_PIXEL_COLOR;
+				percentage /= MAX_PIXEL_COLOR;
+				
+				double height = minHeight + intervalsRatio * (percentage - minAfterScale);
+
+//				double height = minHeight + 
+//						(maxHeight - minHeight) *
+//						(percentage - minAfterScale) / 
+//						(maxAfterScale - minAfterScale);
+				
+				if(height > maxFoundHeightFinal) maxFoundHeightFinal = height;
+				if(height < minFoundHeightFinal) minFoundHeightFinal = height;
+
 				heightMap[x][y] = height;
 			}
 		}
+		
+		System.out.println("min height: " + maxOriginaldHeight);
+		System.out.println("max height: " + minOriginalHeight);
+		System.out.println("min height after scaling with " + MAX_PIXEL_COLOR + ": " + minAfterScale);
+		System.out.println("max height after scaling with " + MAX_PIXEL_COLOR + ": " + maxAfterScale);
+		System.out.println("min height true: " + minFoundHeightFinal);
+		System.out.println("max height true: " + maxFoundHeightFinal);
 		
 		return heightMap;
 	}
@@ -97,7 +154,7 @@ public class ImageHeightMap implements IHeightGenerator {
 	@Override
 	public Vector3f getNormal(float x, float z) {
 		//final float DIFF = 0.01f;
-		final float DIFF = 3f;
+		final float DIFF = 11.1111f;
 		
 		float heightL = getHeight(x - DIFF, z);
 		float heightR = getHeight(x + DIFF, z);
@@ -110,7 +167,7 @@ public class ImageHeightMap implements IHeightGenerator {
 //				(heightU - heightD) / (2f * DIFF));
 		
 //		Vector3f normal = new Vector3f(heightL - heightR, 2f, heightU - heightD);
-		Vector3f normal = new Vector3f(heightL - heightR, 2f, heightU - heightD);
+		Vector3f normal = new Vector3f(heightL - heightR, 20f, heightU - heightD);
 
 		normal.normalise();
 		

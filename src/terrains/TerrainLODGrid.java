@@ -112,7 +112,7 @@ public class TerrainLODGrid {
 		int zPatches = (int) Math.ceil((domainLowerLeftLimit.getZ() - domainUpperRightLimit.getZ()) / patchSize);
 		
 		Point2Di end = new Point2Di(start.getX() + xPatches - 1, start.getZ() - (zPatches - 1));
-		
+
 		if(end.getX() - start.getX() < 0 || start.getZ() - end.getZ() < 0) {
 			LOGGER.warning("Number of terrains to generate is 0.");
 		}
@@ -139,7 +139,7 @@ public class TerrainLODGrid {
 	private void submitPatchForGeneration(int x, int z, int level) {
 		float xUpperLeft = x * patchSize;
 		float zUpperLeft = (z - 1) * patchSize;
-		
+
 		Point2Di gridPoint = new Point2Di(x, z);
 		
 		float vertsPerUnit = lodLevelToVertsPerUnit.get(level);
