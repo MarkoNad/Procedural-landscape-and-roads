@@ -47,8 +47,6 @@ public class TerrainLODGrid {
 	
 	private final int cellSearchRange;
 	
-//	private List<Terrain> proximityTerrainsCache;
-//	private List<ITerrain> proximityMendsCache;
 	private List<ITerrain> proximityITerrainsCache;
 	private Vector3f lastRetrievalPosition;
 	private boolean terrainsAdded;
@@ -151,7 +149,6 @@ public class TerrainLODGrid {
 		Runnable generationTask = new Runnable() {
 			@Override
 			public void run() {
-				try { // TODO
 				Terrain patch = generatePatch(xUpperLeft, zUpperLeft, patchSize, vertsPerUnit);
 				ConcurrentNavigableMap<Integer, Terrain> terrainsAtPoint = grid.get(gridPoint);
 
@@ -174,20 +171,11 @@ public class TerrainLODGrid {
 							loader);
 					
 					mendDataGrid.put(gridPoint, mends);
-					System.out.println("added mends to " + gridPoint + " x, z, level: " + x + ", " + z + ", " + level);
-				} else {
-					System.out.println("already added mends to " + gridPoint + " x, z, level: " + x + ", " + z + ", " + level);
 				}
-				
-				System.out.println("mends size: " + mendDataGrid.size());
 
 				setTerrainsAdded(true);
 				LOGGER.finest("Added terrain patch at (" + gridPoint.getX() + ", " +
 				gridPoint.getZ() + ") with LOD " + level + ".");
-				} catch(Exception ex) {
-					System.out.println(ex);
-					ex.printStackTrace();
-				}
 			}
 		};
 		
@@ -266,12 +254,10 @@ public class TerrainLODGrid {
 			LOGGER.finer("Recalculating terrain patches.");
 			setTerrainsAdded(false);
 			lastRetrievalPosition = new Vector3f(position);
-			List<ITerrain> proximityTerrains = calcProximityTerrains(position);
-			List<ITerrain> proximityMends = calcProximityMends(position);
-			
 			proximityITerrainsCache = new ArrayList<>();
-			proximityITerrainsCache.addAll(proximityTerrains);
-			proximityITerrainsCache.addAll(proximityMends);
+			
+			addProximityTerrains(position, proximityITerrainsCache);
+			addProximityMends(position, proximityITerrainsCache);
 		}
 
 		return proximityITerrainsCache;
@@ -279,14 +265,12 @@ public class TerrainLODGrid {
 	
 	private synchronized void setTerrainsAdded(boolean terrainsAdded) {
 		this.terrainsAdded = terrainsAdded;
-		LOGGER.finer("Terrains added: " + terrainsAdded + "; need refresh.");
+		LOGGER.finer("Terrains added: " + terrainsAdded + "; need refresh: " + terrainsAdded);
 	}
 
-	private List<ITerrain> calcProximityTerrains(Vector3f position) {
+	private void addProximityTerrains(Vector3f position, List<ITerrain> outputList) {
 		int x = (int) (position.x / patchSize);
 		int z = (int) (position.z / patchSize);
-		
-		List<ITerrain> terrainPatches = new ArrayList<>();
 		
 		for(int row = z - cellSearchRange; row <= z + cellSearchRange; row++) {
 			for(int col = x - cellSearchRange; col <= x + cellSearchRange; col++) {
@@ -314,19 +298,14 @@ public class TerrainLODGrid {
 				}
 				
 				Terrain terrainPatch = terrainWithEqualOrLesserLOD.getValue();
-				
-//				if(terrainPatch.getModel() == null) { // TODO isEmpty instead
-//					terrainPatch.setModel(loader);
-//				}
-				if(!terrainPatch.getModel().isPresent()) { // TODO isEmpty instead
+
+				if(!terrainPatch.getModel().isPresent()) {
 					terrainPatch.setModel(loader);
 				}
 				
-				terrainPatches.add(terrainPatch);
+				outputList.add(terrainPatch);
 			}
 		}
-
-		return terrainPatches;
 	}
 	
 	private int determineLOD(Point2Di gridPoint, Vector3f position) {
@@ -343,41 +322,31 @@ public class TerrainLODGrid {
 		return (int) Math.ceil(renderDistance / patchSize);
 	}
 
-	private List<ITerrain> calcProximityMends(Vector3f position) {
-		System.out.println("calculating mends:");
-		System.out.println("mend grid size: " + mendDataGrid.size());
-		System.out.println("mend grid: " + mendDataGrid);
-		
+	private void addProximityMends(Vector3f position, List<ITerrain> outputList) {
 		int x = (int) (position.x / patchSize);
 		int z = (int) (position.z / patchSize);
 		
-		List<ITerrain> terrainMends = new ArrayList<>();
 		Point2Di gridPointBuf = new Point2Di();
 		
 		for(int row = z - cellSearchRange; row <= z + cellSearchRange; row++) {
 			for(int col = x - cellSearchRange; col <= x + cellSearchRange; col++) {
 				gridPointBuf.setPosition(col, row);
 
-				TerrainMends mendsAtPoint = mendDataGrid.get(gridPointBuf); // TODO mend datum synchronized?
-				System.out.println("mends at " + gridPointBuf + ": " + mendsAtPoint);
-				 
+				TerrainMends mendsAtPoint = mendDataGrid.get(gridPointBuf);
+
 				// no terrains are generated at this point yet, or they will not be at all
 				if(mendsAtPoint == null) {
-					System.out.println("nothing here");
 					continue;
 				}
 
 				int actualMiddleLOD = determineActualTerrainLOD(gridPointBuf, position);
-				System.out.println("middle lod: " + actualMiddleLOD);
 				if(actualMiddleLOD == -1) continue;
 
 				gridPointBuf.setPosition(col + 1, row);
 				int actualRightLOD = determineActualTerrainLOD(gridPointBuf, position);
-				System.out.println("right lod: " + actualRightLOD);
 
 				gridPointBuf.setPosition(col, row + 1);
 				int actualDownLOD = determineActualTerrainLOD(gridPointBuf, position);
-				System.out.println("down lod: " + actualDownLOD);
 				
 				if(actualRightLOD != -1 && actualRightLOD != actualMiddleLOD) {
 					Optional<ITerrain> maybeRightMend = mendsAtPoint.rightMend(actualMiddleLOD, actualRightLOD);
@@ -389,7 +358,7 @@ public class TerrainLODGrid {
 							rightMend.setModel(loader);
 						}
 						
-						terrainMends.add(rightMend);
+						outputList.add(rightMend);
 					}
 				}
 				
@@ -403,14 +372,11 @@ public class TerrainLODGrid {
 							downMend.setModel(loader);
 						}
 						
-						terrainMends.add(downMend);
+						outputList.add(downMend);
 					}
 				}
 			}
 		}
-
-		System.out.println();
-		return terrainMends;
 	}
 	
 	private int determineActualTerrainLOD(Point2Di gridPoint, Vector3f position) {

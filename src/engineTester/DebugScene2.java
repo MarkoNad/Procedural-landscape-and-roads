@@ -60,6 +60,7 @@ import toolbox.SamplerUtility.SamplingType;
 import toolbox.TriFunction;
 
 public class DebugScene2 {
+	
 	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
 	public static void main(String[] args) {

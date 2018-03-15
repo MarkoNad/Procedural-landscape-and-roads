@@ -23,9 +23,8 @@ public class Terrain implements ITerrain {
 	private final float depth;
 	private final float vertsPerMeter;
 
-	private final float textureWidth; // how many times the texture will be repeated
-								// in x direction
-	private final float textureDepth;
+	private final float textureWidth; // how many units this texture represents along x axis
+	private final float textureDepth; // how many units this texture represents along z axis
 
 	private float xUpperLeft; // true x coordinate of upper left corner
 	private float zUpperLeft;

@@ -40,7 +40,6 @@ public class TerrainRenderer {
 	}
 	
 	private void prepareTerrain(ITerrain terrain) {
-		//RawModel rawModel = terrain.getModel();
 		Optional<RawModel> rawModel = terrain.getModel();
 		if(!rawModel.isPresent()) {
 			throw new IllegalArgumentException("Terrain raw model was not set.");
@@ -86,7 +85,6 @@ public class TerrainRenderer {
 	}
 	
 	private void loadModelMatrix(ITerrain terrain) {
-		//Matrix4f transformationMatrix = Maths.createTransformationMatrix(new Vector3f(terrain.getX(), 0, terrain.getZ()), 0, 0, 0, 1);
 		Matrix4f transformationMatrix = MatrixUtils.createTransformationMatrix(terrain.getTranslation(), 0, 0, 0, 1);
 		shader.loadTransformationMatrix(transformationMatrix);
 	}

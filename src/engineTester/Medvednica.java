@@ -41,10 +41,10 @@ import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
+import terrains.ITerrain;
 import terrains.ImageHeightMap;
 import terrains.MutableHeightMap;
 import terrains.NoiseMap;
-import terrains.Terrain;
 import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
 import terrains.TreeType;
@@ -67,7 +67,7 @@ public class Medvednica {
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
-		Camera camera = new FloatingCamera(new Vector3f(9350.0f, 200.0f, 12000.0f), 20f, 100f, 500f, 300f, 12.5f);
+		Camera camera = new FloatingCamera(new Vector3f(9350.0f, 500.0f, 12000.0f), 20f, 100f, 500f, 300f, 12.5f);
 		Light light = new Light(new Vector3f(6000, 10000, 25000), new Vector3f(1, 1, 1));
 		MasterRenderer renderer = new MasterRenderer();
 
@@ -219,7 +219,7 @@ public class Medvednica {
 			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
 			maybeRoadEntity.ifPresent(roadEntity -> renderer.processEntity(roadEntity));
 
-			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), 200f);
+			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), 200f);
 			terrains.forEach(t -> renderer.processTerrain(t));
 			
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());

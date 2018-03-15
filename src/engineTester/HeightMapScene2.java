@@ -20,7 +20,6 @@ import java.util.function.BiFunction;
 import javax.imageio.ImageIO;
 
 import org.lwjgl.opengl.Display;
-import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 
 import controller.LODGrid;
@@ -41,9 +40,9 @@ import roads.Road;
 import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
+import terrains.ITerrain;
 import terrains.ImageHeightMap;
 import terrains.MutableHeightMap;
-import terrains.Terrain;
 import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
 import terrains.TreeType;
@@ -305,7 +304,7 @@ public class HeightMapScene2 {
 			//barrelEntity2.increaseRotation(0, 0.5f, 0);
 			//crateEntity2.increaseRotation(0, 0.5f, 0);
 
-			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
+			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			terrains.forEach(t -> renderer.processTerrain(t));
 			
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());

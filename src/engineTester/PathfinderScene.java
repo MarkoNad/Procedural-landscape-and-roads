@@ -37,9 +37,9 @@ import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
+import terrains.ITerrain;
 import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
-import terrains.Terrain;
 import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
 import terrains.TreeType;
@@ -212,7 +212,7 @@ public class PathfinderScene {
 			camera.update();
 
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
+			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			
 			tunnelEndpoints.ifPresent(tes -> tes.forEach(te -> renderer.processEntity(te)));
 			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));

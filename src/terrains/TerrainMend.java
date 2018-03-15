@@ -141,7 +141,7 @@ public class TerrainMend implements ITerrain {
 		float[] normals = new float[count * 3];
 		float[] textureCoords = new float[count * 2];
 		float[] textureInfluences = new float[count * NUM_TEXTURES]; // 3 textures per vertex (r, g, b)
-		float[] tangents = new float[count * 3];
+		float[] tangents = new float[count * 3]; // TODO calculate tangents
 		int[] indices = new int[6 * (thisVertices.size() - 1)];
 		
 		float[] texStrengthsBuffer = new float[NUM_TEXTURES];
