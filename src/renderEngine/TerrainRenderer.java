@@ -11,7 +11,7 @@ import org.lwjgl.util.vector.Matrix4f;
 
 import models.RawModel;
 import shaders.TerrainShader;
-import terrains.Terrain;
+import terrains.ITerrain;
 import textures.TerrainTexturePack;
 import toolbox.MatrixUtils;
 
@@ -28,8 +28,8 @@ public class TerrainRenderer {
 		shader.stop();
 	}
 	
-	public void render(List<Terrain> terrains) {
-		for(Terrain terrain : terrains) {
+	public void render(List<ITerrain> terrains) {
+		for(ITerrain terrain : terrains) {
 			prepareTerrain(terrain);
 			loadModelMatrix(terrain);
 			
@@ -39,8 +39,7 @@ public class TerrainRenderer {
 		}
 	}
 	
-	private void prepareTerrain(Terrain terrain) {
-		//RawModel rawModel = terrain.getModel();
+	private void prepareTerrain(ITerrain terrain) {
 		Optional<RawModel> rawModel = terrain.getModel();
 		if(!rawModel.isPresent()) {
 			throw new IllegalArgumentException("Terrain raw model was not set.");
@@ -57,7 +56,7 @@ public class TerrainRenderer {
 		shader.loadShineVariables(1, 0);
 	}
 	
-	private void bindTextures(Terrain terrain) {
+	private void bindTextures(ITerrain terrain) {
 		TerrainTexturePack texturePack = terrain.getTexturePack();
 		
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
@@ -85,8 +84,7 @@ public class TerrainRenderer {
 		GL30.glBindVertexArray(0);
 	}
 	
-	private void loadModelMatrix(Terrain terrain) {
-		//Matrix4f transformationMatrix = Maths.createTransformationMatrix(new Vector3f(terrain.getX(), 0, terrain.getZ()), 0, 0, 0, 1);
+	private void loadModelMatrix(ITerrain terrain) {
 		Matrix4f transformationMatrix = MatrixUtils.createTransformationMatrix(terrain.getTranslation(), 0, 0, 0, 1);
 		shader.loadTransformationMatrix(transformationMatrix);
 	}

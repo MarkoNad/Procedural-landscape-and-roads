@@ -1,6 +1,9 @@
 package engineTester;
 
 import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -13,7 +16,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+
+import javax.imageio.ImageIO;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -38,8 +42,9 @@ import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
 import terrains.ITerrain;
+import terrains.ImageHeightMap;
+import terrains.MutableHeightMap;
 import terrains.NoiseMap;
-import terrains.SimplexHeightGenerator;
 import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
 import terrains.TreeType;
@@ -56,13 +61,14 @@ import toolbox.Range;
 import toolbox.SamplerUtility.SamplingType;
 import toolbox.TriFunction;
 
-public class PathfinderScene {
+public class Medvednica {
 
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
-		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
+		Camera camera = new FloatingCamera(new Vector3f(9350.0f, 500.0f, 12000.0f), 20f, 100f, 500f, 300f, 12.5f);
+		Light light = new Light(new Vector3f(6000, 10000, 25000), new Vector3f(1, 1, 1));
 		MasterRenderer renderer = new MasterRenderer();
 
 		TexturedModel firLOD1 = load("fir_lod1", "fir_lod1", loader);
@@ -90,17 +96,29 @@ public class PathfinderScene {
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
 		chestnutLods.put(200f, chestnutLOD0Comp);
-		chestnutLods.put(2000f, chestnutLOD1Comp);
+		chestnutLods.put(1500f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
 		firLods.put(200f, firLOD0Comp);
-		firLods.put(2000f, firLOD1Comp);
+		firLods.put(1500f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
 		lodLevelsForType.put(TreeType.OAK, chestnutLods);
 		lodLevelsForType.put(TreeType.PINE, firLods);
 		
 		// terrain setup
+		float size = 12000.0f;
+		
+		BufferedImage heightImage = null;
+		try {
+			heightImage = ImageIO.read(new File("res/medvednicaHeightMap12.png")); // 12 km x 12 km
+		} catch (IOException ex) {
+			ex.printStackTrace();
+			System.exit(1);
+		}
+
+		double pixelDistance = size / 1080.0f; // 12 km / (1081 - 1 pixels)
+		
 		NavigableMap<Float, Integer> distanceToLODLevel = new TreeMap<>();
 		distanceToLODLevel.put(3000f, 0);
 		distanceToLODLevel.put(10000f, 1);
@@ -119,28 +137,25 @@ public class PathfinderScene {
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
-		SimplexHeightGenerator heightGenerator = new SimplexHeightGenerator(1, 9000f, 0.0001f, 2f, 5, 0.4f, 0.2f, 5f);
-		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
-		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
-			NoiseMap texVariationMap = new NoiseMap(450f, 0.0005f, 0);
-			final float maxHeight = textureRanges.get(textureRanges.size() - 1).getEnd();
-			return (float) (texVariationMap.getNoise(x, z) * Math.pow(4 * (h + 1000) / maxHeight, 1.5));
-		};
-		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
+		MutableHeightMap heightGenerator = new ImageHeightMap(heightImage, 135.0, 1041.0, pixelDistance);
+		List<Range> textureRanges = Arrays.asList(new Range(0, 600), new Range(600, 900), new Range(900, heightGenerator.getMaxHeight()));
+		NoiseMap texVariationMap = new NoiseMap(40f, 0.005f, 0);
+		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> texVariationMap.getNoise(x, z);
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 50f, textureVariation);
 		
-		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
-		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
+		Point2Df domainLowerLeftLimit = new Point2Df(0f, size);
+		Point2Df domainUpperRightLimit = new Point2Df(size, 0f);
 
 		Pathfinder pathfinder = new Pathfinder(
 				AStar<Point2Di>::new, // algorithm
 				CatmullRomSpline3D::new, // spline
-				new Point2Df(9500f, -5000f), // start,
-				new Point2Df(10000f, -22000f), // goal,
+				new Point2Df(9350f, 11950f), // start,
+				new Point2Df(4000f, 0f), // goal,
 				domainLowerLeftLimit,
 				domainUpperRightLimit,
 				heightGenerator,
-				100f, // cellsize
-				true, // allowTunnels
+				15f, // cellSize
+				false, // allowTunnels
 				15f, // minimum tunnel depth
 				10, // endpointOffset
 				8, // maskOffset
@@ -150,7 +165,7 @@ public class PathfinderScene {
 				true, // limitTunnelCandidates
 				new Random(0), // random,
 				3, // roadRange,
-				0.3, // maxRoadSlopePercent,
+				0.09, // maxRoadSlopePercent,
 				1.75, //maxRoadCurvature,
 				1.0, // roadLengthMultiplier,
 				80.0, // roadSlopeMultiplier,
@@ -164,7 +179,7 @@ public class PathfinderScene {
 				10.0, // tunnelCurvatureMultiplier,
 				2.0, // tunnelSlopeExponent,
 				3.0, // tunnelCurvatureExponent,
-				SamplingType.NEAREST_UNIQUE // roadSamplingType
+				SamplingType.FARTHEST // roadSamplingType
 		);
 
 		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(1f);
@@ -180,7 +195,10 @@ public class PathfinderScene {
 				Optional.of(Globals.getThreadPool()));
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
-		PoissonDiskSampler sampler = new PoissonDiskSampler(0, -5000, 10000, -22000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(10000f, -5000f));
+		PoissonDiskSampler sampler = new PoissonDiskSampler(domainLowerLeftLimit.getX(), domainLowerLeftLimit.getZ(),
+				domainUpperRightLimit.getX(), domainUpperRightLimit.getZ(), 10f, 50f, distribution, 1, 30, 10_000_000,
+				new Point2D.Float(camera.getPosition().x, camera.getPosition().z));
+		
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		pathfinder.findModifierTrajectories(0.0f).ifPresent(ts -> ts.forEach(t -> placer.addNoTreeZone(t, 7.0f)));
 		ExecutorService pool = Globals.getThreadPool();
@@ -189,19 +207,6 @@ public class PathfinderScene {
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
 		grid.addToGrid(locationsPerType, pool);
 
-		Camera camera = new FloatingCamera(new Vector3f(10000.0f, 1000.0f, -5000.0f));
-		
-		final float terrainLODTolerance = 200f;
-		
-		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
-		
-		Optional<List<Entity>> tunnelEndpoints = pathfinder.findTunnelsData()
-				.map(tdList -> tdList
-						.stream()
-						.flatMap(td -> Arrays.asList(td.getFirstEndpointLocation(), td.getSecondEndpointLocation()).stream())
-						.map(te -> new Entity(chestnutTrunk, te, 0f, 0f, 0f, 40f))
-						.collect(Collectors.toList()));
-		
 		Optional<List<Entity>> tunnelPartEntities = maybeRoad.map(road -> {
 			TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData().get(), 5, 1.0f, 50f,
 					50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
@@ -211,15 +216,15 @@ public class PathfinderScene {
 		while(!Display.isCloseRequested()) {
 			camera.update();
 
-			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
-			
-			tunnelEndpoints.ifPresent(tes -> tes.forEach(te -> renderer.processEntity(te)));
 			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
-			
-			entities.forEach(e -> renderer.processEntity(e));
-			terrains.forEach(t -> renderer.processTerrain(t));
 			maybeRoadEntity.ifPresent(roadEntity -> renderer.processEntity(roadEntity));
+
+			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), 200f);
+			terrains.forEach(t -> renderer.processTerrain(t));
+			
+			List<Entity> entities = grid.proximityEntities(camera.getPosition());
+			entities.forEach(e -> renderer.processEntity(e));
+			
 			renderer.render(light, camera);
 			
 			DisplayManager.updateDisplay();

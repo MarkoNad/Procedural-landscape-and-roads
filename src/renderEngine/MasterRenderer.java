@@ -16,7 +16,7 @@ import models.TexturedModel;
 import shaders.NormalMappingShader;
 import shaders.StaticShader;
 import shaders.TerrainShader;
-import terrains.Terrain;
+import terrains.ITerrain;
 
 public class MasterRenderer {
 	
@@ -42,7 +42,7 @@ public class MasterRenderer {
 	
 	private Map<TexturedModel, List<Entity>> entities = new HashMap<>();
 	private Map<TexturedModel, List<Entity>> normalMapEntities = new HashMap<>();
-	private List<Terrain> terrains = new ArrayList<>();
+	private List<ITerrain> terrains = new ArrayList<>();
 	
 	public MasterRenderer() {
 		enableCulling();
@@ -88,7 +88,7 @@ public class MasterRenderer {
 		normalMapEntities.clear();
 	}
 	
-	public void processTerrain(Terrain terrain) {
+	public void processTerrain(ITerrain terrain) {
 		terrains.add(terrain);
 	}
 	

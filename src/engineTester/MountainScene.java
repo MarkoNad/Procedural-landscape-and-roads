@@ -36,9 +36,9 @@ import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
+import terrains.ITerrain;
 import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
-import terrains.Terrain;
 import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
 import terrains.TreeType;
@@ -89,11 +89,11 @@ public class MountainScene {
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
 		chestnutLods.put(200f, chestnutLOD0Comp);
-		chestnutLods.put(2000f, chestnutLOD1Comp);
+		chestnutLods.put(1200f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
 		firLods.put(200f, firLOD0Comp);
-		firLods.put(2000f, firLOD1Comp);
+		firLods.put(1200f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
 		lodLevelsForType.put(TreeType.OAK, chestnutLods);
@@ -241,15 +241,14 @@ public class MountainScene {
 //				SamplingType.NEAREST_UNIQUE // roadSamplingType
 //		);
 
-		final float segmentLen = 1f;
-		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(segmentLen);
+		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(1f);
 		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, 0.0f));
 		Optional<Entity> maybeRoadEntity = maybeRoad.map(road -> setupRoad(loader, heightGenerator, road));
 
 		// 14.2 is a bit more than 10 * sqrt(2), 10 is road width
 		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
 		pathfinder.findModifierTrajectories(-0.05f).ifPresent(modifiers -> modifiers.forEach(m -> heightGenerator.updateHeight(m, influenceFn, 15f)));
-		
+
 		Camera camera = new FloatingCamera(new Vector3f(11580f, 3000.0f, -7130f));
 		
 		float texWidth = 5f;
@@ -273,6 +272,7 @@ public class MountainScene {
 		grid.addToGrid(locationsPerType, pool);
 		
 		final float terrainLODTolerance = 200f;
+		//final float terrainLODTolerance = 0f;
 		
 		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
 		
@@ -286,7 +286,7 @@ public class MountainScene {
 			camera.update();
 
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
+			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 
 			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
 			entities.forEach(e -> renderer.processEntity(e));
