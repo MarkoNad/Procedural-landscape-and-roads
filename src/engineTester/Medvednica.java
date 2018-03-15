@@ -67,7 +67,7 @@ public class Medvednica {
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
-		Camera camera = new FloatingCamera(new Vector3f(9350.0f, 200.0f, 12000.0f));
+		Camera camera = new FloatingCamera(new Vector3f(9350.0f, 200.0f, 12000.0f), 20f, 100f, 500f, 300f, 12.5f);
 		Light light = new Light(new Vector3f(6000, 10000, 25000), new Vector3f(1, 1, 1));
 		MasterRenderer renderer = new MasterRenderer();
 
@@ -139,16 +139,13 @@ public class Medvednica {
 		
 		MutableHeightMap heightGenerator = new ImageHeightMap(heightImage, 135.0, 1041.0, pixelDistance);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 600), new Range(600, 900), new Range(900, heightGenerator.getMaxHeight()));
-		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
-			NoiseMap texVariationMap = new NoiseMap(40f, 0.005f, 0);
-			final float maxHeight = textureRanges.get(textureRanges.size() - 1).getEnd();
-			return (float) (texVariationMap.getNoise(x, z) * Math.pow(1 * (h + 0) / maxHeight, 1.0));
-		};
+		NoiseMap texVariationMap = new NoiseMap(40f, 0.005f, 0);
+		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> texVariationMap.getNoise(x, z);
 		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 50f, textureVariation);
 		
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, size);
 		Point2Df domainUpperRightLimit = new Point2Df(size, 0f);
-		
+
 		Pathfinder pathfinder = new Pathfinder(
 				AStar<Point2Di>::new, // algorithm
 				CatmullRomSpline3D::new, // spline
@@ -157,7 +154,7 @@ public class Medvednica {
 				domainLowerLeftLimit,
 				domainUpperRightLimit,
 				heightGenerator,
-				25f, // 12f, // cellSize // TODO
+				15f, // cellSize
 				false, // allowTunnels
 				15f, // minimum tunnel depth
 				10, // endpointOffset
@@ -168,13 +165,13 @@ public class Medvednica {
 				true, // limitTunnelCandidates
 				new Random(0), // random,
 				3, // roadRange,
-				0.1, // maxRoadSlopePercent,
+				0.09, // maxRoadSlopePercent,
 				1.75, //maxRoadCurvature,
 				1.0, // roadLengthMultiplier,
-				150.0, //80.0, // 150.0, // roadSlopeMultiplier,
-				20.0, //10.0, //30.0, // roadCurvatureMultiplier,
+				80.0, // roadSlopeMultiplier,
+				10.0, // roadCurvatureMultiplier,
 				2.0, // roadSlopeExponent,
-				2.0, //3.0, // roadCurvatureExponent,
+				3.0, // roadCurvatureExponent,
 				0.25, // maxTunnelSlopePercent,
 				1.75, // maxTunnelCurvature,
 				10.0, // tunnelLengthMultiplier,
@@ -184,42 +181,6 @@ public class Medvednica {
 				3.0, // tunnelCurvatureExponent,
 				SamplingType.FARTHEST // roadSamplingType
 		);
-		
-//		Pathfinder pathfinder = new Pathfinder(
-//				AStar<Point2Di>::new, // algorithm
-//				CatmullRomSpline3D::new, // spline
-//				new Point2Df(9350f, 11950f), // start,
-//				new Point2Df(4000f, 0f), // goal,
-//				domainLowerLeftLimit,
-//				domainUpperRightLimit,
-//				heightGenerator,
-//				12f, // cellSize
-//				false, // allowTunnels
-//				15f, // minimum tunnel depth
-//				10, // endpointOffset
-//				8, // maskOffset
-//				4500f, // tunnelInnerRadius
-//				6000f, // tunnelOuterRadius
-//				100, // tunnelCandidates
-//				true, // limitTunnelCandidates
-//				new Random(0), // random,
-//				3, // roadRange,
-//				0.1, // maxRoadSlopePercent,
-//				1.5, //maxRoadCurvature,
-//				1.0, // roadLengthMultiplier,
-//				80.0, // 150.0, // roadSlopeMultiplier,
-//				20.0, //10.0, //30.0, // roadCurvatureMultiplier,
-//				2.0, // roadSlopeExponent,
-//				3.0, // roadCurvatureExponent,
-//				0.25, // maxTunnelSlopePercent,
-//				1.75, // maxTunnelCurvature,
-//				10.0, // tunnelLengthMultiplier,
-//				200.0, // tunnelSlopeMultiplier,
-//				10.0, // tunnelCurvatureMultiplier,
-//				2.0, // tunnelSlopeExponent,
-//				3.0, // tunnelCurvatureExponent,
-//				SamplingType.FARTHEST // roadSamplingType
-//		);
 
 		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(1f);
 		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, 0.0f));
