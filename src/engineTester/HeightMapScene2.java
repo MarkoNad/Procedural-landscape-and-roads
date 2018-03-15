@@ -218,7 +218,7 @@ public class HeightMapScene2 {
 		
 		//Camera camera = new FPSCamera(new Vector3f(100.0f, 0.0f, -5000.0f), heightGenerator, 1f, 2f, 50f, 50f, 12.5f);
 		//Camera camera = new FloatingCamera(new Vector3f(0.0f, 10.0f, 0.0f));
-		Camera camera = new FloatingCamera(new Vector3f(9350.0f, 200.0f, 12000.0f));
+		Camera camera = new FloatingCamera(new Vector3f(0.0f, 10.0f, 0.0f));
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
 //		PoissonDiskSampler sampler = new PoissonDiskSampler(9350, 12000, 10000, 11500, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(9350f, 12000f));

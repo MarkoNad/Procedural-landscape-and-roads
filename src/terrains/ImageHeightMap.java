@@ -1,64 +1,40 @@
 package terrains;
 
 import java.awt.image.BufferedImage;
+import java.util.logging.Logger;
 
 public class ImageHeightMap extends MutableHeightMap {
 
+	private static final Logger LOGGER = Logger.getLogger(ImageHeightMap.class.getName());
 	private static final int MAX_PIXEL_COLOR = 256 * 256 * 256;
-	private static final float DIFF = 12000.0f / 1080.0f;
 	
 	private final double maxHeight;
-	private final double vertexDistance;
+	private final double pixelDistance;
 	private final double[][] heightMap;
 	private final int xVerts;
 	private final int zVerts;
 
 	public ImageHeightMap(BufferedImage heightMapImage, double minHeight, double maxHeight,
-			double vertexDistance) {
-		super(DIFF);
+			double pixelDistance) {
+		super((float) pixelDistance);
 		
 		this.maxHeight = maxHeight;
-		this.vertexDistance = vertexDistance;
+		this.pixelDistance = pixelDistance;
 		this.xVerts = heightMapImage.getWidth();
 		this.zVerts = heightMapImage.getHeight();
 		this.heightMap = generateHeightMap(heightMapImage, minHeight, maxHeight);
-		
-		for(int z = 0; z < heightMap[0].length; z++) {
-			for(int x = 0; x < heightMap.length; x++) {
-				//System.out.println("Map x: " + x + ", z: " + z + ", height: " + heightMap[x][z]);
-			}
-		}
 	}
 	
 	private double[][] generateHeightMap(BufferedImage heightMapImage, double minHeight, 
 			double maxHeight) {
 		double[][] heightMap = new double[heightMapImage.getWidth()][heightMapImage.getHeight()];
-		
-		double minOriginalHeight = Double.POSITIVE_INFINITY; // remove
-		double maxOriginaldHeight = Double.NEGATIVE_INFINITY; // remove
+
 		double minAfterScale = Double.POSITIVE_INFINITY;
 		double maxAfterScale = Double.NEGATIVE_INFINITY;
 		
 		for(int y = 0; y < heightMapImage.getHeight(); y++) {
 			for(int x = 0; x < heightMapImage.getWidth(); x++) {
 				double height = heightMapImage.getRGB(x, y);
-				
-//				int rgb = heightMapImage.getRGB(x, y);
-//				int a = (rgb >> 24) & 0xFF;
-//				int r = (rgb >> 16) & 0xFF;
-//				int g = (rgb >> 8) & 0xFF;
-//				int b = rgb & 0xFF;
-//				
-//				System.out.println("rgb: " + rgb);
-//				System.out.println("height: " + height);
-//				System.out.println("a: " + a);
-//				System.out.println("r: " + r);
-//				System.out.println("g: " + g);
-//				System.out.println("b: " + b);
-//				System.out.println("a: " + Integer.toBinaryString(a));
-
-				if(height > maxOriginaldHeight) maxOriginaldHeight = height;
-				if(height < minOriginalHeight) minOriginalHeight = height;
 
 				height += MAX_PIXEL_COLOR;
 				height /= MAX_PIXEL_COLOR;
@@ -88,39 +64,24 @@ public class ImageHeightMap extends MutableHeightMap {
 				heightMap[x][y] = height;
 			}
 		}
-		
-		System.out.println("min height: " + maxOriginaldHeight);
-		System.out.println("max height: " + minOriginalHeight);
-		System.out.println("min height after scaling with " + MAX_PIXEL_COLOR + ": " + minAfterScale);
-		System.out.println("max height after scaling with " + MAX_PIXEL_COLOR + ": " + maxAfterScale);
-		System.out.println("min height true: " + minFoundHeightFinal);
-		System.out.println("max height true: " + maxFoundHeightFinal);
+
+		LOGGER.fine("min height after scaling with " + MAX_PIXEL_COLOR + ": " + minAfterScale);
+		LOGGER.fine("max height after scaling with " + MAX_PIXEL_COLOR + ": " + maxAfterScale);
+		LOGGER.fine("min height total: " + minFoundHeightFinal);
+		LOGGER.fine("max height total: " + maxFoundHeightFinal);
 		
 		return heightMap;
 	}
 	
 	@Override
 	protected float getBaseHeight(float x, float z) {
-		if(x + 1e-6 < 0.0 || 
-				z + 1e-6 < 0.0 || 
-				x > (heightMap.length - 1) * vertexDistance + 1e-6 || // heightMap.length == width
-				z > (heightMap[0].length - 1) * vertexDistance + 1e-6) {
-//			System.out.println("x z out of map bounds; x: " + x + ", z: " + z);
-			return 0.0f;
-		}
-		
-		/*
-		 * Quad:
-		 * 1 2
-		 * ._.
-		 * |_|
-		 * 3 4
-		 */
-		
-		double xGrid = x / vertexDistance;
-		double zGrid = z / vertexDistance;
-		
-//		System.out.println("Grid x: " + xGrid + ", z: " + zGrid);
+		if(x + 1e-6 < 0.0) x = 0.0f;
+		if(z + 1e-6 < 0.0) z = 0.0f;
+		if(x > (xVerts - 1) * pixelDistance + 1e-6) x = (float) ((xVerts - 1) * pixelDistance);
+		if(z > (zVerts - 1) * pixelDistance) z = (float) ((zVerts - 1) * pixelDistance);
+
+		double xGrid = x / pixelDistance;
+		double zGrid = z / pixelDistance;
 
 		int leftX = (int) xGrid;
 		int upZ = (int) zGrid; // up is forward, towards -z
@@ -129,10 +90,7 @@ public class ImageHeightMap extends MutableHeightMap {
 		
 		double u = xGrid - leftX;
 		double v = zGrid - upZ;
-		
-//		System.out.println("u: " + u);
-//		System.out.println("v: " + v);
-		
+
 		double heightLeftUp = heightMap[leftX][upZ];
 		double heightLeftDown = heightMap[leftX][downZ];
 		double heightRightUp = heightMap[rightX][upZ];
@@ -142,8 +100,6 @@ public class ImageHeightMap extends MutableHeightMap {
 		double heightDown = (1.0 - u) * heightLeftDown + u * heightRightDown;
 		double height = (1.0 - v) * heightUp + v * heightDown;
 
-//		System.out.println("Height at x: " + x + ", z: " + z + ": " + height);
-		
 		return (float) height;
 	}
 

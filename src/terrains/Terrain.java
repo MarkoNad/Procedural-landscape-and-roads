@@ -102,22 +102,14 @@ public class Terrain {
 	}
 
 	private TerrainData generateTerrainData() {
-//		int xVertices = (int) (width * vertsPerMeter); // TODO
-//		int zVertices = (int) (depth * vertsPerMeter); // TODO
 		int xVertices = (int) (Math.round(width * vertsPerMeter) + 1);
 		int zVertices = (int) (Math.round(depth * vertsPerMeter) + 1);
 		int count = xVertices * zVertices;
-		
-		System.out.println("Terrain width: " + width);
-		System.out.println("Terrain depth: " + depth);
-		System.out.println("Terrain vertsPerMeter: " + vertsPerMeter);
-		System.out.println("Terrain xVertices: " + xVertices);
-		System.out.println("Terrain zVertices: " + zVertices);
 
 		float[] vertices = new float[count * 3];
 		float[] normals = new float[count * 3];
 		float[] textureCoords = new float[count * 2];
-		float[] textureInfluences = new float[count * 3]; // two textures per vertex (3?)
+		float[] textureInfluences = new float[count * 3]; // 3 textures per vertex
 		int[] indices = new int[6 * (xVertices - 1) * (zVertices - 1)];
 
 		int vertexPointer = 0;
@@ -128,17 +120,12 @@ public class Terrain {
 				float xcoord = x / (float) (xVertices - 1) * width + xUpperLeft;
 				float zcoord = z / (float) (zVertices - 1) * depth + zUpperLeft;
 				float height = heightGenerator.getHeight(xcoord, zcoord);
-				
-//				System.out.println("TERRAIN x: " + x + ", z: " + z + ", xcoord: " + xcoord + ", zcoord: " + zcoord + ", height: " + height);
 
 				vertices[vertexPointer * 3] = xcoord;
 				vertices[vertexPointer * 3 + 1] = height;
 				vertices[vertexPointer * 3 + 2] = zcoord;
 
-				Vector3f normal = heightGenerator.getNormalApprox(xcoord, zcoord); // TODO
-//				System.out.println("Terrain normal: " + normal);
-//				System.out.println();
-				//Vector3f normal = new Vector3f(0f, 1f, 0f);
+				Vector3f normal = heightGenerator.getNormalApprox(xcoord, zcoord);
 				normals[vertexPointer * 3] = normal.x;
 				normals[vertexPointer * 3 + 1] = normal.y;
 				normals[vertexPointer * 3 + 2] = normal.z;
