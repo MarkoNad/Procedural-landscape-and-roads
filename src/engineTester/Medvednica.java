@@ -1,6 +1,9 @@
 package engineTester;
 
 import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +16,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import javax.imageio.ImageIO;
 
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Vector3f;
@@ -36,8 +41,9 @@ import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
+import terrains.ImageHeightMap;
+import terrains.MutableHeightMap;
 import terrains.NoiseMap;
-import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
 import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
@@ -55,13 +61,14 @@ import toolbox.Range;
 import toolbox.SamplerUtility.SamplingType;
 import toolbox.TriFunction;
 
-public class MountainScene {
+public class Medvednica {
 
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
-		Light light = new Light(new Vector3f(3000, 2000, 2000), new Vector3f(1, 1, 1));
+		Camera camera = new FloatingCamera(new Vector3f(9350.0f, 200.0f, 12000.0f), 20f, 100f, 500f, 300f, 12.5f);
+		Light light = new Light(new Vector3f(6000, 10000, 25000), new Vector3f(1, 1, 1));
 		MasterRenderer renderer = new MasterRenderer();
 
 		TexturedModel firLOD1 = load("fir_lod1", "fir_lod1", loader);
@@ -89,17 +96,29 @@ public class MountainScene {
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
 		chestnutLods.put(200f, chestnutLOD0Comp);
-		chestnutLods.put(1200f, chestnutLOD1Comp);
+		chestnutLods.put(1500f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
 		firLods.put(200f, firLOD0Comp);
-		firLods.put(1200f, firLOD1Comp);
+		firLods.put(1500f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
 		lodLevelsForType.put(TreeType.OAK, chestnutLods);
 		lodLevelsForType.put(TreeType.PINE, firLods);
 		
 		// terrain setup
+		float size = 12000.0f;
+		
+		BufferedImage heightImage = null;
+		try {
+			heightImage = ImageIO.read(new File("res/medvednicaHeightMap12.png")); // 12 km x 12 km
+		} catch (IOException ex) {
+			ex.printStackTrace();
+			System.exit(1);
+		}
+
+		double pixelDistance = size / 1080.0f; // 12 km / (1081 - 1 pixels)
+		
 		NavigableMap<Float, Integer> distanceToLODLevel = new TreeMap<>();
 		distanceToLODLevel.put(3000f, 0);
 		distanceToLODLevel.put(10000f, 1);
@@ -118,28 +137,24 @@ public class MountainScene {
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
-		SimplexHeightGenerator heightGenerator = new SimplexHeightGenerator(5, 9000f, 0.0001f, 2f, 5, 0.4f, 0.2f, 5f);
-		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
-		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
-			NoiseMap texVariationMap = new NoiseMap(450f, 0.0005f, 0);
-			final float maxHeight = textureRanges.get(textureRanges.size() - 1).getEnd();
-			return (float) (texVariationMap.getNoise(x, z) * Math.pow(4 * (h + 1000) / maxHeight, 1.5));
-		};
-		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
+		MutableHeightMap heightGenerator = new ImageHeightMap(heightImage, 135.0, 1041.0, pixelDistance);
+		List<Range> textureRanges = Arrays.asList(new Range(0, 600), new Range(600, 900), new Range(900, heightGenerator.getMaxHeight()));
+		NoiseMap texVariationMap = new NoiseMap(40f, 0.005f, 0);
+		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> texVariationMap.getNoise(x, z);
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 50f, textureVariation);
 		
-		Point2Df domainLowerLeftLimit = new Point2Df(-3000f, -7000f);
-		Point2Df domainUpperRightLimit = new Point2Df(12000f, -23000f);
+		Point2Df domainLowerLeftLimit = new Point2Df(0f, size);
+		Point2Df domainUpperRightLimit = new Point2Df(size, 0f);
 
-		// tunnels not allowed, only roads with max slope 0.15
 		Pathfinder pathfinder = new Pathfinder(
 				AStar<Point2Di>::new, // algorithm
 				CatmullRomSpline3D::new, // spline
-				new Point2Df(6000f, -21560f), // start,
-				new Point2Df(11580f, -7130f), // goal,
+				new Point2Df(9350f, 11950f), // start,
+				new Point2Df(4000f, 0f), // goal,
 				domainLowerLeftLimit,
 				domainUpperRightLimit,
 				heightGenerator,
-				100f, // cellSize
+				15f, // cellSize
 				false, // allowTunnels
 				15f, // minimum tunnel depth
 				10, // endpointOffset
@@ -150,7 +165,7 @@ public class MountainScene {
 				true, // limitTunnelCandidates
 				new Random(0), // random,
 				3, // roadRange,
-				0.15, // maxRoadSlopePercent,
+				0.09, // maxRoadSlopePercent,
 				1.75, //maxRoadCurvature,
 				1.0, // roadLengthMultiplier,
 				80.0, // roadSlopeMultiplier,
@@ -164,82 +179,8 @@ public class MountainScene {
 				10.0, // tunnelCurvatureMultiplier,
 				2.0, // tunnelSlopeExponent,
 				3.0, // tunnelCurvatureExponent,
-				SamplingType.NEAREST_UNIQUE // roadSamplingType
+				SamplingType.FARTHEST // roadSamplingType
 		);
-		
-		// tunnels not allowed and max road slope - 0.1 - can't create roads on this terrain
-//		Pathfinder pathfinder = new Pathfinder(
-//				AStar<Point2Di>::new, // algorithm
-//				CatmullRomSpline3D::new, // spline
-//				new Point2Df(6000f, -21560f), // start,
-//				new Point2Df(11580f, -7130f), // goal,
-//				domainLowerLeftLimit,
-//				domainUpperRightLimit,
-//				heightGenerator,
-//				100f, // cellSize
-//				false, // allowTunnels
-//				15f, // minimum tunnel depth
-//				10, // endpointOffset
-//				8, // maskOffset
-//				4500f, // tunnelInnerRadius
-//				6000f, // tunnelOuterRadius
-//				100, // tunnelCandidates
-//				true, // limitTunnelCandidates
-//				new Random(0), // random,
-//				3, // roadRange,
-//				0.1, // maxRoadSlopePercent,
-//				1.75, //maxRoadCurvature,
-//				1.0, // roadLengthMultiplier,
-//				80.0, // roadSlopeMultiplier,
-//				10.0, // roadCurvatureMultiplier,
-//				2.0, // roadSlopeExponent,
-//				3.0, // roadCurvatureExponent,
-//				0.25, // maxTunnelSlopePercent,
-//				1.75, // maxTunnelCurvature,
-//				10.0, // tunnelLengthMultiplier,
-//				200.0, // tunnelSlopeMultiplier,
-//				10.0, // tunnelCurvatureMultiplier,
-//				2.0, // tunnelSlopeExponent,
-//				3.0, // tunnelCurvatureExponent,
-//				SamplingType.NEAREST_UNIQUE // roadSamplingType
-//		);
-
-		// tunnels allowed
-//		Pathfinder pathfinder = new Pathfinder(
-//				AStar<Point2Di>::new, // algorithm
-//				CatmullRomSpline3D::new, // spline
-//				new Point2Df(6000f, -21560f), // start,
-//				new Point2Df(11580f, -7130f), // goal,
-//				domainLowerLeftLimit,
-//				domainUpperRightLimit,
-//				heightGenerator,
-//				100f, // cellSize
-//				true, // allowTunnels
-//				15f, // minimum tunnel depth
-//				10, // endpointOffset
-//				8, // maskOffset
-//				8000f, // tunnelInnerRadius
-//				10000f, // tunnelOuterRadius
-//				100, // tunnelCandidates
-//				true, // limitTunnelCandidates
-//				new Random(0), // random,
-//				3, // roadRange,
-//				0.3, // maxRoadSlopePercent,
-//				1.75, //maxRoadCurvature,
-//				1.0, // roadLengthMultiplier,
-//				80.0, // roadSlopeMultiplier,
-//				10.0, // roadCurvatureMultiplier,
-//				2.0, // roadSlopeExponent,
-//				3.0, // roadCurvatureExponent,
-//				0.25, // maxTunnelSlopePercent,
-//				0.8, // maxTunnelCurvature,
-//				1.0, // tunnelLengthMultiplier,
-//				200.0, // tunnelSlopeMultiplier,
-//				10.0, // tunnelCurvatureMultiplier,
-//				2.0, // tunnelSlopeExponent,
-//				3.0, // tunnelCurvatureExponent,
-//				SamplingType.NEAREST_UNIQUE // roadSamplingType
-//		);
 
 		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(1f);
 		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, 0.0f));
@@ -249,12 +190,7 @@ public class MountainScene {
 		Function<Float, Float> influenceFn = x -> x <= 14.2f ? 1f : 1 - Math.min((x - 14.2f) / 9.2f, 1f);
 		pathfinder.findModifierTrajectories(-0.05f).ifPresent(modifiers -> modifiers.forEach(m -> heightGenerator.updateHeight(m, influenceFn, 15f)));
 
-		Camera camera = new FloatingCamera(new Vector3f(11580f, 3000.0f, -7130f));
-		
-		float texWidth = 5f;
-		float texDepth = 5f;
-		float patchSize = 500f;
-		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, patchSize, texWidth, texDepth,
+		TerrainLODGrid terrainLODGrid = new TerrainLODGrid(distanceToLODLevel, lodLevelToVertsPerUnit, 500f, 5f, 5f,
 				new Vector3f(), loader, texturePack, blendMap, heightGenerator, biomesMap, domainLowerLeftLimit, domainUpperRightLimit,
 				Optional.of(Globals.getThreadPool()));
 
@@ -270,11 +206,7 @@ public class MountainScene {
 
 		LODGrid grid = new LODGrid(2000, scaleForModel, lodLevelsForType);
 		grid.addToGrid(locationsPerType, pool);
-		
-		final float terrainLODTolerance = 200f;
-		
-		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
-		
+
 		Optional<List<Entity>> tunnelPartEntities = maybeRoad.map(road -> {
 			TunnelManager tunnelManager = new TunnelManager(road, pathfinder.findTunnelsData().get(), 5, 1.0f, 50f,
 					50f, 50f, 50f, 50f, 50f, "tunnel", "tunnel", "tunnel", "black", loader);
@@ -284,13 +216,15 @@ public class MountainScene {
 		while(!Display.isCloseRequested()) {
 			camera.update();
 
-			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
-
 			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
-			entities.forEach(e -> renderer.processEntity(e));
-			terrains.forEach(t -> renderer.processTerrain(t));
 			maybeRoadEntity.ifPresent(roadEntity -> renderer.processEntity(roadEntity));
+
+			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), 200f);
+			terrains.forEach(t -> renderer.processTerrain(t));
+			
+			List<Entity> entities = grid.proximityEntities(camera.getPosition());
+			entities.forEach(e -> renderer.processEntity(e));
+			
 			renderer.render(light, camera);
 			
 			DisplayManager.updateDisplay();

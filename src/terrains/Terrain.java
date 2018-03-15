@@ -102,14 +102,14 @@ public class Terrain {
 	}
 
 	private TerrainData generateTerrainData() {
-		int xVertices = (int) (width * vertsPerMeter);
-		int zVertices = (int) (depth * vertsPerMeter);
+		int xVertices = (int) (Math.round(width * vertsPerMeter) + 1);
+		int zVertices = (int) (Math.round(depth * vertsPerMeter) + 1);
 		int count = xVertices * zVertices;
 
 		float[] vertices = new float[count * 3];
 		float[] normals = new float[count * 3];
 		float[] textureCoords = new float[count * 2];
-		float[] textureInfluences = new float[count * 3]; // two textures per vertex (3?)
+		float[] textureInfluences = new float[count * 3]; // 3 textures per vertex
 		int[] indices = new int[6 * (xVertices - 1) * (zVertices - 1)];
 
 		int vertexPointer = 0;
