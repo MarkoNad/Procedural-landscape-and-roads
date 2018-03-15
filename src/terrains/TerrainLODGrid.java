@@ -315,7 +315,10 @@ public class TerrainLODGrid {
 				
 				Terrain terrainPatch = terrainWithEqualOrLesserLOD.getValue();
 				
-				if(terrainPatch.getModel() == null) { // TODO isEmpty instead
+//				if(terrainPatch.getModel() == null) { // TODO isEmpty instead
+//					terrainPatch.setModel(loader);
+//				}
+				if(!terrainPatch.getModel().isPresent()) { // TODO isEmpty instead
 					terrainPatch.setModel(loader);
 				}
 				

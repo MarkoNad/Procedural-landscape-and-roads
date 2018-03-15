@@ -59,6 +59,7 @@ public class Terrain implements ITerrain {
 		this.blendMap = blendMap;
 		this.heightGenerator = heightGenerator;
 		this.textureMap = textureMap;
+		this.terrainModel = Optional.empty();
 		this.terrainData = generateTerrainData();
 	}
 	
@@ -73,7 +74,7 @@ public class Terrain implements ITerrain {
 	
 	@Override
 	public Optional<RawModel> getModel() {
-		return terrainModel; // TODO Optional.ofNullable() and setup in constructor
+		return terrainModel;
 	}
 	
 	@Override
