@@ -16,7 +16,6 @@ import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import javax.imageio.ImageIO;
 
@@ -38,13 +37,12 @@ import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import roads.Pathfinder;
 import roads.Road;
-import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
+import terrains.ITerrain;
 import terrains.ImageHeightMap;
 import terrains.MutableHeightMap;
-import terrains.Terrain;
 import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
 import terrains.TreeType;
@@ -172,7 +170,7 @@ public class HeightMapScene2 {
 				domainLowerLeftLimit,
 				domainUpperRightLimit,
 				heightGenerator,
-				12f, //15f, // cellSize //TODO
+				50f, //15f, // cellSize //TODO
 				false, // allowTunnels
 				15f, // minimum tunnel depth
 				10, // endpointOffset
@@ -306,7 +304,7 @@ public class HeightMapScene2 {
 			//barrelEntity2.increaseRotation(0, 0.5f, 0);
 			//crateEntity2.increaseRotation(0, 0.5f, 0);
 
-			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
+			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			terrains.forEach(t -> renderer.processTerrain(t));
 			
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());

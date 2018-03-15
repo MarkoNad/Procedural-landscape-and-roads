@@ -40,9 +40,9 @@ import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
+import terrains.ITerrain;
 import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
-import terrains.Terrain;
 import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
 import terrains.TreeType;
@@ -60,6 +60,7 @@ import toolbox.SamplerUtility.SamplingType;
 import toolbox.TriFunction;
 
 public class DebugScene2 {
+	
 	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
 	public static void main(String[] args) {
@@ -273,7 +274,7 @@ public class DebugScene2 {
 			crateEntity2.increaseRotation(0, 0.5f, 0);
 
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
+			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			roadWaypoints.ifPresent(wps -> wps.forEach(p -> entities.add(new Entity(chestnutTrunk, new Vector3f(p.x, p.y, p.z), 0f, 0f, 0f, 20f))));
 			entities.add(chestnutEntityTrunk);
 			entities.add(chestnutEntityTop);

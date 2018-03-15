@@ -13,7 +13,7 @@ import renderEngine.Loader;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 
-public class Terrain {
+public class Terrain implements ITerrain {
 	
 	/** Every point's color of this terrain is made of 3 textures (3 texture influences)
 	 * are needed from the texture map. */
@@ -23,9 +23,8 @@ public class Terrain {
 	private final float depth;
 	private final float vertsPerMeter;
 
-	private final float textureWidth; // how many times the texture will be repeated
-								// in x direction
-	private final float textureDepth;
+	private final float textureWidth; // how many units this texture represents along x axis
+	private final float textureDepth; // how many units this texture represents along z axis
 
 	private float xUpperLeft; // true x coordinate of upper left corner
 	private float zUpperLeft;
@@ -59,6 +58,7 @@ public class Terrain {
 		this.blendMap = blendMap;
 		this.heightGenerator = heightGenerator;
 		this.textureMap = textureMap;
+		this.terrainModel = Optional.empty();
 		this.terrainData = generateTerrainData();
 	}
 	
@@ -71,10 +71,12 @@ public class Terrain {
 		setModel(loader);
 	}
 	
+	@Override
 	public Optional<RawModel> getModel() {
 		return terrainModel;
 	}
 	
+	@Override
 	public void setModel(Loader loader) {
 		this.terrainModel = Optional.of(loader.loadToVAO(
 				terrainData.getVertices(),
@@ -84,7 +86,8 @@ public class Terrain {
 				terrainData.getIndices(),
 				terrainData.getTextureInfluences()));
 	}
-
+	
+	@Override
 	public Vector3f getTranslation() {
 		return translation;
 	}
@@ -92,11 +95,13 @@ public class Terrain {
 	public TerrainData getModelData() {
 		return terrainData;
 	}
-
+	
+	@Override
 	public TerrainTexturePack getTexturePack() {
 		return texturePack;
 	}
-
+	
+	@Override
 	public TerrainTexture getBlendMap() {
 		return blendMap;
 	}
