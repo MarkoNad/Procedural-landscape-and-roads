@@ -16,11 +16,11 @@ import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import javax.imageio.ImageIO;
 
 import org.lwjgl.opengl.Display;
+import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 
 import controller.LODGrid;
@@ -38,7 +38,6 @@ import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import roads.Pathfinder;
 import roads.Road;
-import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
@@ -172,7 +171,7 @@ public class HeightMapScene2 {
 				domainLowerLeftLimit,
 				domainUpperRightLimit,
 				heightGenerator,
-				12f, //15f, // cellSize //TODO
+				50f, //15f, // cellSize //TODO
 				false, // allowTunnels
 				15f, // minimum tunnel depth
 				10, // endpointOffset

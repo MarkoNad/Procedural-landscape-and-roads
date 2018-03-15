@@ -30,6 +30,11 @@ public class Point2Di {
 		this.z = z;
 	}
 	
+	public void setPosition(int x, int z) {
+		this.x = x;
+		this.z = z;
+	}
+	
 	public static float distance(Point2Di p1, Point2Di p2) {
 		return (float) Math.hypot(p1.x - p2.x, p1.z - p2.z);
 	}

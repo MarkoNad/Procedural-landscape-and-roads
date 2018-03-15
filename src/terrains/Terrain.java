@@ -13,7 +13,7 @@ import renderEngine.Loader;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 
-public class Terrain {
+public class Terrain implements ITerrain {
 	
 	/** Every point's color of this terrain is made of 3 textures (3 texture influences)
 	 * are needed from the texture map. */
@@ -71,6 +71,7 @@ public class Terrain {
 		setModel(loader);
 	}
 	
+	@Override
 	public Optional<RawModel> getModel() {
 		return terrainModel;
 	}
@@ -84,7 +85,8 @@ public class Terrain {
 				terrainData.getIndices(),
 				terrainData.getTextureInfluences()));
 	}
-
+	
+	@Override
 	public Vector3f getTranslation() {
 		return translation;
 	}
@@ -92,11 +94,13 @@ public class Terrain {
 	public TerrainData getModelData() {
 		return terrainData;
 	}
-
+	
+	@Override
 	public TerrainTexturePack getTexturePack() {
 		return texturePack;
 	}
-
+	
+	@Override
 	public TerrainTexture getBlendMap() {
 		return blendMap;
 	}
