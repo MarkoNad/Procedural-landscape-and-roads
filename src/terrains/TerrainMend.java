@@ -175,12 +175,12 @@ public class TerrainMend implements ITerrain {
 			vertices[(thisVertices.size() + i) * 3 + 2] = otherVert.z;
 
 			
-			Vector3f thisNormal = heightMap.getNormalApprox(thisVert.x, thisVert.y);
+			Vector3f thisNormal = heightMap.getNormalApprox(thisVert.x, thisVert.z);
 			normals[i * 3] = thisNormal.x;
 			normals[i * 3 + 1] = thisNormal.y;
 			normals[i * 3 + 2] = thisNormal.z;
 			
-			Vector3f otherNormal = heightMap.getNormalApprox(otherVert.x, otherVert.y);
+			Vector3f otherNormal = heightMap.getNormalApprox(otherVert.x, otherVert.z);
 			normals[(thisVertices.size() + i) * 3] = otherNormal.x;
 			normals[(thisVertices.size() + i) * 3 + 1] = otherNormal.y;
 			normals[(thisVertices.size() + i) * 3 + 2] = otherNormal.z;
@@ -203,8 +203,10 @@ public class TerrainMend implements ITerrain {
 			textureInfluences[(thisVertices.size() + i) * NUM_TEXTURES + 1] = texStrengthsBuffer[1];
 			textureInfluences[(thisVertices.size() + i) * NUM_TEXTURES + 2] = texStrengthsBuffer[2];
 		}
+
+		boolean cw = isRight;
+		int pointer = 0;
 		
-		int pointer = 0;// TODO
 		for(int i = 0; i < thisVertices.size() - 1; i++) {
 			int topLeft = i;
 			int topRight = topLeft + 1;
@@ -212,26 +214,12 @@ public class TerrainMend implements ITerrain {
 			int bottomRight = bottomLeft + 1;
 
 			indices[pointer++] = topLeft;
-			indices[pointer++] = bottomLeft;
+			indices[pointer++] = cw ? topRight : bottomLeft;
+			indices[pointer++] = cw ? bottomLeft : topRight;
 			indices[pointer++] = topRight;
-			indices[pointer++] = topRight;
-			indices[pointer++] = bottomLeft;
-			indices[pointer++] = bottomRight;
+			indices[pointer++] = cw ? bottomRight : bottomLeft;
+			indices[pointer++] = cw ? bottomLeft : bottomRight;
 		}
-//		int pointer = 0;
-//		for(int i = 0; i < thisVertices.size() - 1; i++) {
-//			int topLeft = i;
-//			int topRight = topLeft + 1;
-//			int bottomLeft = topLeft + thisVertices.size();
-//			int bottomRight = bottomLeft + 1;
-//
-//			indices[pointer++] = topLeft;
-//			indices[pointer++] = topRight;
-//			indices[pointer++] = bottomLeft;
-//			indices[pointer++] = topRight;
-//			indices[pointer++] = bottomRight;
-//			indices[pointer++] = bottomLeft;
-//		}
 		
 		return new TerrainData(vertices, textureCoords, normals, tangents, indices, textureInfluences);
 	}

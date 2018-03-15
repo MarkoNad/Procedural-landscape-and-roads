@@ -252,21 +252,7 @@ public class TerrainLODGrid {
 		
 		return cells;
 	}
-	
-//	public List<Terrain> proximityTerrains(Vector3f position, float tolerance) {
-//		if(proximityTerrainsCache == null ||
-//				lastRetrievalPosition == null ||
-//				terrainsAdded ||
-//				Vector3f.sub(lastRetrievalPosition, position, null).lengthSquared() >= tolerance * tolerance) {
-//			LOGGER.finer("Recalculating terrain patches.");
-//			setTerrainsAdded(false);
-//			lastRetrievalPosition = new Vector3f(position);
-//			proximityTerrainsCache = calcProximityTerrains(position);
-//		}
-//
-//		return proximityTerrainsCache;
-//	}
-	
+
 	public List<ITerrain> proximityTerrains(Vector3f position, float tolerance) {
 		if(proximityITerrainsCache == null ||
 				lastRetrievalPosition == null ||
@@ -280,7 +266,7 @@ public class TerrainLODGrid {
 			
 			proximityITerrainsCache = new ArrayList<>();
 			proximityITerrainsCache.addAll(proximityTerrains);
-			proximityITerrainsCache.addAll(proximityMends); // TODO temp
+			proximityITerrainsCache.addAll(proximityMends);
 		}
 
 		return proximityITerrainsCache;

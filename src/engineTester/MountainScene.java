@@ -36,9 +36,9 @@ import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
 import terrains.IHeightGenerator;
+import terrains.ITerrain;
 import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
-import terrains.Terrain;
 import terrains.TerrainLODGrid;
 import terrains.TreePlacer;
 import terrains.TreeType;
@@ -272,6 +272,7 @@ public class MountainScene {
 		grid.addToGrid(locationsPerType, pool);
 		
 		final float terrainLODTolerance = 200f;
+		//final float terrainLODTolerance = 0f;
 		
 		light = new Light(new Vector3f(50_000, 10_000, 10_000), new Vector3f(1, 1, 1));
 		
@@ -285,7 +286,7 @@ public class MountainScene {
 			camera.update();
 
 			List<Entity> entities = grid.proximityEntities(camera.getPosition());
-			List<Terrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
+			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 
 			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
 			entities.forEach(e -> renderer.processEntity(e));

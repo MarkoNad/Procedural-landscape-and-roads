@@ -214,7 +214,7 @@ public class DebugHeightMapScene {
 			List<ITerrain> terrains = terrainLODGrid.proximityTerrains(camera.getPosition(), terrainLODTolerance);
 			//List<ITerrain> terrainPatches = terrainLODGrid.proximityMends(camera.getPosition(), terrainLODTolerance);
 			
-			if(terrains.size() > 0) System.out.println("TERRAINS + patches: " + terrains.size());
+			//if(terrains.size() > 0) System.out.println("TERRAINS + patches: " + terrains.size());
 
 			tunnelPartEntities.ifPresent(parts -> parts.forEach(p -> renderer.processEntity(p)));
 			entities.forEach(e -> renderer.processEntity(e));
