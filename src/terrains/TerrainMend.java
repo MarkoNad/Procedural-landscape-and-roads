@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 
-import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 
 import models.RawModel;
@@ -22,36 +21,18 @@ public class TerrainMend implements ITerrain {
 	private final TerrainTexturePack texturePack;
 	private final TerrainTexture blendMap;
 	private final Vector3f translation;
-	private final RawModel model;
+	private final TerrainData terrainData;
+	private Optional<RawModel> model;
 
 	public TerrainMend(float xUpperLeft, float zUpperLeft, float size, float thisVertsPerUnit,
 			float otherVertsPerUnit, IHeightGenerator heightMap, ITextureMap textureMap,
-			TerrainTexturePack texturePack, Loader loader, TerrainTexture blendMap, Vector3f translation,
+			TerrainTexturePack texturePack, TerrainTexture blendMap, Vector3f translation,
 			float textureWidth, float textureDepth, boolean isRight) {
 		
 		this.texturePack = texturePack;
 		this.blendMap = blendMap;
 		this.translation = translation;
-		
-		this.model = load(
-				xUpperLeft,
-				zUpperLeft,
-				size,
-				thisVertsPerUnit,
-				otherVertsPerUnit,
-				heightMap,
-				textureMap,
-				textureWidth,
-				textureDepth,
-				isRight,
-				loader);
-	}
-	
-	private RawModel load(float xUpperLeft, float zUpperLeft, float size,
-			float thisVertsPerUnit, float otherVertsPerUnit, IHeightGenerator heightMap,
-			ITextureMap textureMap, float textureWidth, float textureDepth, boolean isRight,
-			Loader loader) {
-		TerrainData mendData = generateTerrainData(
+		this.terrainData = generateTerrainData(
 				xUpperLeft,
 				zUpperLeft,
 				size,
@@ -63,20 +44,23 @@ public class TerrainMend implements ITerrain {
 				textureDepth,
 				isRight);
 		
-		RawModel mendModel = loader.loadToVAO(
-				mendData.getVertices(),
-				mendData.getTextureCoords(),
-				mendData.getNormals(),
-				mendData.getTangents(),
-				mendData.getIndices(),
-				mendData.getTextureInfluences());
-		
-		return mendModel;
+		this.model = Optional.empty();
 	}
 
 	@Override
 	public Optional<RawModel> getModel() {
-		return Optional.of(model);
+		return model;
+	}
+	
+	@Override
+	public void setModel(Loader loader) {
+		this.model = Optional.of(loader.loadToVAO(
+				terrainData.getVertices(),
+				terrainData.getTextureCoords(),
+				terrainData.getNormals(),
+				terrainData.getTangents(),
+				terrainData.getIndices(),
+				terrainData.getTextureInfluences()));
 	}
 
 	@Override

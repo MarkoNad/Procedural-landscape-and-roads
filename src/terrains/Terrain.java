@@ -73,9 +73,10 @@ public class Terrain implements ITerrain {
 	
 	@Override
 	public Optional<RawModel> getModel() {
-		return terrainModel;
+		return terrainModel; // TODO Optional.ofNullable() and setup in constructor
 	}
 	
+	@Override
 	public void setModel(Loader loader) {
 		this.terrainModel = Optional.of(loader.loadToVAO(
 				terrainData.getVertices(),

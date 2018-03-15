@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.lwjgl.util.vector.Vector3f;
 
-import renderEngine.Loader;
 import textures.TerrainTexture;
 import textures.TerrainTexturePack;
 
@@ -19,20 +18,20 @@ public class TerrainMends {
 	public TerrainMends(float xUpperLeft, float zUpperLeft, float size,
 			Map<Integer, Float> lodLevelToVertsPerUnit, boolean generateRight, boolean generateDown,
 			IHeightGenerator heightMap, ITextureMap textureMap, TerrainTexturePack texturePack,
-			Loader loader, TerrainTexture blendMap, Vector3f translation, float textureWidth,
+			TerrainTexture blendMap, Vector3f translation, float textureWidth,
 			float textureDepth) {
 		this.middleLodTo_rightLodToMend = new HashMap<>();
 		this.middleLodTo_downLodToMend = new HashMap<>();
 		
 		generateMends(xUpperLeft, zUpperLeft, size, lodLevelToVertsPerUnit, generateRight, generateDown,
-				heightMap, textureMap, texturePack, loader, blendMap, translation, textureWidth,
+				heightMap, textureMap, texturePack, blendMap, translation, textureWidth,
 				textureDepth);
 	}
 
 	private void generateMends(float xUpperLeft, float zUpperLeft, float size,
 			Map<Integer, Float> lodLevelToVertsPerUnit, boolean generateRight, boolean generateDown,
 			IHeightGenerator heightMap, ITextureMap textureMap, TerrainTexturePack texturePack,
-			Loader loader,  TerrainTexture blendMap, Vector3f translation, float textureWidth,
+			TerrainTexture blendMap, Vector3f translation, float textureWidth,
 			float textureDepth) {
 		Set<Integer> levels = lodLevelToVertsPerUnit.keySet();
 		
@@ -63,7 +62,6 @@ public class TerrainMends {
 							heightMap,
 							textureMap,
 							texturePack,
-							loader,
 							blendMap,
 							translation,
 							textureWidth,
@@ -84,7 +82,6 @@ public class TerrainMends {
 							heightMap,
 							textureMap,
 							texturePack,
-							loader,
 							blendMap,
 							translation,
 							textureWidth,

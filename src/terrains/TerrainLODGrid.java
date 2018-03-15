@@ -151,6 +151,7 @@ public class TerrainLODGrid {
 		Runnable generationTask = new Runnable() {
 			@Override
 			public void run() {
+				try { // TODO
 				Terrain patch = generatePatch(xUpperLeft, zUpperLeft, patchSize, vertsPerUnit);
 				ConcurrentNavigableMap<Integer, Terrain> terrainsAtPoint = grid.get(gridPoint);
 
@@ -183,6 +184,10 @@ public class TerrainLODGrid {
 				setTerrainsAdded(true);
 				LOGGER.finest("Added terrain patch at (" + gridPoint.getX() + ", " +
 				gridPoint.getZ() + ") with LOD " + level + ".");
+				} catch(Exception ex) {
+					System.out.println(ex);
+					ex.printStackTrace();
+				}
 			}
 		};
 		
@@ -210,7 +215,7 @@ public class TerrainLODGrid {
 			Map<Integer, Float> lodLevelToVertsPerUnit, boolean generateRight, boolean generateDown,
 			Loader loader) {
 		return new TerrainMends(xUpperLeft, zUpperLeft, size, lodLevelToVertsPerUnit, generateRight,
-				generateDown, heightMap, biomesMap, texturePack, loader, blendMap, translation,
+				generateDown, heightMap, biomesMap, texturePack, blendMap, translation,
 				textureWidth, textureDepth);
 	}
 	
@@ -310,7 +315,7 @@ public class TerrainLODGrid {
 				
 				Terrain terrainPatch = terrainWithEqualOrLesserLOD.getValue();
 				
-				if(terrainPatch.getModel() == null) {
+				if(terrainPatch.getModel() == null) { // TODO isEmpty instead
 					terrainPatch.setModel(loader);
 				}
 				
@@ -334,20 +339,7 @@ public class TerrainLODGrid {
 		float renderDistance = distanceToLODLevel.lastKey();
 		return (int) Math.ceil(renderDistance / patchSize);
 	}
-	
-//	public List<ITerrain> proximityMends(Vector3f position, float tolerance) {
-//		if(proximityMendsCache == null ||
-//				lastRetrievalPosition == null ||
-//				terrainsAdded ||
-//				Vector3f.sub(lastRetrievalPosition, position, null).lengthSquared() >= tolerance * tolerance) {
-//			LOGGER.finer("Recalculating terrain mends.");
-//			lastRetrievalPosition = new Vector3f(position);
-//			proximityMendsCache = calcProximityMends(position);
-//		}
-//
-//		return proximityMendsCache;
-//	}
-	
+
 	private List<ITerrain> calcProximityMends(Vector3f position) {
 		System.out.println("calculating mends:");
 		System.out.println("mend grid size: " + mendDataGrid.size());
@@ -363,7 +355,7 @@ public class TerrainLODGrid {
 			for(int col = x - cellSearchRange; col <= x + cellSearchRange; col++) {
 				gridPointBuf.setPosition(col, row);
 
-				TerrainMends mendsAtPoint = mendDataGrid.get(gridPointBuf); // TODO mend datum syncronized?
+				TerrainMends mendsAtPoint = mendDataGrid.get(gridPointBuf); // TODO mend datum synchronized?
 				System.out.println("mends at " + gridPointBuf + ": " + mendsAtPoint);
 				 
 				// no terrains are generated at this point yet, or they will not be at all
@@ -385,14 +377,31 @@ public class TerrainLODGrid {
 				System.out.println("down lod: " + actualDownLOD);
 				
 				if(actualRightLOD != -1 && actualRightLOD != actualMiddleLOD) {
-					Optional<ITerrain> rightMend = mendsAtPoint.rightMend(actualMiddleLOD, actualRightLOD);
-					System.out.println("right mend: " + rightMend);
-					if(rightMend.isPresent()) terrainMends.add(rightMend.get());
+					Optional<ITerrain> maybeRightMend = mendsAtPoint.rightMend(actualMiddleLOD, actualRightLOD);
+					
+					if(maybeRightMend.isPresent()) {
+						ITerrain rightMend = maybeRightMend.get();
+						
+						if(!rightMend.getModel().isPresent()) {
+							rightMend.setModel(loader);
+						}
+						
+						terrainMends.add(rightMend);
+					}
 				}
+				
 				if(actualDownLOD != -1 && actualDownLOD != actualMiddleLOD) {
-					Optional<ITerrain> downMend = mendsAtPoint.downMend(actualMiddleLOD, actualDownLOD);
-					System.out.println("down mend: " + downMend);
-					if(downMend.isPresent()) terrainMends.add(downMend.get());
+					Optional<ITerrain> maybeDownMend = mendsAtPoint.downMend(actualMiddleLOD, actualDownLOD);
+					
+					if(maybeDownMend.isPresent()) {
+						ITerrain downMend = maybeDownMend.get();
+						
+						if(!downMend.getModel().isPresent()) {
+							downMend.setModel(loader);
+						}
+						
+						terrainMends.add(downMend);
+					}
 				}
 			}
 		}
