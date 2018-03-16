@@ -64,6 +64,8 @@ import hr.fer.zemris.engine.util.SamplerUtility.SamplingType;
 public class Medvednica {
 
 	public static void main(String[] args) {
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+		
 		DisplayManager.createDisplay();
 		
 		Loader loader = new Loader();
