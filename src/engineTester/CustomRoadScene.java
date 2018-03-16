@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 
@@ -27,7 +28,7 @@ import renderEngine.Loader;
 import renderEngine.MasterRenderer;
 import roads.Road;
 import terrains.BiomesMap;
-import terrains.IHeightGenerator;
+import terrains.IHeightMap;
 import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
 import terrains.Terrain;
@@ -41,7 +42,7 @@ import toolbox.PoissonDiskSampler;
 import toolbox.Range;
 import toolbox.TriFunction;
 
-public class RoadsScene {
+public class CustomRoadScene {
 	
 	public static void main(String[] args) {
 		DisplayManager.createDisplay();
@@ -93,14 +94,14 @@ public class RoadsScene {
 		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
 		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
 		
-		IHeightGenerator heightGenerator = new SimplexHeightGenerator(1);
+		IHeightMap heightGenerator = new SimplexHeightGenerator(1);
 		List<Range> textureRanges = Arrays.asList(new Range(0, 700), new Range(700, 3000), new Range(3000, heightGenerator.getMaxHeight()));
 		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> {
 			NoiseMap texVariationMap = new NoiseMap(450f, 0.0005f, 0);
 			final float maxHeight = textureRanges.get(textureRanges.size() - 1).getEnd();
 			return (float) (texVariationMap.getNoise(x, z) * Math.pow(4 * (h + 1000) / maxHeight, 1.5));
 		};
-		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation, new Random(0));
 		float width = 20000;
 		float depth = 20000;
 		float texWidth = 200f;
@@ -142,7 +143,7 @@ public class RoadsScene {
 		return new TexturedModel(model, new ModelTexture(loader.loadTexture(pngFile)));
 	}
 	
-	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator) {
+	private static Entity setupRoad(Loader loader, IHeightMap heightGenerator) {
 		List<Vector3f> waypoints = new ArrayList<>();
 		
 		waypoints.add(new Vector3f(0, 0, -2000));

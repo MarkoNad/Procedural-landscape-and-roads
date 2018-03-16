@@ -2,7 +2,7 @@ package terrains;
 
 import org.lwjgl.util.vector.Vector3f;
 
-public class UniformHeightGenerator implements IHeightGenerator {
+public class UniformHeightGenerator implements IHeightMap {
 
 	@Override
 	public float getHeight(float x, float z) {

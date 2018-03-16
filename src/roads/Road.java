@@ -9,7 +9,7 @@ import org.lwjgl.util.vector.Vector3f;
 
 import models.RawModel;
 import renderEngine.Loader;
-import terrains.IHeightGenerator;
+import terrains.IHeightMap;
 import toolbox.AbstractSpline;
 import toolbox.Globals;
 import toolbox.Point2Df;
@@ -19,7 +19,7 @@ public class Road {
 	private final float groundOffset; // distance of road from ground, to avoid jittering
 	private Loader loader;
 	private List<Vector3f> trajectory;
-	private IHeightGenerator heightMap;
+	private IHeightMap heightMap;
 	private final float width;
 	private float textureLength;
 	private RawModel model;
@@ -29,7 +29,7 @@ public class Road {
 	private List<Vector3f> rightTrajectory;
 	
 	private Road(Loader loader, float width, float textureLength, float groundOffset,
-			IHeightGenerator heightMap, boolean heightCorrection) {
+			IHeightMap heightMap, boolean heightCorrection) {
 		this.loader = loader;
 		this.width = width;
 		this.textureLength = textureLength;
@@ -51,14 +51,14 @@ public class Road {
 	}
 	
 	public Road(List<Point2Df> waypoints2D, Loader loader, float width, float textureLength,
-			float segmentLength, float groundOffset, IHeightGenerator heightMap, boolean heightCorrection,
+			float segmentLength, float groundOffset, IHeightMap heightMap, boolean heightCorrection,
 			BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier) {
 		this(loader, assignHeightsToWaypoints(waypoints2D, heightMap), width, textureLength,
 				segmentLength, groundOffset, heightMap, heightCorrection, splineSupplier);
 	}
 	
 	public Road(Loader loader, List<Vector3f> waypoints, float width, float textureLen, float segmentLength,
-			float groundOffset, IHeightGenerator heightMap, boolean heightCorrection,
+			float groundOffset, IHeightMap heightMap, boolean heightCorrection,
 			BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier) {
 		this(loader, width, textureLen, groundOffset, heightMap, heightCorrection);
 		
@@ -88,7 +88,7 @@ public class Road {
 	}
 	
 	private static List<Vector3f> assignHeightsToWaypoints(List<Point2Df> waypoints2D,
-			IHeightGenerator heightMap) {
+			IHeightMap heightMap) {
 		List<Vector3f> waypoints3D = new ArrayList<>();
 		
 		waypoints2D.forEach(p -> {
@@ -106,13 +106,13 @@ public class Road {
 	}
 	
 	public static List<Vector3f> generateTrajectory(List<Vector3f> waypoints, float segmentLength, 
-			IHeightGenerator heightMap, BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier) {
+			IHeightMap heightMap, BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier) {
 		List<Vector3f> trajectory = generateTrajectory(waypoints, segmentLength, splineSupplier);
 		adhereTrajectoryToHeightMap(trajectory, heightMap);
 		return trajectory;
 	}
 	
-	private static void adhereTrajectoryToHeightMap(List<Vector3f> trajectory, IHeightGenerator heightMap) {
+	private static void adhereTrajectoryToHeightMap(List<Vector3f> trajectory, IHeightMap heightMap) {
 		trajectory.forEach(p -> {
 			float height = heightMap.getHeight(p.getX(), p.getZ());
 			p.setY(height);
@@ -153,7 +153,7 @@ public class Road {
 			Vector3f prevDirection = Vector3f.sub(curr, prev, null).normalise(null);
 			Vector3f nextDirection = Vector3f.sub(next, curr, null).normalise(null);
 			
-			prevDirection.y = 0; // TODO #issue1
+			prevDirection.y = 0;
 			nextDirection.y = 0;
 			
 			// vector pointing to the right of the prev and next directions, used for centerline

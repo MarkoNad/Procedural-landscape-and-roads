@@ -14,7 +14,7 @@ import search.IHeuristics;
 import search.IProblem;
 import search.ISearchAlgorithm;
 import search.Node;
-import terrains.IHeightGenerator;
+import terrains.IHeightMap;
 import toolbox.AbstractSpline;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
@@ -24,7 +24,7 @@ public class Pathfinder {
 	
 	private static final Logger LOGGER = Logger.getLogger(Pathfinder.class.getName());
 	
-	private final IHeightGenerator heightGenerator;
+	private final IHeightMap heightGenerator;
 	private final PathfindingProblem searchProblem;
 	private final IHeuristics<Point2Di> heuristics;
 	private final ISearchAlgorithm<Point2Di> searchAlgorithm;
@@ -41,7 +41,7 @@ public class Pathfinder {
 	public Pathfinder(BiFunction<IProblem<Point2Di>, IHeuristics<Point2Di>, ISearchAlgorithm<Point2Di>> algorithmSupplier,
 			BiFunction<List<Vector3f>, Float, AbstractSpline<Vector3f>> splineSupplier,
 			Point2Df start, Point2Df goal, Point2Df domainLowerLeftLimit,
-			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, 
+			Point2Df domainUpperRightLimit, IHeightMap heightGenerator, 
 			float cellSize, boolean allowTunnels, float minimalTunnelDepth,
 			int endpointOffset, int maskOffset, float tunnelInnerRadius, float tunnelOuterRadius,
 			int tunnelCandidates, boolean limitTunnelCandidates, Random random, int roadRange,
@@ -173,7 +173,7 @@ public class Pathfinder {
 		return Optional.of(shiftedModifiers);
 	}
 	
-	private List<PathPoint3D> setWaypointHeights(List<PathPoint> pathPoints, IHeightGenerator heightMap) {
+	private List<PathPoint3D> setWaypointHeights(List<PathPoint> pathPoints, IHeightMap heightMap) {
 		List<PathPoint3D> waypoints = new ArrayList<>();
 		
 		Point2Df firstTunnelEndpoint = null;

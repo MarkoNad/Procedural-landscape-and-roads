@@ -17,7 +17,7 @@ public class TerrainMends {
 
 	public TerrainMends(float xUpperLeft, float zUpperLeft, float size,
 			Map<Integer, Float> lodLevelToVertsPerUnit, boolean generateRight, boolean generateDown,
-			IHeightGenerator heightMap, ITextureMap textureMap, TerrainTexturePack texturePack,
+			IHeightMap heightMap, ITextureMap textureMap, TerrainTexturePack texturePack,
 			TerrainTexture blendMap, Vector3f translation, float textureWidth,
 			float textureDepth) {
 		this.middleLodTo_rightLodToMend = new HashMap<>();
@@ -30,7 +30,7 @@ public class TerrainMends {
 
 	private void generateMends(float xUpperLeft, float zUpperLeft, float size,
 			Map<Integer, Float> lodLevelToVertsPerUnit, boolean generateRight, boolean generateDown,
-			IHeightGenerator heightMap, ITextureMap textureMap, TerrainTexturePack texturePack,
+			IHeightMap heightMap, ITextureMap textureMap, TerrainTexturePack texturePack,
 			TerrainTexture blendMap, Vector3f translation, float textureWidth,
 			float textureDepth) {
 		Set<Integer> levels = lodLevelToVertsPerUnit.keySet();

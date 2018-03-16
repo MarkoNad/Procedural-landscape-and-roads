@@ -6,7 +6,7 @@ import java.util.Random;
 import java.util.logging.Logger;
 
 import search.IProblem;
-import terrains.IHeightGenerator;
+import terrains.IHeightMap;
 import toolbox.Point2Df;
 import toolbox.Point2Di;
 import toolbox.SamplerUtility;
@@ -23,7 +23,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	private final Point2Di goal;
 	private final Point2Df domainLowerLeftLimit;
 	private final Point2Df domainUpperRightLimit;
-	private final IHeightGenerator heightGenerator;
+	private final IHeightMap heightGenerator;
 	private final boolean allowTunnels;
 
 	private final float cellSize;
@@ -56,7 +56,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	private final double tunnelCurvatureExponent;
 
 	public PathfindingProblem(Point2Df origin, Point2Df goal, Point2Df domainLowerLeftLimit,
-			Point2Df domainUpperRightLimit, IHeightGenerator heightGenerator, float cellSize, boolean allowTunnels,
+			Point2Df domainUpperRightLimit, IHeightMap heightGenerator, float cellSize, boolean allowTunnels,
 			float minimalTunnelDepth, float tunnelInnerRadius, float tunnelOuterRadius, int tunnelCandidates,
 			boolean limitTunnelCandidates, Random random, int roadRange, double maxRoadSlopePercent, double maxRoadCurvature,
 			double roadLengthMultiplier, double roadSlopeMultiplier, double roadCurvatureMultiplier,
@@ -260,7 +260,7 @@ public class PathfindingProblem implements IProblem<Point2Di> {
 	}
 
 	private boolean goesThroughMountain(Point2Df p1, Point2Df p2, float y1, float y2,
-			float samplingDist, IHeightGenerator heightMap, float minimalTunnelDepth) {
+			float samplingDist, IHeightMap heightMap, float minimalTunnelDepth) {
 		Point2Df direction = Point2Df.sub(p2, p1);
 		direction = Point2Df.normalize(direction);
 		

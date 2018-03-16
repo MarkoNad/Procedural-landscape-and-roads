@@ -2,6 +2,7 @@ package terrains;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Function;
 
 import org.lwjgl.util.vector.Vector3f;
@@ -16,53 +17,79 @@ public class BiomesMap implements ITextureMap {
 	private static final float EPS = 1e-6f;
 	private static final float DEFAULT_INTERPOLATION_INTERVAL = 0f;
 	
-	private static NoiseMap noiseMap = new NoiseMap(450, 0.01f, 0);
-	private NoiseMap moistureMap = new NoiseMap(1, 0.0003f, 1);
-	private final IHeightGenerator heightMap;
-
+	private static final NoiseMap DEFAULT_TREE_TYPE_VARIATION_MAP = new NoiseMap(450, 0.01f, 0);
+	private static final NoiseMap DEFAULT_MOISTURE_MAP = new NoiseMap(1, 0.0003f, 1);
+	private static final float DEFAULT_LOWER_TREE_THRESHOLD = 600.0f;
+	private static final float DEFAULT_UPPER_TREE_THRESHOLD = 800.0f;
+	
+	private final IHeightMap heightMap;
+	private final NoiseMap treeTypeVariationMap;
+	private final NoiseMap moistureMap;
+	private final float upperTreeThreshold;
+	private final float lowerTreeThreshold;
 	private final List<Function<Float, Float>> weightedFunctions;
 	private final TriFunction<Float, Float, Float, Float> textureVariation;
+	private final Random random;
 
-	public BiomesMap(IHeightGenerator heightMap, List<Range> textureRanges, float interpolationInterval,
-			TriFunction<Float, Float, Float, Float> textureVariation) {
+	public BiomesMap(IHeightMap heightMap, List<Range> textureRanges, float interpolationInterval,
+			TriFunction<Float, Float, Float, Float> textureVariation, NoiseMap treeTypeVariationMap,
+			NoiseMap moistureMap, float lowerTreeThreshold, float upperTreeThreshold, Random random) {
 		this.heightMap = heightMap;
 		this.textureVariation = textureVariation;
+		this.treeTypeVariationMap = treeTypeVariationMap;
+		this.moistureMap = moistureMap;
+		this.lowerTreeThreshold = lowerTreeThreshold;
+		this.upperTreeThreshold = upperTreeThreshold;
+		this.random = random;
 		this.weightedFunctions = createWeightedFunctions(textureRanges, interpolationInterval);
 	}
 	
-	public BiomesMap(IHeightGenerator heightMap, List<Range> textureRanges) {
-		this(heightMap, textureRanges, DEFAULT_INTERPOLATION_INTERVAL, (x, y, z) -> 0f);
+	public BiomesMap(IHeightMap heightMap, List<Range> textureRanges, float interpolationInterval,
+			TriFunction<Float, Float, Float, Float> textureVariation, Random random) {
+		this(heightMap, textureRanges, interpolationInterval, textureVariation,
+				DEFAULT_TREE_TYPE_VARIATION_MAP, DEFAULT_MOISTURE_MAP, DEFAULT_LOWER_TREE_THRESHOLD,
+				DEFAULT_UPPER_TREE_THRESHOLD, random);
 	}
 	
-	public BiomesMap(IHeightGenerator heightMap, List<Range> textureRanges, float interpolationInterval) {
-		this(heightMap, textureRanges, interpolationInterval, (x, y, z) -> 0f);
+	public BiomesMap(IHeightMap heightMap, List<Range> textureRanges, Random random) {
+		this(heightMap, textureRanges, DEFAULT_INTERPOLATION_INTERVAL, (x, y, z) -> 0f,
+				DEFAULT_TREE_TYPE_VARIATION_MAP, DEFAULT_MOISTURE_MAP, DEFAULT_LOWER_TREE_THRESHOLD,
+				DEFAULT_UPPER_TREE_THRESHOLD, random);
 	}
 	
-	public BiomesMap(IHeightGenerator heightMap, List<Range> textureRanges,
-			TriFunction<Float, Float, Float, Float> textureVariation) {
-		this(heightMap, textureRanges, DEFAULT_INTERPOLATION_INTERVAL, textureVariation);
+	public BiomesMap(IHeightMap heightMap, List<Range> textureRanges, float interpolationInterval,
+			Random random) {
+		this(heightMap, textureRanges, interpolationInterval, (x, y, z) -> 0f,
+				DEFAULT_TREE_TYPE_VARIATION_MAP, DEFAULT_MOISTURE_MAP, DEFAULT_LOWER_TREE_THRESHOLD,
+				DEFAULT_UPPER_TREE_THRESHOLD, random);
+	}
+	
+	public BiomesMap(IHeightMap heightMap, List<Range> textureRanges,
+			TriFunction<Float, Float, Float, Float> textureVariation, Random random) {
+		this(heightMap, textureRanges, DEFAULT_INTERPOLATION_INTERVAL, textureVariation,
+				DEFAULT_TREE_TYPE_VARIATION_MAP, DEFAULT_MOISTURE_MAP, DEFAULT_LOWER_TREE_THRESHOLD,
+				DEFAULT_UPPER_TREE_THRESHOLD, random);
 	}
 	
 	public TreeType getTreeType(float x, float z) {
 		float height = heightMap.getHeightApprox(x, z);
-		float modifiedHeight = height + noiseMap.getNoise(x, z);
-		if(modifiedHeight < 600) return TreeType.OAK;
-		return TreeType.PINE;
+		float modifiedHeight = height + treeTypeVariationMap.getNoise(x, z);
+		
+		if(modifiedHeight < lowerTreeThreshold) return TreeType.OAK;
+		if(modifiedHeight > upperTreeThreshold) return TreeType.PINE;
+		
+		double r = random.nextDouble();
+		double pineProbability = (modifiedHeight - lowerTreeThreshold) /
+				(upperTreeThreshold - lowerTreeThreshold);
+		return r < pineProbability ? TreeType.OAK : TreeType.PINE;
 	}
 	
 	public float getTreeDensity(float x, float z) {
 		float slope = Vector3f.angle(Globals.Y_AXIS, heightMap.getNormalApprox(x, z));
 		float moisture = moistureMap.getPrenormalizedNoise(x, z);
-		//float moisture = getMoisture(x, z);
 		return (float) (Math.cos(slope) * moisture);
 	}
-	
-//	private float getMoisture(float x, float z) {
-//		float moisture = moistureMap.getPrenormalizedNoise(x, z);
-//		//moisture = (float)  Math.pow((moisture + 0.5) / 1.5, 2);
-//		return moisture;
-//	}
-	
+
 	private List<Function<Float, Float>> createWeightedFunctions(List<Range> ranges,
 			float interpolationInterval) {
 		List<Function<Float, Float>> weightedFunctions = new ArrayList<>();

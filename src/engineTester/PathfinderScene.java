@@ -36,7 +36,7 @@ import roads.Road;
 import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
-import terrains.IHeightGenerator;
+import terrains.IHeightMap;
 import terrains.ITerrain;
 import terrains.NoiseMap;
 import terrains.SimplexHeightGenerator;
@@ -126,7 +126,7 @@ public class PathfinderScene {
 			final float maxHeight = textureRanges.get(textureRanges.size() - 1).getEnd();
 			return (float) (texVariationMap.getNoise(x, z) * Math.pow(4 * (h + 1000) / maxHeight, 1.5));
 		};
-		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation);
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 500f, textureVariation, new Random(0));
 		
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
@@ -230,7 +230,7 @@ public class PathfinderScene {
 		DisplayManager.closeDisplay();
 	}
 	
-	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator, Road road) {
+	private static Entity setupRoad(Loader loader, IHeightMap heightGenerator, Road road) {
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);

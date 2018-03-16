@@ -2,7 +2,7 @@ package terrains;
 
 import org.lwjgl.util.vector.Vector3f;
 
-public interface IHeightGenerator {
+public interface IHeightMap {
 	
 	public float getHeight(float x, float z);
 	public float getHeightApprox(float x, float z);

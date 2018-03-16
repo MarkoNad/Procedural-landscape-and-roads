@@ -39,7 +39,7 @@ public class TerrainLODGrid {
 	private final Loader loader;
 	private final TerrainTexturePack texturePack;
 	private final TerrainTexture blendMap;
-	private final IHeightGenerator heightMap;
+	private final IHeightMap heightMap;
 	private final BiomesMap biomesMap;
 	private final Point2Df domainLowerLeftLimit;
 	private final Point2Df domainUpperRightLimit;
@@ -54,7 +54,7 @@ public class TerrainLODGrid {
 	public TerrainLODGrid(NavigableMap<Float, Integer> distanceToLODLevel,
 			Map<Integer, Float> lodLevelToVertsPerUnit, float patchSize, float textureWidth,
 			float textureDepth, Vector3f translation, Loader loader, TerrainTexturePack texturePack,
-			TerrainTexture blendMap, IHeightGenerator heightMap, BiomesMap biomesMap,
+			TerrainTexture blendMap, IHeightMap heightMap, BiomesMap biomesMap,
 			Point2Df domainLowerLeftLimit, Point2Df domainUpperRightLimit,
 			Optional<ExecutorService> pool) {
 

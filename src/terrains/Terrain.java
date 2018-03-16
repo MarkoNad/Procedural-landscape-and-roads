@@ -37,11 +37,11 @@ public class Terrain implements ITerrain {
 	private TerrainTexture blendMap;
 	private ITextureMap textureMap;
 
-	private IHeightGenerator heightGenerator;
+	private IHeightMap heightGenerator;
 
 	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth,
 			float vertsPerMeter, float textureWidth, float textureDepth, TerrainTexturePack texturePack,
-			TerrainTexture blendMap, IHeightGenerator heightGenerator, ITextureMap textureMap) {
+			TerrainTexture blendMap, IHeightMap heightGenerator, ITextureMap textureMap) {
 		if(textureMap.getNumberOfInfluences() != NUM_TEXTURES) {
 			throw new IllegalArgumentException("Terrain needs " + NUM_TEXTURES + " texture influences per "
 					+ "vertex, provided texture map has " + textureMap.getNumberOfInfluences());
@@ -64,7 +64,7 @@ public class Terrain implements ITerrain {
 	
 	public Terrain(float xUpperLeft, float zUpperLeft, Vector3f position, float width, float depth,
 			float vertsPerMeter, float textureWidth, float textureDepth, TerrainTexturePack texturePack,
-			TerrainTexture blendMap, IHeightGenerator heightGenerator, ITextureMap textureMap, 
+			TerrainTexture blendMap, IHeightMap heightGenerator, ITextureMap textureMap, 
 			Loader loader) {
 		this(xUpperLeft, zUpperLeft, position, width, depth, vertsPerMeter, textureWidth, textureDepth, texturePack,
 				blendMap, heightGenerator, textureMap);

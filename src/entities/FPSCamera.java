@@ -2,14 +2,14 @@ package entities;
 
 import org.lwjgl.util.vector.Vector3f;
 
-import terrains.IHeightGenerator;
+import terrains.IHeightMap;
 
 public class FPSCamera extends FloatingCamera {
 	
 	private final float groundOffset;
-	private final IHeightGenerator heightMap;
+	private final IHeightMap heightMap;
 	
-	public FPSCamera(Vector3f position, IHeightGenerator heightMap, float crawlSpeed,
+	public FPSCamera(Vector3f position, IHeightMap heightMap, float crawlSpeed,
 			float baseLowSpeed, float baseHighSpeed, float acceleration, float rotationSpeed, 
 			float groundOffset) {
 		super(position, crawlSpeed, baseLowSpeed, baseHighSpeed, acceleration, rotationSpeed);

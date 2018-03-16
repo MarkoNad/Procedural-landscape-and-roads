@@ -40,7 +40,7 @@ import roads.Road;
 import roads.TunnelManager;
 import search.AStar;
 import terrains.BiomesMap;
-import terrains.IHeightGenerator;
+import terrains.IHeightMap;
 import terrains.ITerrain;
 import terrains.ImageHeightMap;
 import terrains.MutableHeightMap;
@@ -141,7 +141,7 @@ public class Medvednica {
 		List<Range> textureRanges = Arrays.asList(new Range(0, 600), new Range(600, 900), new Range(900, heightGenerator.getMaxHeight()));
 		NoiseMap texVariationMap = new NoiseMap(40f, 0.005f, 0);
 		TriFunction<Float, Float, Float, Float> textureVariation = (x, h, z) -> texVariationMap.getNoise(x, z);
-		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 50f, textureVariation);
+		BiomesMap biomesMap = new BiomesMap(heightGenerator, textureRanges, 50f, textureVariation, new Random(0));
 		
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, size);
 		Point2Df domainUpperRightLimit = new Point2Df(size, 0f);
@@ -235,7 +235,7 @@ public class Medvednica {
 		DisplayManager.closeDisplay();
 	}
 	
-	private static Entity setupRoad(Loader loader, IHeightGenerator heightGenerator, Road road) {
+	private static Entity setupRoad(Loader loader, IHeightMap heightGenerator, Road road) {
 		TexturedModel roadTM = new TexturedModel(road.getModel(), new ModelTexture(loader.loadTexture("road")));
 		roadTM.getTexture().setHasTransparency(true);
 		return new Entity(roadTM, new Vector3f(0f, 0f, 0f), 0f, 0f, 0f, 1f);

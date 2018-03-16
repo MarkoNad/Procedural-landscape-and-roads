@@ -25,7 +25,7 @@ public class TerrainMend implements ITerrain {
 	private Optional<RawModel> model;
 
 	public TerrainMend(float xUpperLeft, float zUpperLeft, float size, float thisVertsPerUnit,
-			float otherVertsPerUnit, IHeightGenerator heightMap, ITextureMap textureMap,
+			float otherVertsPerUnit, IHeightMap heightMap, ITextureMap textureMap,
 			TerrainTexturePack texturePack, TerrainTexture blendMap, Vector3f translation,
 			float textureWidth, float textureDepth, boolean isRight) {
 		
@@ -79,7 +79,7 @@ public class TerrainMend implements ITerrain {
 	}
 	
 	private TerrainData generateTerrainData(float xUpperLeft, float zUpperLeft, float size,
-			float thisVertsPerUnit, float otherVertsPerUnit, IHeightGenerator heightMap,
+			float thisVertsPerUnit, float otherVertsPerUnit, IHeightMap heightMap,
 			ITextureMap textureMap, float textureWidth, float textureDepth, boolean isRight) {
 		float xStart = isRight ? xUpperLeft + size : xUpperLeft;
 		float zStart = isRight ? zUpperLeft : zUpperLeft + size;

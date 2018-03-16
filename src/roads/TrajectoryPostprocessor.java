@@ -6,7 +6,7 @@ import java.util.logging.Logger;
 
 import org.lwjgl.util.vector.Vector3f;
 
-import terrains.IHeightGenerator;
+import terrains.IHeightMap;
 
 public class TrajectoryPostprocessor {
 	
@@ -18,7 +18,7 @@ public class TrajectoryPostprocessor {
 	private List<TunnelData> tunnelData;
 	
 	public TrajectoryPostprocessor(List<Vector3f> initialTrajectory, List<PathPoint3D> pathPoints, 
-			IHeightGenerator heightMap, float minimalTunnelDepth, int endpointOffset, int maskOffset) {
+			IHeightMap heightMap, float minimalTunnelDepth, int endpointOffset, int maskOffset) {
 		modifierTrajectories = new ArrayList<>();
 		trajectory = new ArrayList<>();
 		tunnelData = new ArrayList<>();
@@ -45,7 +45,7 @@ public class TrajectoryPostprocessor {
 	}
 	
 	private void process(List<Vector3f> initialTrajectory, List<PathPoint3D> pathPoints, 
-			IHeightGenerator heightMap, float minimalTunnelDepth, int endpointOffset,
+			IHeightMap heightMap, float minimalTunnelDepth, int endpointOffset,
 			int maskOffset) {
 		List<Vector3f> newModifier = new ArrayList<>();
 		
@@ -175,7 +175,7 @@ public class TrajectoryPostprocessor {
 	}
 	
 	private Vector3f tunnelBodyEnd(List<Vector3f> initialTrajectory, PathPoint3D entrance, PathPoint3D exit,
-			float minimalTunnelDepth, IHeightGenerator heightMap) {
+			float minimalTunnelDepth, IHeightMap heightMap) {
 		int entranceIndex = -1;
 		int exitIndex = -1;
 		for(int i = 0; i < initialTrajectory.size(); i++) {

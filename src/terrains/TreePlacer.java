@@ -33,13 +33,13 @@ public class TreePlacer {
 	
 	private static final int BATCH_SIZE = 1000;
 
-	private final IHeightGenerator heightMap;
+	private final IHeightMap heightMap;
 	private final BiomesMap biomesMap;
 	private final Sampler sampler;
 	private final boolean usePreciseHeight;
 	private List<GriddedTrajectory> noTreeZones;
 	
-	public TreePlacer(IHeightGenerator heightMap, BiomesMap biomesMap, Sampler sampler,
+	public TreePlacer(IHeightMap heightMap, BiomesMap biomesMap, Sampler sampler,
 			boolean usePreciseHeight) {
 		this.heightMap = heightMap;
 		this.biomesMap = biomesMap;
@@ -48,7 +48,7 @@ public class TreePlacer {
 		noTreeZones = new ArrayList<>();
 	}
 
-	public TreePlacer(IHeightGenerator heightMap, BiomesMap biomesMap, Sampler sampler) {
+	public TreePlacer(IHeightMap heightMap, BiomesMap biomesMap, Sampler sampler) {
 		this(heightMap, biomesMap, sampler, true);
 	}
 

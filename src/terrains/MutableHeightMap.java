@@ -15,7 +15,7 @@ import toolbox.GriddedTrajectory;
 import toolbox.Point2Di;
 import toolbox.GriddedTrajectory.TrajectoryPoint;
 
-public abstract class MutableHeightMap implements IHeightGenerator {
+public abstract class MutableHeightMap implements IHeightMap {
 	
 	private static final Logger LOGGER = Logger.getLogger(MutableHeightMap.class.getName());
 
