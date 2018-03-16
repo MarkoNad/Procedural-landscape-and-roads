@@ -130,13 +130,15 @@ public class PathfinderRoadsScene {
 		Point2Df domainLowerLeftLimit = new Point2Df(0f, -5000f);
 		Point2Df domainUpperRightLimit = new Point2Df(10_000f, -22_000f);
 
+		float margin = 10f;
+		
 		Pathfinder pathfinder = new Pathfinder(
 				AStar<Point2Di>::new, // algorithm
 				CatmullRomSpline3D::new, // spline
-				new Point2Df(9500f, -5000f), // start,
-				new Point2Df(10000f, -22000f), // goal,
-				domainLowerLeftLimit,
-				domainUpperRightLimit,
+				new Point2Df(9500f, -5100f), // start,
+				new Point2Df(10000f - margin, -22000f + margin), // goal,
+				new Point2Df(domainLowerLeftLimit.getX() + margin, domainLowerLeftLimit.getZ() - margin),
+				new Point2Df(domainUpperRightLimit.getX() - margin, domainUpperRightLimit.getZ() + margin),
 				heightGenerator,
 				25f, // cellsize
 				false, // allowTunnels
