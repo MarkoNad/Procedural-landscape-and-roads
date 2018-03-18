@@ -58,8 +58,8 @@ import hr.fer.zemris.engine.util.Point2Di;
 import hr.fer.zemris.engine.util.PoissonDiskSampler;
 import hr.fer.zemris.engine.util.QueueProduct;
 import hr.fer.zemris.engine.util.Range;
-import hr.fer.zemris.engine.util.TriFunction;
 import hr.fer.zemris.engine.util.SamplerUtility.SamplingType;
+import hr.fer.zemris.engine.util.TriFunction;
 
 public class Medvednica {
 
@@ -183,6 +183,44 @@ public class Medvednica {
 				3.0, // tunnelCurvatureExponent,
 				SamplingType.FARTHEST // roadSamplingType
 		);
+
+		// configuration for AStar and GreedyBestFirstSearch comparison
+//		Pathfinder pathfinder = new Pathfinder(
+//			AStar<Point2Di>::new, // algorithm
+////			GreedyBestFirstSearch<Point2Di>::new, // algorithm
+//			CatmullRomSpline3D::new, // spline
+//			new Point2Df(9350f, 11950f), // start,
+//			new Point2Df(4000f, 0f), // goal,
+//			domainLowerLeftLimit,
+//			domainUpperRightLimit,
+//			heightGenerator,
+//			50f, // cellSize
+//			false, // allowTunnels
+//			15f, // minimum tunnel depth
+//			10, // endpointOffset
+//			8, // maskOffset
+//			4500f, // tunnelInnerRadius
+//			6000f, // tunnelOuterRadius
+//			100, // tunnelCandidates
+//			true, // limitTunnelCandidates
+//			new Random(0), // random,
+//			3, // roadRange,
+//			0.1, // maxRoadSlopePercent,
+//			1.5, //maxRoadCurvature,
+//			1.0, // roadLengthMultiplier,
+//			80.0, // 150.0, // roadSlopeMultiplier,
+//			10.0, //30.0, // roadCurvatureMultiplier,
+//			2.0, // roadSlopeExponent,
+//			3.0, // roadCurvatureExponent,
+//			0.25, // maxTunnelSlopePercent,
+//			1.75, // maxTunnelCurvature,
+//			10.0, // tunnelLengthMultiplier,
+//			200.0, // tunnelSlopeMultiplier,
+//			10.0, // tunnelCurvatureMultiplier,
+//			2.0, // tunnelSlopeExponent,
+//			3.0, // tunnelCurvatureExponent,
+//			SamplingType.NEAREST_UNIQUE // roadSamplingType
+//		);
 
 		Optional<List<Vector3f>> roadTrajectory = pathfinder.findTrajectory(1f);
 		Optional<Road> maybeRoad = roadTrajectory.map(trajectory -> new Road(loader, trajectory, 10, 12, 0.0f));
