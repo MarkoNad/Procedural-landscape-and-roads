@@ -1,4 +1,4 @@
-package hr.fer.zemris.engine.usecase;
+package hr.fer.zemris.engine.demo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,6 +63,8 @@ public class CustomRoadScene {
 		firTreetop.getTexture().setHasTransparency(true);
 		firLOD1.getTexture().setHasTransparency(true);
 		chestnutLOD1.getTexture().setHasTransparency(true);
+		chestnutLOD1.getTexture().setUsesFakeLighting(true);
+		firLOD1.getTexture().setUsesFakeLighting(true);
 		
 		TexturedModelComp firLOD1Comp = new TexturedModelComp(firLOD1);
 		TexturedModelComp chestnutLOD1Comp = new TexturedModelComp(chestnutLOD1);
@@ -71,9 +73,9 @@ public class CustomRoadScene {
 
 		Map<TexturedModelComp, Float> scaleForModel = new HashMap<>();
 		scaleForModel.put(firLOD0Comp, 60.0f);
-		scaleForModel.put(firLOD1Comp, 140.0f);
+		scaleForModel.put(firLOD1Comp, 280.0f);
 		scaleForModel.put(chestnutLOD0Comp, 15.0f);
-		scaleForModel.put(chestnutLOD1Comp, 190.0f);
+		scaleForModel.put(chestnutLOD1Comp, 380.0f);
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
 		chestnutLods.put(4000f, chestnutLOD0Comp);
