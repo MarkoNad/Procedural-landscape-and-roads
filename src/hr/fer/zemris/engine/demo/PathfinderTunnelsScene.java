@@ -1,4 +1,4 @@
-package hr.fer.zemris.engine.usecase;
+package hr.fer.zemris.engine.demo;
 
 import java.awt.geom.Point2D;
 import java.util.Arrays;
@@ -91,11 +91,11 @@ public class PathfinderTunnelsScene {
 		
 		NavigableMap<Float, TexturedModelComp> chestnutLods = new TreeMap<>();
 		chestnutLods.put(200f, chestnutLOD0Comp);
-		chestnutLods.put(2000f, chestnutLOD1Comp);
+		chestnutLods.put(1200f, chestnutLOD1Comp);
 
 		NavigableMap<Float, TexturedModelComp> firLods = new TreeMap<>();
 		firLods.put(200f, firLOD0Comp);
-		firLods.put(2000f, firLOD1Comp);
+		firLods.put(1200f, firLOD1Comp);
 		
 		Map<TreeType, NavigableMap<Float, TexturedModelComp>> lodLevelsForType = new HashMap<>();
 		lodLevelsForType.put(TreeType.OAK, chestnutLods);
@@ -183,7 +183,7 @@ public class PathfinderTunnelsScene {
 				Optional.of(Globals.getThreadPool()));
 
 		BiFunction<Float, Float, Float> distribution = (x, z) -> (float)Math.pow(1 - biomesMap.getTreeDensity(x, z), 2.0);
-		PoissonDiskSampler sampler = new PoissonDiskSampler(0, -5000, 10000, -22000, 10f, 50f, distribution, 1, 30, 10_000_000, new Point2D.Float(10000f, -5000f));
+		PoissonDiskSampler sampler = new PoissonDiskSampler(0, -5000, 10000, -22000, 10f, 15f, distribution, 1, 30, 10_000_000, new Point2D.Float(10000f, -5000f));
 		TreePlacer placer = new TreePlacer(heightGenerator, biomesMap, sampler);
 		pathfinder.findModifierTrajectories(0.0f).ifPresent(ts -> ts.forEach(t -> placer.addNoTreeZone(t, 7.0f)));
 		ExecutorService pool = Globals.getThreadPool();
