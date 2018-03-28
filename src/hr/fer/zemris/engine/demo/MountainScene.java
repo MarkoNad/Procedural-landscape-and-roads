@@ -59,6 +59,7 @@ public class MountainScene {
 
 	public static void main(String[] args) {
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+		Globals.initializeThreadPool(3);
 		
 		DisplayManager.createDisplay();
 		

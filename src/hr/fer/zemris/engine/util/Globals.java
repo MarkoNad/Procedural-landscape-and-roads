@@ -15,20 +15,23 @@ public class Globals {
 	public static final String RESOURCES_ROOT = "resources/";
 	
 	private static ExecutorService threadPool;
+	public static final int DEFAULT_BACKGROUND_THREADS = 1;
+	
+	public static void initializeThreadPool(int threads) {
+		threadPool = Executors.newFixedThreadPool(threads, new ThreadFactory() {	
+			@Override
+			public Thread newThread(Runnable r) {
+				Thread thread = new Thread(r);
+				thread.setDaemon(true);
+				thread.setPriority(Thread.MIN_PRIORITY);
+				return thread;
+			}
+		});
+	}
 	
 	public static ExecutorService getThreadPool() {
 		if(threadPool == null) {
-			final int threads = Runtime.getRuntime().availableProcessors();
-			
-			threadPool = Executors.newFixedThreadPool(threads, new ThreadFactory() {	
-				@Override
-				public Thread newThread(Runnable r) {
-					Thread thread = new Thread(r);
-					thread.setDaemon(true);
-					thread.setPriority(Thread.MIN_PRIORITY);
-					return thread;
-				}
-			});
+			initializeThreadPool(DEFAULT_BACKGROUND_THREADS);
 		}
 
 		return threadPool;
