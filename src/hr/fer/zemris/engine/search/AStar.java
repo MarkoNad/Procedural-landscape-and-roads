@@ -45,8 +45,6 @@ public class AStar<S> implements ISearchAlgorithm<S> {
 			}
 			
 			for(S succState : problem.getSuccessors(current.getState())) {
-				if(closedMap.containsKey(succState)) continue;
-				
 				double transitionCost = problem.getTransitionCost(
 						current.getState(),
 						succState,
